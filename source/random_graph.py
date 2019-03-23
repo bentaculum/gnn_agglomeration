@@ -1,7 +1,6 @@
 import torch
 from torch_geometric.data import Data
-import torch_geometric
-import numpy as np
+
 
 class RandomGraph():
     def __init__(self, config):
@@ -9,7 +8,7 @@ class RandomGraph():
         self.data = None
 
     def create_graph(self):
-        x = torch.rand(self.config.nodes, 2)
+        x = torch.rand(self.config.nodes, self.config.dimensionality)
         # TODO might want to save the position in the pos attribute, not the node feature matrix
 
         # connect all edges within distance theta_max O(n^2)
