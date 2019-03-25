@@ -1,7 +1,7 @@
 import torch
 from torch_geometric.data import InMemoryDataset
 import torch_geometric.transforms as T
-from source.my_graph import MyGraph
+from my_graph import MyGraph
 
 class RandomGraphDataset(InMemoryDataset):
     def __init__(self, root, config, transform=T.Distance(), pre_transform=None):

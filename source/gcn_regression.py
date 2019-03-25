@@ -1,10 +1,10 @@
 import torch
 import torch.nn.functional as F
 from torch_geometric.nn import GCNConv
-from . import gnn_model
+from gnn_model import GnnModel
 
 
-class GcnRegression(gnn_model.GnnModel):
+class GcnRegression(GnnModel):
     def __init__(self, config):
         super(GcnRegression, self).__init__(config)
         self.loss_name = 'MSE loss'

@@ -1,9 +1,5 @@
 import torch
-import torch.nn.functional as F
-from torch_geometric.nn import GCNConv
-
 from abc import ABC, abstractmethod
-import importlib
 
 
 class GnnModel(torch.nn.Module, ABC):

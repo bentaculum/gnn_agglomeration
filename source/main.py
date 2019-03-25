@@ -1,10 +1,10 @@
-from source.config import Config
-from source.gcn_regression import GcnRegression
-from source.gcn_classification import GcnClassification
-from source.gmmconv_classification import GmmConvClassification
+from config import Config
+from gcn_regression import GcnRegression
+from gcn_classification import GcnClassification
+from gmmconv_classification import GmmConvClassification
 
-from source.random_graph_dataset import RandomGraphDataset
-from source.my_graph import MyGraph
+from random_graph_dataset import RandomGraphDataset
+from my_graph import MyGraph
 
 import torch
 import os
@@ -20,8 +20,13 @@ if __name__  == '__main__':
     config.max_neighbors = dataset.max_neighbors()
 
     device = torch.device('cpu')
-    model = globals()[config.model](config=config)
+
+    try:
+        model = globals()[config.model](config=config)
+    except:
+        raise NotImplementedError('The model you have specified is not implemented')
     model = model.to(device)
+
     data = dataset[0].to(device)
 
     # put model in training mode (e.g. use dropout)
@@ -39,7 +44,6 @@ if __name__  == '__main__':
 
     model.evaluate_metric(data)
 
-    # print the first graph in the dataset
+    # plot the first graph in the dataset
     g = MyGraph(config, dataset[0])
     g.plot_predictions(model.evaluate_as_list(data))
-    print('Done')

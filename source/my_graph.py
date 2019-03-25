@@ -76,7 +76,7 @@ class MyGraph():
         if os.path.isfile(img_path):
             os.remove(img_path)
         plt.savefig(img_path)
-        print('plotted the predictions to {}'.format(img_path))
+        print('plotted the graph with predictions to {}'.format(img_path))
         plt.show()
 
     def set_plotting_style(self):

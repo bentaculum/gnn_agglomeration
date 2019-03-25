@@ -1,10 +1,10 @@
 import torch
 import torch.nn.functional as F
 from torch_geometric.nn import GMMConv
-from . import gnn_model
+from gnn_model import GnnModel
 
 
-class GmmConvClassification(gnn_model.GnnModel):
+class GmmConvClassification(GnnModel):
     def __init__(self, config):
         super(GmmConvClassification, self).__init__(config)
         self.loss_name = 'NLL loss'
