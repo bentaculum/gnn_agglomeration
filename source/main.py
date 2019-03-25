@@ -1,11 +1,12 @@
 from source.config import Config
+from source.gcn_regression import GcnRegression
 from source.gcn_classification import GcnClassification
+from source.gmmconv_classification import GmmConvClassification
+
 from source.random_graph_dataset import RandomGraphDataset
 from source.my_graph import MyGraph
-from source.gcn_regression import GcnRegression
 
 import torch
-import torch.nn.functional as F
 import os
 
 if __name__  == '__main__':
@@ -17,10 +18,10 @@ if __name__  == '__main__':
 
     dataset = RandomGraphDataset(root=config.dataset_path, config=config)
     config.max_neighbors = dataset.max_neighbors()
-    # TODO make the config editable?
 
     device = torch.device('cpu')
-    model = GcnClassification(config=config).to(device)
+    # model = GcnClassification(config=config).to(device)
+    model = GmmConvClassification(config=config).to(device)
     data = dataset[0].to(device)
 
     # put model in training mode (e.g. use dropout)

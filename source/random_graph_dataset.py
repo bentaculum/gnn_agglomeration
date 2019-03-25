@@ -1,9 +1,10 @@
 import torch
 from torch_geometric.data import InMemoryDataset
+import torch_geometric.transforms as T
 from source.my_graph import MyGraph
 
 class RandomGraphDataset(InMemoryDataset):
-    def __init__(self, root, config, transform=None, pre_transform=None):
+    def __init__(self, root, config, transform=T.Distance(), pre_transform=None):
         self.config = config
         super(RandomGraphDataset, self).__init__(root, transform, pre_transform)
         self.data, self.slices = torch.load(self.processed_paths[0])

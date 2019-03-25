@@ -1,5 +1,6 @@
 import torch
 from torch_geometric.data import Data
+import torch_geometric.transforms as T
 import networkx as nx
 import matplotlib.pyplot as plt
 import os
@@ -31,8 +32,11 @@ class MyGraph():
                     y[j] += 1
 
         edge_index = torch.tensor(edges, dtype=torch.long).transpose(0,1)
-        edge_attr = torch.tensor(edge_attr)
-        self.data = Data(x=x, edge_index=edge_index, edge_attr=edge_attr, y=y)
+        # edge_attr = torch.tensor(edge_attr)
+        pos = x.clone()
+
+        # self.data = Data(x=x, edge_index=edge_index, edge_attr=edge_attr, y=y, pos=pos)
+        self.data = Data(x=x, edge_index=edge_index, y=y, pos=pos)
 
     def plot(self):
         g = nx.Graph(incoming_graph_data=self.data.edge_index.transpose(0,1).tolist())
@@ -68,7 +72,12 @@ class MyGraph():
         nx.draw_networkx(g, pos_dict, labels=labels_dict, font_size=10)
         plt.title("Number of neighbors within euclidian distance {}.\nEach node displays 'pred:target'".format(
             self.config.theta))
-        plt.savefig(os.path.join(self.config.temp_dir, 'graph_with_predictions.png'))
+
+        img_path = os.path.join(self.config.temp_dir, 'graph_with_predictions.png')
+        if os.path.isfile(img_path):
+            os.remove(img_path)
+        plt.savefig(img_path)
+        print('plotted the predictions to {}'.format(img_path))
         plt.show()
 
     def set_plotting_style(self):

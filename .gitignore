@@ -4,3 +4,4 @@ tutorial
 *__pycache__*
 data
 temp
+*.DS_Store*
