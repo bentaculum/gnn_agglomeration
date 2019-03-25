@@ -24,14 +24,14 @@ class GcnRegression(GnnModel):
         return x
 
     def loss(self, inputs, targets):
-        self.current_loss =  F.mse_loss(inputs, targets)
+        self.current_loss =  F.mse_loss(inputs, targets.float())
         return self.current_loss
 
     def evaluate_metric(self, data):
         # put model in evaluation mode
         self.eval()
         pred = self.forward(data).round()
-        correct = torch.squeeze(pred).eq(data.y).sum().item()
+        correct = torch.squeeze(pred).eq(data.y.float()).sum().item()
         acc = correct / data.num_nodes
         # print('\nAccuracy: {:.4f}'.format(acc))
         return acc
