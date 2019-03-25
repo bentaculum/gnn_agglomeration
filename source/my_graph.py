@@ -2,7 +2,7 @@ import torch
 from torch_geometric.data import Data
 import networkx as nx
 import matplotlib.pyplot as plt
-
+import os
 
 class MyGraph():
     # TODO let this class inherit directly from torch_geometric.data.Data
@@ -45,10 +45,15 @@ class MyGraph():
             pos_dict[i] = self.data.x[i].tolist()
             labels_dict[i] = int(self.data.y[i].item())
 
+        self.set_plotting_style()
         nx.draw_networkx(g, pos_dict, labels=labels_dict)
+        plt.title("Number of neighbors within euclidian distance {}".format(
+            self.config.theta))
+        plt.savefig(os.path.join(self.config.temp_dir, 'graph.png'))
         plt.show()
 
     def plot_predictions(self, pred):
+        # transpose the edge matrix for format requirements
         g = nx.Graph(incoming_graph_data=self.data.edge_index.transpose(0,1).tolist())
         # add the positions in euclidian space to the model
         pos_dict = {}
@@ -59,7 +64,15 @@ class MyGraph():
             pos_dict[i] = self.data.x[i].tolist()
             labels_dict[i] = '{};{}'.format(int(pred[i]), int(self.data.y[i].item()))
 
-        nx.draw_networkx(g, pos_dict, labels=labels_dict, font_size=8)
-        plt.title("Number of neighbors within distance {}. Each node displays 'pred:target'".format(
+        self.set_plotting_style()
+        nx.draw_networkx(g, pos_dict, labels=labels_dict, font_size=10)
+        plt.title("Number of neighbors within euclidian distance {}.\nEach node displays 'pred:target'".format(
             self.config.theta))
+        plt.savefig(os.path.join(self.config.temp_dir, 'graph_with_predictions.png'))
         plt.show()
+
+    def set_plotting_style(self):
+        plt.figure(figsize=(8, 8))
+        plt.xlabel('x (euclidian)')
+        plt.ylabel('y (euclidian)')
+

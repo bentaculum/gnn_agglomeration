@@ -17,5 +17,7 @@ class Config():
                                  default=200, help='number of training epochs')
         self.parser.add_argument('--hidden_units', type=int,
                                  default=64, help='number of hidden units in the GNN')
+        self.parser.add_argument('--temp_dir', type=str,
+                                 default='../temp', help='directory to save temporary outputs')
     def parse_args(self):
         return self.parser.parse_args()
