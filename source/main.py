@@ -20,8 +20,8 @@ if __name__  == '__main__':
     config.max_neighbors = dataset.max_neighbors()
 
     device = torch.device('cpu')
-    # model = GcnClassification(config=config).to(device)
-    model = GmmConvClassification(config=config).to(device)
+    model = globals()[config.model](config=config)
+    model = model.to(device)
     data = dataset[0].to(device)
 
     # put model in training mode (e.g. use dropout)

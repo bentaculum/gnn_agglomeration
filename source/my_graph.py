@@ -14,7 +14,6 @@ class MyGraph():
 
     def create_random_graph(self):
         x = torch.rand(self.config.nodes, self.config.dimensionality)
-        # TODO might want to save the position in the pos attribute, not the node feature matrix
 
         # connect all edges within distance theta_max O(n^2)
         edges = []
