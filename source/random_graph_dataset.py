@@ -22,12 +22,12 @@ class RandomGraphDataset(InMemoryDataset):
 
     def process(self):
         # Read data into huge `Data` list.
-        graph = MyGraph(self.config)
-        print('Creating a new random graph ... ')
-        graph.create_random_graph()
-        data_list = [graph.data]
-
-
+        data_list = []
+        print('Creating {} new random graphs ... '.format(self.config.samples))
+        for i in range(self.config.samples):
+            graph = MyGraph(self.config)
+            graph.create_random_graph()
+            data_list.append(graph.data)
 
         if self.pre_filter is not None:
             data_list = [data for data in data_list if self.pre_filter(data)]

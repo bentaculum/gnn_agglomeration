@@ -1,5 +1,9 @@
 # GNN Toy Example
-Getting familiar with Graph Neural Nets and the pytorch_geometric library
+Getting familiar with Graph Neural Nets and the [pytorch_geometric](https://github.com/rusty1s/pytorch_geometric) library
+
+### Instructions:
+1. Set up a python3 virtual environment using 'requirements.txt'
+2. Please run 'main.py' out of the directory 'source'
 
 ### This repo addresses the following problem:
 
