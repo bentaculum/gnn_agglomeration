@@ -1,6 +1,7 @@
 from source.config import Config
 from source.random_graph_dataset import RandomGraphDataset
-from source.gnn_example import GnnExample
+from source.my_graph import MyGraph
+from source.gcn_regression import GcnRegression
 
 import torch
 import torch.nn.functional as F
@@ -10,8 +11,9 @@ if __name__  == '__main__':
 
     dataset = RandomGraphDataset(root=config.dataset_path, config=config)
 
+
     device = torch.device('cpu')
-    model = GnnExample(config=config).to(device)
+    model = GcnRegression(config=config).to(device)
     data = dataset[0].to(device)
 
     # TODO move loss display to the model as well
@@ -30,4 +32,8 @@ if __name__  == '__main__':
         model.optimizer.step()
 
     model.evaluate_metric(data)
+
+    # print the first graph in the dataset
+    g = MyGraph(config, dataset[0])
+    g.plot_predictions(model.evaluate_as_list(data))
     print('Done')

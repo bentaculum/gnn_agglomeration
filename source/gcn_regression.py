@@ -3,9 +3,9 @@ import torch.nn.functional as F
 from torch_geometric.nn import GCNConv
 from . import gnn_model
 
-class GnnExample(gnn_model.GnnModel):
+class GcnRegression(gnn_model.GnnModel):
     def __init__(self, config):
-        super(GnnExample, self).__init__(config)
+        super(GcnRegression, self).__init__(config)
 
     def layers(self):
         self.conv1 = GCNConv(self.config.dimensionality, self.config.hidden_units)
@@ -31,6 +31,11 @@ class GnnExample(gnn_model.GnnModel):
         correct = torch.squeeze(pred).eq(data.y).sum().item()
         acc = correct / data.num_nodes
         print('Accuracy: {:.4f}'.format(acc))
+
+    def evaluate_as_list(self, data):
+        self.eval()
+        pred = self.forward(data).round()
+        return torch.squeeze(pred).tolist()
 
 
 

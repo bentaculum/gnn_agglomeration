@@ -1,6 +1,6 @@
 import torch
 from torch_geometric.data import InMemoryDataset
-from source.random_graph import RandomGraph
+from source.my_graph import MyGraph
 
 class RandomGraphDataset(InMemoryDataset):
     def __init__(self, root, config, transform=None, pre_transform=None):
@@ -21,9 +21,9 @@ class RandomGraphDataset(InMemoryDataset):
 
     def process(self):
         # Read data into huge `Data` list.
-        graph = RandomGraph(self.config)
+        graph = MyGraph(self.config)
         print('Creating a new random graph ... ')
-        graph.create_graph()
+        graph.create_random_graph()
         data_list = [graph.data]
 
         if self.pre_filter is not None:

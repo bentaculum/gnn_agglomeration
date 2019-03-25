@@ -30,3 +30,7 @@ class GnnModel(torch.nn.Module, ABC):
     @abstractmethod
     def evaluate_metric(self, data):
         pass
+
+    @abstractmethod
+    def evaluate_as_list(self, data):
+        pass
