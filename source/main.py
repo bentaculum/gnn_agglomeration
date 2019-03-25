@@ -2,6 +2,7 @@ from config import Config
 from gcn_regression import GcnRegression
 from gcn_classification import GcnClassification
 from gmmconv_classification import GmmConvClassification
+from gmmconv_classification_2_hidden_layers import GmmConvClassification2
 
 from random_graph_dataset import RandomGraphDataset
 from my_graph import MyGraph
@@ -40,6 +41,8 @@ if __name__  == '__main__':
     # put model in training mode (e.g. use dropout)
     model.train()
 
+    # TODO introduce support for minibatches > 1
+    # TODO monitor validation loss during training
     for epoch in range(config.training_epochs):
         for data in data_loader:
             data = data.to(device)
@@ -53,12 +56,20 @@ if __name__  == '__main__':
             model.optimizer.step()
 
     print('')
+    # TODO introduce support for minibatches > 1 also for eval phase
     test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False)
+    eval_loss_values = []
+    eval_metric_values = []
+
     for i, data in enumerate(test_dataloader):
         data = data.to(device)
-        model.evaluate(data, i)
+        eval_loss_values.append(model.evaluate(data, i))
+        eval_metric_values.append(model.evaluate_metric(data))
 
-    model.evaluate_metric(data)
+    print('\nMean test loss: {}'.format(
+        torch.mean(torch.tensor(eval_loss_values))))
+    print('\nMean accuracy on test set: {}'.format(
+        torch.mean(torch.tensor(eval_metric_values))))
 
     # plot the first graph in the dataset
     g = MyGraph(config, dataset[0])

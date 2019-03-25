@@ -33,7 +33,8 @@ class GcnClassification(GnnModel):
         _, pred = self.forward(data).max(dim=1)
         correct = pred.eq(data.y).sum().item()
         acc = correct / data.num_nodes
-        print('\nACCURACY: {:.4f}'.format(acc))
+        # print('\nACCURACY: {:.4f}'.format(acc))
+        return acc
 
     def evaluate_as_list(self, data):
         self.eval()

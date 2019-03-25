@@ -33,7 +33,8 @@ class GcnRegression(GnnModel):
         pred = self.forward(data).round()
         correct = torch.squeeze(pred).eq(data.y).sum().item()
         acc = correct / data.num_nodes
-        print('\nAccuracy: {:.4f}'.format(acc))
+        # print('\nAccuracy: {:.4f}'.format(acc))
+        return acc
 
     def evaluate_as_list(self, data):
         self.eval()

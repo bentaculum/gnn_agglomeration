@@ -53,7 +53,7 @@ class MyGraph():
         plt.title("Number of neighbors within euclidian distance {}".format(
             self.config.theta))
         plt.savefig(os.path.join(self.config.temp_dir, 'graph.png'))
-        plt.show()
+        # plt.show()
 
     def plot_predictions(self, pred):
         # transpose the edge matrix for format requirements
@@ -77,7 +77,7 @@ class MyGraph():
             os.remove(img_path)
         plt.savefig(img_path)
         print('plotted the graph with predictions to {}'.format(img_path))
-        plt.show()
+        # plt.show()
 
     def set_plotting_style(self):
         plt.figure(figsize=(8, 8))

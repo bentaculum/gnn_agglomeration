@@ -4,9 +4,9 @@ from torch_geometric.nn import GMMConv
 from gnn_model import GnnModel
 
 
-class GmmConvClassification(GnnModel):
+class GmmConvClassification2(GnnModel):
     def __init__(self, config):
-        super(GmmConvClassification, self).__init__(config)
+        super(GmmConvClassification2, self).__init__(config)
         self.loss_name = 'NLL loss'
 
     def layers(self):
@@ -15,6 +15,10 @@ class GmmConvClassification(GnnModel):
             out_channels=self.config.hidden_units,
             dim=1)
         self.conv2 = GMMConv(
+            in_channels=self.config.hidden_units,
+            out_channels=self.config.hidden_units,
+            dim=1)
+        self.conv3 = GMMConv(
             in_channels=self.config.hidden_units,
             out_channels=self.config.max_neighbors + 1,
             dim=1)
@@ -26,6 +30,9 @@ class GmmConvClassification(GnnModel):
         x = F.relu(x)
         x = F.dropout(x, training=self.training)
         x = self.conv2(x, edge_index, edge_attr)
+        x = F.relu(x)
+        x = F.dropout(x, training=self.training)
+        x = self.conv3(x, edge_index, edge_attr)
 
         return F.log_softmax(x, dim=1)
 
