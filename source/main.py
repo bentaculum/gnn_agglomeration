@@ -11,6 +11,7 @@ import torch
 import os
 from torch_geometric.data import DataLoader
 
+
 if __name__  == '__main__':
     config = Config().parse_args()
 
@@ -55,7 +56,6 @@ if __name__  == '__main__':
             loss.backward()
             model.optimizer.step()
 
-    print('')
     # TODO introduce support for minibatches > 1 also for eval phase
     test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False)
     eval_loss_values = []
@@ -66,10 +66,13 @@ if __name__  == '__main__':
         eval_loss_values.append(model.evaluate(data, i))
         eval_metric_values.append(model.evaluate_metric(data))
 
-    print('\nMean test loss: {}'.format(
+    print('')
+    print('Maximum # of neighbors within distance {} in dataset: {}'.format(config.theta, config.max_neighbors))
+    print('Mean test loss: {}'.format(
         torch.mean(torch.tensor(eval_loss_values))))
-    print('\nMean accuracy on test set: {}'.format(
+    print('Mean accuracy on test set: {}'.format(
         torch.mean(torch.tensor(eval_metric_values))))
+    print('')
 
     # plot the first graph in the dataset
     g = MyGraph(config, dataset[0])

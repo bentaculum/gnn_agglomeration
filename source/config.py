@@ -20,7 +20,7 @@ class Config():
         self.parser.add_argument('--temp_dir', type=str,
                                  default='../temp', help='directory to save temporary outputs')
         self.parser.add_argument('--model', type=str,
-                                 default='GmmConvClassification2', help='GcnRegression | GcnClassification | GmmConvClassification | GmmConvClassification2')
+                                 default='GmmConvClassification', help='GcnRegression | GcnClassification | GmmConvClassification | GmmConvClassification2')
         self.parser.add_argument('--samples', type=int,
                                  default=10, help='Number of random graphs to create, if a new dataset is created')
 
