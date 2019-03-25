@@ -12,4 +12,4 @@ neighbors within a threshold distance θ. In particular:
   distance θ < θ_max.
 4. Train a GNN to predict the label of each node.
 
-<img src='imgs/graph_with_predictions.png' width="400px"/>
+<img src='imgs/graph_with_predictions.png' width="800px"/>
