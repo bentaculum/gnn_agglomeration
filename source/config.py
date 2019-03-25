@@ -14,7 +14,8 @@ class Config():
         self.parser.add_argument('--dataset_path', type=str,
                             default='../data/example1', help='the directory to read the Dataset from')
         self.parser.add_argument('--training_epochs', type=int,
-                                 default=100, help='number of training epochs')
-
+                                 default=200, help='number of training epochs')
+        self.parser.add_argument('--hidden_units', type=int,
+                                 default=64, help='number of hidden units in the GNN')
     def parse_args(self):
         return self.parser.parse_args()
