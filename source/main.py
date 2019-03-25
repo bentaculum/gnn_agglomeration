@@ -1,4 +1,5 @@
 from source.config import Config
+from source.gcn_classification import GcnClassification
 from source.random_graph_dataset import RandomGraphDataset
 from source.my_graph import MyGraph
 from source.gcn_regression import GcnRegression
@@ -10,13 +11,12 @@ if __name__  == '__main__':
     config = Config().parse_args()
 
     dataset = RandomGraphDataset(root=config.dataset_path, config=config)
-
+    config.max_neighbors = dataset.max_neighbors()
+    # TODO make the config editable?
 
     device = torch.device('cpu')
-    model = GcnRegression(config=config).to(device)
+    model = GcnClassification(config=config).to(device)
     data = dataset[0].to(device)
-
-    # TODO move loss display to the model as well
 
     # put model in training mode (e.g. use dropout)
     model.train()
@@ -27,7 +27,7 @@ if __name__  == '__main__':
         # call the forward method
         out = model(data)
         loss = model.loss(out, data.y)
-        print('epoch {} MSE loss: {} '.format(epoch, loss))
+        model.print_current_loss(epoch)
         loss.backward()
         model.optimizer.step()
 

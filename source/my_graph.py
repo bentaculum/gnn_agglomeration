@@ -7,11 +7,7 @@ import matplotlib.pyplot as plt
 class MyGraph():
     # TODO let this class inherit directly from torch_geometric.data.Data
 
-    def __init__(self, config):
-        self.config = config
-        self.data = None
-
-    def __init__(self, config, data):
+    def __init__(self, config, data=None):
         self.config = config
         self.data = data
 
@@ -22,7 +18,7 @@ class MyGraph():
         # connect all edges within distance theta_max O(n^2)
         edges = []
         edge_attr = []
-        y = torch.zeros(self.config.nodes)
+        y = torch.zeros(self.config.nodes, dtype=torch.long)
         for i in range(x.size()[0]):
             for j in range(i+1, x.size()[0]):
                 node1 = x[i]
@@ -64,4 +60,6 @@ class MyGraph():
             labels_dict[i] = '{};{}'.format(int(pred[i]), int(self.data.y[i].item()))
 
         nx.draw_networkx(g, pos_dict, labels=labels_dict, font_size=8)
+        plt.title("Number of neighbors within distance {}. Each node displays 'pred:target'".format(
+            self.config.theta))
         plt.show()

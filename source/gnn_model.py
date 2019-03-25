@@ -34,3 +34,7 @@ class GnnModel(torch.nn.Module, ABC):
     @abstractmethod
     def evaluate_as_list(self, data):
         pass
+
+    def print_current_loss(self, epoch):
+        print('epoch {} {}: {} '.format(epoch, self.loss_name, self.current_loss))
+

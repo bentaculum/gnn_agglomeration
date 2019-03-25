@@ -4,14 +4,14 @@ from torch_geometric.nn import GCNConv
 from . import gnn_model
 
 
-class GcnRegression(gnn_model.GnnModel):
+class GcnClassification(gnn_model.GnnModel):
     def __init__(self, config):
-        super(GcnRegression, self).__init__(config)
-        self.loss_name = 'MSE loss'
+        super(GcnClassification, self).__init__(config)
+        self.loss_name = 'NLL loss'
 
     def layers(self):
         self.conv1 = GCNConv(self.config.dimensionality, self.config.hidden_units)
-        self.conv2 = GCNConv(self.config.hidden_units, 1)
+        self.conv2 = GCNConv(self.config.hidden_units, self.config.max_neighbors + 1)
 
     def forward(self, data):
         x, edge_index = data.x, data.edge_index
@@ -21,22 +21,25 @@ class GcnRegression(gnn_model.GnnModel):
         x = F.dropout(x, training=self.training)
         x = self.conv2(x, edge_index)
 
-        return x
+        return F.log_softmax(x, dim=1)
 
     def loss(self, inputs, targets):
-        self.current_loss =  F.mse_loss(inputs, targets)
+        self.current_loss = F.nll_loss(inputs, targets)
         return self.current_loss
 
     def evaluate_metric(self, data):
         # put model in evaluation mode
         self.eval()
-        pred = self.forward(data).round()
-        correct = torch.squeeze(pred).eq(data.y).sum().item()
+        _, pred = self.forward(data).max(dim=1)
+        correct = pred.eq(data.y).sum().item()
         acc = correct / data.num_nodes
-        print('\nAccuracy: {:.4f}'.format(acc))
+        print('\nACCURACY: {:.4f}'.format(acc))
 
     def evaluate_as_list(self, data):
         self.eval()
-        pred = self.forward(data).round()
-        return torch.squeeze(pred).tolist()
+        _, pred = self.forward(data).max(dim=1)
+        return pred.tolist()
+
+
+
 

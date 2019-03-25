@@ -26,6 +26,8 @@ class RandomGraphDataset(InMemoryDataset):
         graph.create_random_graph()
         data_list = [graph.data]
 
+
+
         if self.pre_filter is not None:
             data_list = [data for data in data_list if self.pre_filter(data)]
 
@@ -34,4 +36,13 @@ class RandomGraphDataset(InMemoryDataset):
 
         data, slices = self.collate(data_list)
         torch.save((data, slices), self.processed_paths[0])
+
+    def max_neighbors(self):
+        # Detect maximum number of neighbors
+        neighbors = 0
+        for i in range(self.__len__()):
+            neighbors = max(neighbors, torch.max(self.get(i).y).item())
+
+        return int(neighbors)
+
 
