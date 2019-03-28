@@ -27,8 +27,9 @@ class MyGraph():
                 if torch.dist(node1, node2) < self.config.theta_max:
                     edges.append([i,j])
                     edge_attr.append(torch.dist(node1, node2))
-                    y[i] += 1
-                    y[j] += 1
+                    if torch.dist(node1, node2) < self.config.theta:
+                        y[i] += 1
+                        y[j] += 1
 
         edge_index = torch.tensor(edges, dtype=torch.long).transpose(0,1)
         # edge_attr = torch.tensor(edge_attr)
