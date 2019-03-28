@@ -23,6 +23,8 @@ class Config():
                                  default='GmmConvClassification', help='GcnRegression | GcnClassification | GmmConvClassification | GmmConvClassification2')
         self.parser.add_argument('--samples', type=int,
                                  default=10, help='Number of random graphs to create, if a new dataset is created')
+        self.parser.add_argument('--hidden_activation', type=str,
+                                 default='sigmoid', help='Activation function from torch.nn.functional, used for hidden layers, e.g. relu | sigmoid | tanh')
 
     def parse_args(self):
         return self.parser.parse_args()
