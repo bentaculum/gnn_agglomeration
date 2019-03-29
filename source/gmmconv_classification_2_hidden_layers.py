@@ -11,28 +11,28 @@ class GmmConvClassification2(GnnModel):
 
     def layers(self):
         self.conv1 = GMMConv(
-            in_channels=self.config.dimensionality,
+            in_channels=self.config.feature_dimensionality,
             out_channels=self.config.hidden_units,
-            dim=1)
+            dim=self.config.pseudo_dimensionality)
         self.conv2 = GMMConv(
             in_channels=self.config.hidden_units,
             out_channels=self.config.hidden_units,
-            dim=1)
+            dim=self.config.pseudo_dimensionality)
         self.conv3 = GMMConv(
             in_channels=self.config.hidden_units,
             out_channels=self.config.max_neighbors + 1,
-            dim=1)
+            dim=self.config.pseudo_dimensionality)
 
     def forward(self, data):
         x, edge_index, edge_attr = data.x, data.edge_index, data.edge_attr
 
-        x = self.conv1(x, edge_index, edge_attr)
+        x = self.conv1(x=x, edge_index=edge_index, pseudo=edge_attr)
         x = getattr(F, self.config.hidden_activation)(x)
         x = F.dropout(x, training=self.training)
-        x = self.conv2(x, edge_index, edge_attr)
+        x = self.conv2(x=x, edge_index=edge_index, pseudo=edge_attr)
         x = getattr(F, self.config.hidden_activation)(x)
         x = F.dropout(x, training=self.training)
-        x = self.conv3(x, edge_index, edge_attr)
+        x = self.conv3(x=x, edge_index=edge_index, pseudo=edge_attr)
 
         return F.log_softmax(x, dim=1)
 

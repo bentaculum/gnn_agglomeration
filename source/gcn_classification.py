@@ -10,7 +10,7 @@ class GcnClassification(GnnModel):
         self.loss_name = 'NLL loss'
 
     def layers(self):
-        self.conv1 = GCNConv(self.config.dimensionality, self.config.hidden_units)
+        self.conv1 = GCNConv(self.config.euclidian_dimensionality, self.config.hidden_units)
         self.conv2 = GCNConv(self.config.hidden_units, self.config.max_neighbors + 1)
 
     def forward(self, data):

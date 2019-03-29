@@ -40,7 +40,7 @@ if __name__  == '__main__':
 
 
     # put model in training mode (e.g. use dropout)
-    model.train()
+    model.eval()
 
     # TODO introduce support for minibatches > 1
     # TODO monitor validation loss during training
@@ -57,6 +57,16 @@ if __name__  == '__main__':
             model.optimizer.step()
 
     # TODO introduce support for minibatches > 1 also for eval phase
+
+    # train loss
+    train_loss_values = []
+    train_metric_values = []
+    for i, data in enumerate(data_loader):
+        data = data.to(device)
+        train_loss_values.append(model.evaluate(data, i))
+        train_metric_values.append(model.evaluate_metric(data))
+
+    # test loss
     test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False)
     eval_loss_values = []
     eval_metric_values = []
@@ -66,8 +76,18 @@ if __name__  == '__main__':
         eval_loss_values.append(model.evaluate(data, i))
         eval_metric_values.append(model.evaluate_metric(data))
 
+    # final print routine
     print('')
     print('Maximum # of neighbors within distance {} in dataset: {}'.format(config.theta, config.max_neighbors))
+    print('# of neighbors, distribution:')
+    dic = dataset.neighbors_distribution()
+    for key, value in sorted(dic.items(), key=lambda x: x[0]):
+        print("{} : {}".format(key, value))
+    print('')
+    print('Mean train loss: {}'.format(
+        torch.mean(torch.tensor(train_loss_values))))
+    print('Mean accuracy on train set: {}'.format(
+        torch.mean(torch.tensor(train_metric_values))))
     print('Mean test loss: {}'.format(
         torch.mean(torch.tensor(eval_loss_values))))
     print('Mean accuracy on test set: {}'.format(
@@ -75,5 +95,5 @@ if __name__  == '__main__':
     print('')
 
     # plot the first graph in the dataset
-    g = MyGraph(config, dataset[0])
+    g = MyGraph(config, train_dataset[0])
     g.plot_predictions(model.evaluate_as_list(data))

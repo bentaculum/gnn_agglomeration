@@ -1,11 +1,13 @@
 import torch
 from torch_geometric.data import InMemoryDataset
 import torch_geometric.transforms as T
+
 from my_graph import MyGraph
 
 class RandomGraphDataset(InMemoryDataset):
-    def __init__(self, root, config, transform=T.Distance(), pre_transform=None):
+    def __init__(self, root, config, transform=None, pre_transform=None):
         self.config = config
+        transform = getattr(T, config.data_transform)()
         super(RandomGraphDataset, self).__init__(root, transform, pre_transform)
         self.data, self.slices = torch.load(self.processed_paths[0])
 
@@ -46,4 +48,16 @@ class RandomGraphDataset(InMemoryDataset):
 
         return int(neighbors)
 
+    def neighbors_distribution(self):
+        # histogram for no of neighbors within distance theta
+        dic = {}
+        for i in range(self.__len__()):
+            graph_targets = self.get(i).y
+            for t in graph_targets:
+                t_int = t.item()
+                if t_int in dic:
+                    dic[t_int] += 1
+                else:
+                    dic[t_int] = 1
 
+        return dic
