@@ -13,7 +13,7 @@ class Config():
         self.parser.add_argument('--pseudo_dimensionality', type=int,
                                  default=2, help='Dimension of the pseudo coordinates for GmmConv')
         self.parser.add_argument('--data_transform', type=str,
-                                 default='Cartesian', help='define the edge attributes of the graphs')
+                                 default='Cartesian', help='define the edge attributes of the graphs e.g. Cartesian | Distance | LocalCartesian | Polar')
 
         self.parser.add_argument('--theta_max', type=float,
                                  default=0.2, help='nodes with lower euclidian distance will be connected')
@@ -28,7 +28,7 @@ class Config():
         self.parser.add_argument('--model', type=str,
                                  default='GmmConvClassification', help='GcnRegression | GcnClassification | GmmConvClassification | GmmConvClassification1 | GmmConvClassification2')
         self.parser.add_argument('--training_epochs', type=int,
-                                 default=100, help='number of training epochs')
+                                 default=1000, help='number of training epochs')
         self.parser.add_argument('--hidden_layers', type=int,
                                  default=3, help='number of hidden layers in the n layer MoNet')
         self.parser.add_argument('--hidden_units', type=int,

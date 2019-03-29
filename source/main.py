@@ -41,7 +41,7 @@ if __name__  == '__main__':
 
 
     # put model in training mode (e.g. use dropout)
-    model.eval()
+    model.train()
 
     # TODO introduce support for minibatches > 1
     # TODO monitor validation loss during training
@@ -85,11 +85,13 @@ if __name__  == '__main__':
     for key, value in sorted(dic.items(), key=lambda x: x[0]):
         print("{} : {}".format(key, value))
     print('')
-    print('Mean train loss: {}'.format(
+    print('Mean train loss ({} samples): {}'.format(
+        train_dataset.__len__(),
         torch.mean(torch.tensor(train_loss_values))))
     print('Mean accuracy on train set: {}'.format(
         torch.mean(torch.tensor(train_metric_values))))
-    print('Mean test loss: {}'.format(
+    print('Mean test loss ({} samples): {}'.format(
+        test_dataset.__len__(),
         torch.mean(torch.tensor(eval_loss_values))))
     print('Mean accuracy on test set: {}'.format(
         torch.mean(torch.tensor(eval_metric_values))))
@@ -97,4 +99,4 @@ if __name__  == '__main__':
 
     # plot the first graph in the dataset
     g = MyGraph(config, train_dataset[0])
-    g.plot_predictions(model.evaluate_as_list(data))
+    g.plot_predictions(model.evaluate_as_list(train_dataset[0]))

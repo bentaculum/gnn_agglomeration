@@ -51,10 +51,11 @@ class GmmConvClassification(GnnModel):
     def evaluate_metric(self, data):
         # put model in evaluation mode
         self.eval()
+        out = self.forward(data)
         _, pred = self.forward(data).max(dim=1)
+        out2 = pred.eq(data.y)
         correct = pred.eq(data.y).sum().item()
         acc = correct / data.num_nodes
-        # print('\nACCURACY: {:.4f}'.format(acc))
         return acc
 
     def evaluate_as_list(self, data):

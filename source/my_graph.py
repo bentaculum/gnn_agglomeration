@@ -24,7 +24,10 @@ class MyGraph():
                 node2 = pos[j]
                 # print(torch.dist(node1, node2))
                 if torch.dist(node1, node2) < self.config.theta_max:
+                    # add bi-directed edges to use directed pseudo-coordinates in MoNet
                     edges.append([i,j])
+                    edges.append([j,i])
+                    # if distance < theta, count the nodes as a neighbor in euclidian space
                     if torch.dist(node1, node2) < self.config.theta:
                         y[i] += 1
                         y[j] += 1
