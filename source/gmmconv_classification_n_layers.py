@@ -10,11 +10,20 @@ class GmmConvClassification(GnnModel):
         self.loss_name = 'NLL loss'
 
     def layers(self):
-        self.conv1 = GMMConv(
+        self.conv_in = GMMConv(
             in_channels=self.config.feature_dimensionality,
             out_channels=self.config.hidden_units,
             dim=self.config.pseudo_dimensionality)
-        self.conv2 = GMMConv(
+
+        self.hidden_layers = []
+        for i in range(self.config.hidden_layers):
+            l = GMMConv(
+                in_channels=self.config.hidden_units,
+                out_channels=self.config.hidden_units,
+                dim=self.config.pseudo_dimensionality)
+            self.hidden_layers.append(l)
+
+        self.conv_out = GMMConv(
             in_channels=self.config.hidden_units,
             out_channels=self.config.max_neighbors + 1,
             dim=self.config.pseudo_dimensionality)
@@ -22,10 +31,16 @@ class GmmConvClassification(GnnModel):
     def forward(self, data):
         x, edge_index, edge_attr = data.x, data.edge_index, data.edge_attr
 
-        x = self.conv1(x=x, edge_index=edge_index, pseudo=edge_attr)
+        x = self.conv_in(x=x, edge_index=edge_index, pseudo=edge_attr)
         x = getattr(F, self.config.hidden_activation)(x)
         x = F.dropout(x, training=self.training)
-        x = self.conv2(x=x, edge_index=edge_index, pseudo=edge_attr)
+
+        for l in self.hidden_layers:
+            x = l(x=x, edge_index=edge_index, pseudo=edge_attr)
+            x = getattr(F, self.config.hidden_activation)(x)
+            x = F.dropout(x, training=self.training)
+
+        x = self.conv_out(x=x, edge_index=edge_index, pseudo=edge_attr)
 
         return F.log_softmax(x, dim=1)
 

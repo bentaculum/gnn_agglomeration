@@ -25,12 +25,14 @@ class Config():
         self.parser.add_argument('--temp_dir', type=str,
                                  default='../temp', help='directory to save temporary outputs')
 
+        self.parser.add_argument('--model', type=str,
+                                 default='GmmConvClassification', help='GcnRegression | GcnClassification | GmmConvClassification | GmmConvClassification1 | GmmConvClassification2')
         self.parser.add_argument('--training_epochs', type=int,
                                  default=100, help='number of training epochs')
+        self.parser.add_argument('--hidden_layers', type=int,
+                                 default=3, help='number of hidden layers in the n layer MoNet')
         self.parser.add_argument('--hidden_units', type=int,
                                  default=64, help='number of hidden units in the GNN')
-        self.parser.add_argument('--model', type=str,
-                                 default='GmmConvClassification', help='GcnRegression | GcnClassification | GmmConvClassification | GmmConvClassification2')
         self.parser.add_argument('--samples', type=int,
                                  default=10, help='Number of random graphs to create, if a new dataset is created')
         self.parser.add_argument('--hidden_activation', type=str,

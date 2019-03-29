@@ -1,8 +1,9 @@
 from config import Config
 from gcn_regression import GcnRegression
 from gcn_classification import GcnClassification
-from gmmconv_classification import GmmConvClassification
+from gmmconv_classification_1_hidden_layer import GmmConvClassification1
 from gmmconv_classification_2_hidden_layers import GmmConvClassification2
+from gmmconv_classification_n_layers import GmmConvClassification
 
 from random_graph_dataset import RandomGraphDataset
 from my_graph import MyGraph
