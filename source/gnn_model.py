@@ -1,5 +1,6 @@
 import torch
 from abc import ABC, abstractmethod
+from torchviz import make_dot
 
 
 class GnnModel(torch.nn.Module, ABC):
@@ -42,4 +43,8 @@ class GnnModel(torch.nn.Module, ABC):
         # print("test loss sample {}: {}".format(sample_no, self.current_loss))
         return self.current_loss
 
-
+    def visualize(self, data):
+        #TODO debug
+        g = make_dot(data.x, params=dict(self.named_parameters()))
+        g.format = 'svg'
+        g.render('../temp/execution_graph')

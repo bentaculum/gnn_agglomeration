@@ -100,3 +100,6 @@ if __name__  == '__main__':
     # plot the first graph in the dataset
     g = MyGraph(config, train_dataset[0])
     g.plot_predictions(model.evaluate_as_list(train_dataset[0]))
+
+    #display the model graph
+    model.visualize(train_dataset[0])
