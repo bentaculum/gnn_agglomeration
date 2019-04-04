@@ -46,14 +46,12 @@ class GmmConvClassification(GnnModel):
 
     def loss(self, inputs, targets):
         self.current_loss = F.nll_loss(inputs, targets)
-        return self.current_loss
+        return torch.mean(self.current_loss)
 
     def evaluate_metric(self, data):
         # put model in evaluation mode
         self.eval()
-        out = self.forward(data)
         _, pred = self.forward(data).max(dim=1)
-        out2 = pred.eq(data.y)
         correct = pred.eq(data.y).sum().item()
         acc = correct / data.num_nodes
         return acc

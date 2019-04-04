@@ -1,8 +1,6 @@
 from config import Config
 from gcn_regression import GcnRegression
 from gcn_classification import GcnClassification
-from gmmconv_classification_1_hidden_layer import GmmConvClassification1
-from gmmconv_classification_2_hidden_layers import GmmConvClassification2
 from gmmconv_classification_n_layers import GmmConvClassification
 
 from random_graph_dataset import RandomGraphDataset
@@ -26,12 +24,17 @@ if __name__  == '__main__':
     dataset = dataset.shuffle()
 
     # split into train and test
-    split_index = int(config.samples * 0.8)
-    train_dataset = dataset[:split_index]
-    test_dataset = dataset[split_index:]
+    split_train_idx = int(config.samples * (1 - config.test_split - config.validation_split))
+    split_validation_idx = int(config.samples * (1 - config.test_split))
 
-    data_loader = DataLoader(train_dataset, batch_size=1, shuffle=True)
+    train_dataset = dataset[:split_train_idx]
+    validation_dataset = dataset[split_train_idx:split_validation_idx]
+    test_dataset = dataset[split_validation_idx:]
+
     device = torch.device('cpu')
+
+    data_loader_train = DataLoader(train_dataset, batch_size=config.batch_size_train, shuffle=True)
+    data_loader_validation = DataLoader(validation_dataset, batch_size=config.batch_size_eval, shuffle=False)
 
     try:
         model = globals()[config.model](config=config)
@@ -40,15 +43,13 @@ if __name__  == '__main__':
     model = model.to(device)
 
 
-    # put model in training mode (e.g. use dropout)
-    model.train()
 
-    # TODO introduce support for minibatches > 1
-    # TODO monitor validation loss during training
     for epoch in range(config.training_epochs):
-        for data in data_loader:
+        # put model in training mode (e.g. use dropout)
+        model.train()
+        for data in data_loader_train:
             data = data.to(device)
-            # clear the gradient variables of the model
+            # clear the gr  adient variables of the model
             model.optimizer.zero_grad()
             # call the forward method
             out = model(data)
@@ -57,18 +58,22 @@ if __name__  == '__main__':
             loss.backward()
             model.optimizer.step()
 
-    # TODO introduce support for minibatches > 1 also for eval phase
+        # validation
+        model.eval()
+        for data in data_loader_validation:
+            data = data.to(device)
+            model.evaluate(data)
 
     # train loss
     train_loss_values = []
     train_metric_values = []
     for i, data in enumerate(data_loader):
         data = data.to(device)
-        train_loss_values.append(model.evaluate(data, i))
+        train_loss_values.append(model.evaluate(data))
         train_metric_values.append(model.evaluate_metric(data))
 
     # test loss
-    test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False)
+    test_dataloader = DataLoader(test_dataset, batch_size=config.batch_size_eval, shuffle=False)
     eval_loss_values = []
     eval_metric_values = []
 

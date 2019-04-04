@@ -24,6 +24,11 @@ class Config():
                                  default='../data/example1', help='the directory to read the Dataset from')
         self.parser.add_argument('--temp_dir', type=str,
                                  default='../temp', help='directory to save temporary outputs')
+        self.parser.add_argument('--validation_split', type=float,
+                                 default=0.1, help='define size of validation set, 0 <= ... <= 1')
+        self.parser.add_argument('--test_split', type=float,
+                                 default=0.1, help='define size of test set, 0 <= ... <= 1')
+
 
         self.parser.add_argument('--model', type=str,
                                  default='GmmConvClassification', help='GcnRegression | GcnClassification | GmmConvClassification | GmmConvClassification1 | GmmConvClassification2')
@@ -37,6 +42,11 @@ class Config():
                                  default=10, help='Number of random graphs to create, if a new dataset is created')
         self.parser.add_argument('--hidden_activation', type=str,
                                  default='sigmoid', help='Activation function from torch.nn.functional, used for hidden layers, e.g. relu | sigmoid | tanh')
+        self.parser.add_argument('--batch_size_train', type=int,
+                                 default='1', help='batch size for training')
+        self.parser.add_argument('--batch_size_eval', type=int,
+                                 default='1', help='batch size for evaluation')
+
 
     def parse_args(self):
         return self.parser.parse_args()

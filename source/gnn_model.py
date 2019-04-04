@@ -35,11 +35,10 @@ class GnnModel(torch.nn.Module, ABC):
     def print_current_loss(self, epoch):
         print('epoch {} {}: {} '.format(epoch, self.loss_name, self.current_loss))
 
-    def evaluate(self, data, sample_no):
+    def evaluate(self, data):
         self.eval()
         out = self.forward(data)
         _ = self.loss(out, data.y)
-        # print("test loss sample {}: {}".format(sample_no, self.current_loss))
         return self.current_loss
 
 
