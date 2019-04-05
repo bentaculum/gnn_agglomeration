@@ -24,8 +24,8 @@ class GcnRegression(GnnModel):
         return x
 
     def loss(self, inputs, targets):
-        self.current_loss =  F.mse_loss(inputs, targets.float())
-        return torch.mean(self.current_loss)
+        self.current_loss =  F.mse_loss(inputs, targets.float(), reduction='mean')
+        return self.current_loss
 
     def evaluate_metric(self, data):
         # put model in evaluation mode

@@ -45,8 +45,8 @@ class GmmConvClassification(GnnModel):
         return F.log_softmax(x, dim=1)
 
     def loss(self, inputs, targets):
-        self.current_loss = F.nll_loss(inputs, targets)
-        return torch.mean(self.current_loss)
+        self.current_loss = F.nll_loss(inputs, targets, reduction='mean')
+        return self.current_loss
 
     def evaluate_metric(self, data):
         # put model in evaluation mode

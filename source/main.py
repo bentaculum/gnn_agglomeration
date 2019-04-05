@@ -47,40 +47,53 @@ if __name__  == '__main__':
     for epoch in range(config.training_epochs):
         # put model in training mode (e.g. use dropout)
         model.train()
-        for data in data_loader_train:
+        epoch_loss = 0.0
+        # epoch_num_graphs = 0
+        for batch_i, data in enumerate(data_loader_train):
             data = data.to(device)
-            # clear the gr  adient variables of the model
+            # clear the gradient variables of the model
             model.optimizer.zero_grad()
             # call the forward method
             out = model(data)
+
             loss = model.loss(out, data.y)
-            model.print_current_loss(epoch)
+            model.print_current_loss(epoch, batch_i)
+            epoch_loss += loss.item() * data.num_graphs
+            # epoch_num_graphs += data.num_graphs
+
             loss.backward()
             model.optimizer.step()
 
+        epoch_loss /= train_dataset.__len__()
+
         # validation
         model.eval()
-        for data in data_loader_validation:
+        for batch_i, data in enumerate(data_loader_validation):
             data = data.to(device)
-            model.evaluate(data)
+            loss = model.evaluate(data)
+            model.print_current_loss(epoch, 'validation {}'.format(batch_i))
 
     # train loss
-    train_loss_values = []
-    train_metric_values = []
-    for i, data in enumerate(data_loader):
+    final_loss_train = 0.0
+    final_metric_train = 0.0
+    for i, data in enumerate(data_loader_train):
         data = data.to(device)
-        train_loss_values.append(model.evaluate(data))
-        train_metric_values.append(model.evaluate_metric(data))
+        final_loss_train += model.evaluate(data).item() * data.num_graphs
+        final_metric_train += model.evaluate_metric(data) * data.num_graphs
+    final_loss_train /= train_dataset.__len__()
+    final_metric_train /= train_dataset.__len__()
 
     # test loss
-    test_dataloader = DataLoader(test_dataset, batch_size=config.batch_size_eval, shuffle=False)
-    eval_loss_values = []
-    eval_metric_values = []
+    data_loader_test = DataLoader(test_dataset, batch_size=config.batch_size_eval, shuffle=False)
+    test_loss = 0.0
+    test_metric = 0.0
 
-    for i, data in enumerate(test_dataloader):
+    for i, data in enumerate(data_loader_test):
         data = data.to(device)
-        eval_loss_values.append(model.evaluate(data, i))
-        eval_metric_values.append(model.evaluate_metric(data))
+        test_loss += model.evaluate(data).item() * data.num_graphs
+        test_metric += model.evaluate_metric(data) * data.num_graphs
+    test_loss /= test_dataset.__len__()
+    test_metric /= test_dataset.__len__()
 
     # final print routine
     print('')
@@ -92,14 +105,14 @@ if __name__  == '__main__':
     print('')
     print('Mean train loss ({} samples): {}'.format(
         train_dataset.__len__(),
-        torch.mean(torch.tensor(train_loss_values))))
+        final_loss_train))
     print('Mean accuracy on train set: {}'.format(
-        torch.mean(torch.tensor(train_metric_values))))
+        final_metric_train))
     print('Mean test loss ({} samples): {}'.format(
         test_dataset.__len__(),
-        torch.mean(torch.tensor(eval_loss_values))))
+        test_loss))
     print('Mean accuracy on test set: {}'.format(
-        torch.mean(torch.tensor(eval_metric_values))))
+        test_metric))
     print('')
 
     # plot the first graph in the dataset
