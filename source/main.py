@@ -9,7 +9,7 @@ from my_graph import MyGraph
 import torch
 import os
 from torch_geometric.data import DataLoader
-
+from tensorboardX import SummaryWriter
 
 if __name__  == '__main__':
     config = Config().parse_args()
@@ -17,6 +17,14 @@ if __name__  == '__main__':
     # make necessary directory structure
     if not os.path.isdir(config.temp_dir):
         os.makedirs(config.temp_dir)
+
+    # clear old summaries from the temp dir
+    old_summaries_list = os.listdir(os.path.join(config.temp_dir, 'summary'))
+    for f in old_summaries_list:
+        os.remove(os.path.join(config.temp_dir, 'summary', f))
+
+    # set up the summary writer for tensorboardX
+    writer = SummaryWriter(os.path.join(config.temp_dir, 'summary'))
 
     # create and load dataset
     dataset = RandomGraphDataset(root=config.dataset_path, config=config)
@@ -68,10 +76,17 @@ if __name__  == '__main__':
 
         # validation
         model.eval()
+        validation_loss = 0.0
         for batch_i, data in enumerate(data_loader_validation):
             data = data.to(device)
             loss = model.evaluate(data)
             model.print_current_loss(epoch, 'validation {}'.format(batch_i))
+            validation_loss += loss.item() * data.num_graphs
+
+        validation_loss /= validation_dataset.__len__()
+        writer.add_scalars('loss_per_epoch',
+                           {'train': epoch_loss, 'validation':validation_loss},
+                           epoch)
 
     # train loss
     final_loss_train = 0.0
