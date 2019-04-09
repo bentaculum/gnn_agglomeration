@@ -49,18 +49,17 @@ if __name__  == '__main__':
     data_loader_validation = DataLoader(validation_dataset, batch_size=config.batch_size_eval, shuffle=False)
 
     try:
-        model = globals()[config.model](config=config)
+        model = globals()[config.model](config=config, train_writer=train_writer, val_writer=val_writer)
     except:
         raise NotImplementedError('The model you have specified is not implemented')
     model = model.to(device)
 
-
-
+    model.train_batch_iteration = 0
+    model.val_batch_iteration = 0
     for epoch in range(config.training_epochs):
         # put model in training mode (e.g. use dropout)
         model.train()
         epoch_loss = 0.0
-        # epoch_num_graphs = 0
         for batch_i, data in enumerate(data_loader_train):
             data = data.to(device)
             # clear the gradient variables of the model
@@ -71,10 +70,10 @@ if __name__  == '__main__':
             loss = model.loss(out, data.y)
             model.print_current_loss(epoch, batch_i)
             epoch_loss += loss.item() * data.num_graphs
-            # epoch_num_graphs += data.num_graphs
 
             loss.backward()
             model.optimizer.step()
+            model.train_batch_iteration += 1
 
         epoch_loss /= train_dataset.__len__()
         train_writer.add_scalar('loss_per_epoch', epoch_loss, epoch)
@@ -87,12 +86,19 @@ if __name__  == '__main__':
             loss = model.evaluate(data)
             model.print_current_loss(epoch, 'validation {}'.format(batch_i))
             validation_loss += loss.item() * data.num_graphs
+            model.val_batch_iteration += 1
+
+        # The numbering of train and val does not correspond 1-to-1!
+        # Here we skip some numbers for maintaining loose correspondence
+        model.val_batch_iteration = model.train_batch_iteration
 
         validation_loss /= validation_dataset.__len__()
         val_writer.add_scalar('loss_per_epoch', validation_loss, epoch)
-        # writer.add_scalars('loss_per_epoch',
-        #                    {'train': epoch_loss, 'validation':validation_loss},
-        #                    epoch)
+
+        model.epoch += 1
+
+    model.eval()
+    model.current_writer = None
 
     # train loss
     final_loss_train = 0.0

@@ -26,6 +26,8 @@ class Config():
                                  default='../temp', help='directory to save temporary outputs')
         self.parser.add_argument('--summary_dir', type=str,
                                  default='summary', help='relative directory to save temporary summary')
+        self.parser.add_argument('--no_summary', action='store_true',
+                                 default=False, help='if passed, tensorboardx will not be used to monitor the training')
         self.parser.add_argument('--validation_split', type=float,
                                  default=0.1, help='define size of validation set, 0 <= ... <= 1')
         self.parser.add_argument('--test_split', type=float,
