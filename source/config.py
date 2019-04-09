@@ -24,6 +24,8 @@ class Config():
                                  default='../data/example1', help='the directory to read the Dataset from')
         self.parser.add_argument('--temp_dir', type=str,
                                  default='../temp', help='directory to save temporary outputs')
+        self.parser.add_argument('--summary_dir', type=str,
+                                 default='summary', help='relative directory to save temporary summary')
         self.parser.add_argument('--validation_split', type=float,
                                  default=0.1, help='define size of validation set, 0 <= ... <= 1')
         self.parser.add_argument('--test_split', type=float,

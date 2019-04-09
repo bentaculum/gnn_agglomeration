@@ -8,6 +8,7 @@ from my_graph import MyGraph
 
 import torch
 import os
+import shutil
 from torch_geometric.data import DataLoader
 from tensorboardX import SummaryWriter
 
@@ -18,13 +19,16 @@ if __name__  == '__main__':
     if not os.path.isdir(config.temp_dir):
         os.makedirs(config.temp_dir)
 
+
     # clear old summaries from the temp dir
-    old_summaries_list = os.listdir(os.path.join(config.temp_dir, 'summary'))
-    for f in old_summaries_list:
-        os.remove(os.path.join(config.temp_dir, 'summary', f))
+    summary_dir = os.path.join(config.temp_dir, config.summary_dir)
+    if os.path.isdir(summary_dir):
+        shutil.rmtree(summary_dir)
+    os.makedirs(summary_dir)
 
     # set up the summary writer for tensorboardX
-    writer = SummaryWriter(os.path.join(config.temp_dir, 'summary'))
+    train_writer = SummaryWriter(os.path.join(config.temp_dir, 'summary', 'training'))
+    val_writer = SummaryWriter(os.path.join(config.temp_dir, 'summary', 'validation'))
 
     # create and load dataset
     dataset = RandomGraphDataset(root=config.dataset_path, config=config)
@@ -73,6 +77,7 @@ if __name__  == '__main__':
             model.optimizer.step()
 
         epoch_loss /= train_dataset.__len__()
+        train_writer.add_scalar('loss_per_epoch', epoch_loss, epoch)
 
         # validation
         model.eval()
@@ -84,9 +89,10 @@ if __name__  == '__main__':
             validation_loss += loss.item() * data.num_graphs
 
         validation_loss /= validation_dataset.__len__()
-        writer.add_scalars('loss_per_epoch',
-                           {'train': epoch_loss, 'validation':validation_loss},
-                           epoch)
+        val_writer.add_scalar('loss_per_epoch', validation_loss, epoch)
+        # writer.add_scalars('loss_per_epoch',
+        #                    {'train': epoch_loss, 'validation':validation_loss},
+        #                    epoch)
 
     # train loss
     final_loss_train = 0.0
