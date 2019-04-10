@@ -115,11 +115,15 @@ if __name__  == '__main__':
     data_loader_test = DataLoader(test_dataset, batch_size=config.batch_size_eval, shuffle=False)
     test_loss = 0.0
     test_metric = 0.0
+    test_predictions = []
+    test_targets = []
 
     for i, data in enumerate(data_loader_test):
         data = data.to(device)
         test_loss += model.evaluate(data).item() * data.num_graphs
         test_metric += model.evaluate_metric(data) * data.num_graphs
+        test_predictions.extend(model.evaluate_as_list(data))
+        test_targets.extend(data.y.tolist())
     test_loss /= test_dataset.__len__()
     test_metric /= test_dataset.__len__()
 
@@ -142,6 +146,19 @@ if __name__  == '__main__':
     print('Mean accuracy on test set: {}'.format(
         test_metric))
     print('')
+
+    # plot targets vs. predictions
+    import chartify
+    import pandas as pd
+
+    ch = chartify.Chart(blank_labels=True, x_axis_type='categorical', y_axis_type='categorical')
+    ch.plot.heatmap(
+        pd.DataFrame({'t':test_targets, 'p':test_predictions}).groupby(['t','p']).size().reset_index(name='count'),
+        x_column='t', y_column='p', color_column='count', text_column='count'
+    ).axes.set_xaxis_label('targets')\
+        .axes.set_yaxis_label('predictions')\
+        .set_title('Confusion matrix on test set')
+    ch.save(filename=os.path.join(config.temp_dir, 'confusion_matrix_test.png'), format='png')
 
     # plot the first graph in the dataset
     g = MyGraph(config, train_dataset[0])
