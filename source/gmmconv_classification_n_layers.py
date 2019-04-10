@@ -66,7 +66,6 @@ class GmmConvClassification(GnnModel):
         return self.current_loss
 
     def evaluate_metric(self, data):
-        # put model in evaluation mode
         _, pred = self.forward(data).max(dim=1)
         correct = pred.eq(data.y).sum().item()
         acc = correct / data.num_nodes
