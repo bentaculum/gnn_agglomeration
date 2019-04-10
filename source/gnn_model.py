@@ -9,6 +9,7 @@ class GnnModel(torch.nn.Module, ABC):
         self.config = config
         self.layers()
         self.optimizer()
+
         self.epoch = 0
         self.train_writer = train_writer
         self.val_writer = val_writer

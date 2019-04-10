@@ -13,7 +13,7 @@ class Config():
         self.parser.add_argument('--pseudo_dimensionality', type=int,
                                  default=2, help='Dimension of the pseudo coordinates for GmmConv')
         self.parser.add_argument('--data_transform', type=str,
-                                 default='Cartesian', help='define the edge attributes of the graphs e.g. Cartesian | Distance | LocalCartesian | Polar')
+                                 default='Polar', help='define the edge attributes of the graphs e.g. Cartesian | Distance | LocalCartesian | Polar')
 
         self.parser.add_argument('--theta_max', type=float,
                                  default=0.2, help='nodes with lower euclidian distance will be connected')

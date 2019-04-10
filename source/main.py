@@ -52,6 +52,7 @@ if __name__  == '__main__':
         model = globals()[config.model](config=config, train_writer=train_writer, val_writer=val_writer)
     except:
         raise NotImplementedError('The model you have specified is not implemented')
+
     model = model.to(device)
 
     model.train_batch_iteration = 0

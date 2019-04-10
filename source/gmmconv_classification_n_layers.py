@@ -15,13 +15,13 @@ class GmmConvClassification(GnnModel):
             out_channels=self.config.hidden_units,
             dim=self.config.pseudo_dimensionality)
 
-        self.hidden_layers = []
+        self.hidden_layers = torch.nn.ModuleList()
         for i in range(self.config.hidden_layers):
-            l = GMMConv(
+            layer = GMMConv(
                 in_channels=self.config.hidden_units,
                 out_channels=self.config.hidden_units,
                 dim=self.config.pseudo_dimensionality)
-            self.hidden_layers.append(l)
+            self.hidden_layers.append(layer)
 
         self.conv_out = GMMConv(
             in_channels=self.config.hidden_units,
@@ -40,7 +40,7 @@ class GmmConvClassification(GnnModel):
         self.write_to_variable_summary(x, 'in_layer', 'output')
         x = F.dropout(x, training=self.training)
 
-        for i,l in enumerate(self.hidden_layers):
+        for i, l in enumerate(self.hidden_layers):
             if self.training:
                 self.write_to_variable_summary(l.mu, 'layer_{}'.format(i), 'weights_mu')
                 self.write_to_variable_summary(l.sigma, 'layer_{}'.format(i), 'weights_sigma')
@@ -50,6 +50,9 @@ class GmmConvClassification(GnnModel):
             self.write_to_variable_summary(x, 'layer_{}'.format(i), 'output')
             x = F.dropout(x, training=self.training)
 
+        if self.training:
+            self.write_to_variable_summary(self.conv_out.mu, 'out_layer', 'weights_mu')
+            self.write_to_variable_summary(self.conv_out.sigma, 'out_layer', 'weights_sigma')
         x = self.conv_out(x=x, edge_index=edge_index, pseudo=edge_attr)
         self.write_to_variable_summary(x, 'out_layer', 'preactivations')
 
