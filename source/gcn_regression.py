@@ -24,7 +24,7 @@ class GcnRegression(GnnModel):
         self.write_to_variable_summary(x, 'conv1', 'preactivations')
         x = getattr(F, self.config.hidden_activation)(x)
         self.write_to_variable_summary(x, 'conv1', 'outputs')
-        x = F.dropout(x, training=self.training)
+        x = getattr(F, self.config.dropout_type)(x, p=self.config.dropout_prob, training=self.training)
 
         if self.training:
             self.write_to_variable_summary(self.conv2.weight, 'conv2', 'params_weights')

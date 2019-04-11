@@ -38,7 +38,7 @@ class GmmConvClassification(GnnModel):
         self.write_to_variable_summary(x, 'in_layer', 'preactivations')
         x = getattr(F, self.config.hidden_activation)(x)
         self.write_to_variable_summary(x, 'in_layer', 'output')
-        x = F.dropout(x, training=self.training)
+        x = getattr(F, self.config.dropout_type)(x, p=self.config.dropout_prob, training=self.training)
 
         for i, l in enumerate(self.hidden_layers):
             if self.training:
@@ -48,7 +48,7 @@ class GmmConvClassification(GnnModel):
             self.write_to_variable_summary(x, 'layer_{}'.format(i), 'preactivations')
             x = getattr(F, self.config.hidden_activation)(x)
             self.write_to_variable_summary(x, 'layer_{}'.format(i), 'output')
-            x = F.dropout(x, training=self.training)
+            x = getattr(F, self.config.dropout_type)(x, p=self.config.dropout_prob, training=self.training)
 
         if self.training:
             self.write_to_variable_summary(self.conv_out.mu, 'out_layer', 'weights_mu')

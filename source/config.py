@@ -47,9 +47,13 @@ class Config():
         self.parser.add_argument('--hidden_activation', type=str,
                                  default='sigmoid', help='Activation function from torch.nn.functional, used for hidden layers, e.g. relu | sigmoid | tanh')
         self.parser.add_argument('--batch_size_train', type=int,
-                                 default='1', help='batch size for training')
+                                 default=1, help='batch size for training')
         self.parser.add_argument('--batch_size_eval', type=int,
-                                 default='1', help='batch size for evaluation')
+                                 default=1, help='batch size for evaluation')
+        self.parser.add_argument('--dropout_type', type=str,
+                                 default='dropout', help='dropout | dropout2d')
+        self.parser.add_argument('--dropout_prob', type=float,
+                                 default=0.5, help='dropout probability during training')
 
 
     def parse_args(self):
