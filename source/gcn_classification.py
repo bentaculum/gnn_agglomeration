@@ -41,6 +41,7 @@ class GcnClassification(GnnModel):
         _, pred = self.forward(data).max(dim=1)
         return pred.tolist()
 
+    # TODO deprecated
 
 
 

@@ -65,16 +65,13 @@ class GmmConvClassification(GnnModel):
         self.write_to_variable_summary(self.current_loss, 'out_layer', 'nll_loss')
         return self.current_loss
 
-    def evaluate_metric(self, data):
-        _, pred = self.forward(data).max(dim=1)
-        correct = pred.eq(data.y).sum().item()
-        acc = correct / data.num_nodes
+    def out_to_predictions(self, out):
+        _, pred = out.max(dim=1)
+        return pred
+
+    def metric(self, predictions, targets):
+        correct = predictions.eq(targets).sum().item()
+        acc = correct / targets.size()[0]
         return acc
-
-    def evaluate_as_list(self, data):
-        _, pred = self.forward(data).max(dim=1)
-        return pred.tolist()
-
-
-
-
+    def predictions_to_list(self, predictions):
+        return predictions.tolist()

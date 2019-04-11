@@ -31,11 +31,24 @@ class GnnModel(torch.nn.Module, ABC):
         self.optimizer = torch.optim.Adam(self.parameters(), lr=0.01, weight_decay=5e-4)
 
     @abstractmethod
-    def evaluate_metric(self, data):
+    def out_to_predictions(self, out):
         pass
 
     @abstractmethod
-    def evaluate_as_list(self, data):
+    def metric(self, predictions, targets):
+        pass
+
+    def evaluate_metric(self, data):
+        out = self.forward(data)
+        pred = self.out_to_predictions(out)
+        return self.metric(pred, data.y)
+
+    def out_to_metric(self, out, targets):
+        pred = self.out_to_predictions(out)
+        return self.metric(pred, targets)
+
+    @abstractmethod
+    def predictions_to_list(self, predictions):
         pass
 
     def print_current_loss(self, epoch, batch_i):

@@ -39,14 +39,15 @@ class GcnRegression(GnnModel):
         self.write_to_variable_summary(self.current_loss, 'out_layer', 'mse_loss')
         return self.current_loss
 
-    def evaluate_metric(self, data):
-        pred = self.forward(data).round()
-        correct = torch.squeeze(pred).eq(data.y.float()).sum().item()
-        acc = correct / data.num_nodes
-        # print('\nAccuracy: {:.4f}'.format(acc))
+
+    def out_to_predictions(self, out):
+        return out.round()
+
+    def metric(self, predictions, targets):
+        correct = torch.squeeze(predictions).eq(targets.float()).sum().item()
+        acc = correct / targets.size()[0]
         return acc
 
-    def evaluate_as_list(self, data):
-        pred = self.forward(data).round()
-        return torch.squeeze(pred).tolist()
+    def predictions_to_list(self, predictions):
+        return torch.squeeze(predictions).tolist()
 
