@@ -63,14 +63,15 @@ if __name__  == '__main__':
         epoch_loss = 0.0
         for batch_i, data in enumerate(data_loader_train):
             data = data.to(device)
-            # clear the gradient variables of the model
-            model.optimizer.zero_grad()
             # call the forward method
             out = model(data)
 
             loss = model.loss(out, data.y)
             model.print_current_loss(epoch, batch_i)
             epoch_loss += loss.item() * data.num_graphs
+
+            # clear the gradient variables of the model
+            model.optimizer.zero_grad()
 
             loss.backward()
             model.optimizer.step()

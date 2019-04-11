@@ -21,7 +21,7 @@ class Config():
                                  default=0.1, help='euclidian neighborhood distance')
 
         self.parser.add_argument('--dataset_path', type=str,
-                                 default='../data/example1', help='the directory to read the Dataset from')
+                                 default='../data/example10', help='the directory to read the Dataset from')
         self.parser.add_argument('--temp_dir', type=str,
                                  default='../temp', help='directory to save temporary outputs')
         self.parser.add_argument('--summary_dir', type=str,
