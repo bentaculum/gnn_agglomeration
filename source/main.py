@@ -128,11 +128,22 @@ if __name__  == '__main__':
     test_loss = 0.0
     test_metric = 0.0
 
+    test_predictions = []
+    test_targets = []
+    all_x_pos = []
+    all_y_pos = []
+
     for i, data in enumerate(data_loader_test):
         data = data.to(device)
         out = model(data)
         test_loss += model.loss(out, data.y).item() * data.num_graphs
         test_metric += model.out_to_metric(out, data.y) * data.num_graphs
+
+        test_predictions.extend(model.predictions_to_list(model.out_to_predictions(out)))
+        test_targets.extend(data.y.tolist())
+        all_x_pos.extend(data.pos[:, 0].tolist())
+        all_y_pos.extend(data.pos[:, 1].tolist())
+
     test_loss /= test_dataset.__len__()
     test_metric /= test_dataset.__len__()
 
@@ -155,6 +166,26 @@ if __name__  == '__main__':
     print('Mean accuracy on test set: {}'.format(
         test_metric))
     print('')
+
+    import pandas as pd
+    import numpy as np
+    import chartify
+
+    ch = chartify.Chart(blank_labels=True)
+    error = np.array(test_predictions) - np.array(test_targets)
+    df = pd.DataFrame({'x': all_x_pos, 'y': all_y_pos, 'error': error})
+    df = df[df['error'] != 0]
+
+    ch.plot.text(
+        data_frame=df,
+        x_column='x',
+        y_column='y',
+        text_column='error'
+    ).axes.set_xaxis_label('x')\
+        .axes.set_yaxis_label('y')\
+        .set_title('Errors by location in euclidian space')\
+        .set_subtitle('Each number corresponds to prediction-target for a misclassified node')
+    ch.save(filename=os.path.join(config.temp_dir, 'errors_by_location.png'), format='png')
 
     # plot the first graph in the dataset
     g = MyGraph(config, train_dataset[0])
