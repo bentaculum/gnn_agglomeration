@@ -22,7 +22,7 @@ class GcnRegression(GnnModel):
 
         x = self.conv1(x, edge_index)
         self.write_to_variable_summary(x, 'conv1', 'preactivations')
-        x = getattr(F, self.config.hidden_activation)(x)
+        x = getattr(F, self.config.non_linearity)(x)
         self.write_to_variable_summary(x, 'conv1', 'outputs')
         x = getattr(F, self.config.dropout_type)(x, p=self.config.dropout_prob, training=self.training)
 
@@ -45,7 +45,7 @@ class GcnRegression(GnnModel):
 
     def metric(self, predictions, targets):
         correct = torch.squeeze(predictions).eq(targets.float()).sum().item()
-        acc = correct / targets.size()[0]
+        acc = correct / targets.size(0)
         return acc
 
     def predictions_to_list(self, predictions):

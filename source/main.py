@@ -15,16 +15,41 @@ from tensorboardX import SummaryWriter
 if __name__  == '__main__':
     config = Config().parse_args()
 
+    # load model
+    # Overwrite the config file with the one that has been saved
+    # Then overwrite again with possible new params that have been set in the command line
+    # TODO make this nicer
+    checkpoint = None
+    if config.load_model is not None:
+        path = config.load_model
+        if config.load_model == 'latest':
+            path = os.path.join(config.temp_dir, config.model_dir, 'final.tar')
+
+        checkpoint = torch.load(path)
+        new_config = vars(config)
+        config = checkpoint['config']
+
+        # overwrite with possible new config variables
+        for k, v in new_config.items():
+            setattr(config, k, v)
+
     # make necessary directory structure
     if not os.path.isdir(config.temp_dir):
         os.makedirs(config.temp_dir)
 
 
-    # clear old summaries from the temp dir
+    # clear old stuff from the temp dir
     summary_dir = os.path.join(config.temp_dir, config.summary_dir)
     if os.path.isdir(summary_dir):
         shutil.rmtree(summary_dir)
+    model_dir = os.path.join(config.temp_dir, config.model_dir)
+    if os.path.isdir(model_dir):
+        shutil.rmtree(model_dir)
+
+    # make dir structure in temp dir
     os.makedirs(summary_dir)
+    os.makedirs(model_dir)
+
 
     # set up the summary writer for tensorboardX
     train_writer = SummaryWriter(os.path.join(config.temp_dir, 'summary', 'training'))
@@ -49,15 +74,31 @@ if __name__  == '__main__':
     data_loader_validation = DataLoader(validation_dataset, batch_size=config.batch_size_eval, shuffle=False)
 
     try:
-        model = globals()[config.model](config=config, train_writer=train_writer, val_writer=val_writer)
-    except:
+        if checkpoint is None:
+            model = globals()[config.model](
+                config=config,
+                train_writer=train_writer,
+                val_writer=val_writer)
+        else:
+            # restore the checkpoint
+            model = globals()[config.model](
+                config=config,
+                train_writer=train_writer,
+                val_writer=val_writer,
+                epoch=checkpoint['epoch'],
+                train_batch_iteration=checkpoint['train_batch_iteration'],
+                val_batch_iteration=checkpoint['val_batch_iteration']
+            )
+            model.load_state_dict(checkpoint['model_state_dict'])
+            model.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+
+    except Exception as e:
+        print(e)
         raise NotImplementedError('The model you have specified is not implemented')
 
     model = model.to(device)
 
-    model.train_batch_iteration = 0
-    model.val_batch_iteration = 0
-    for epoch in range(config.training_epochs):
+    for epoch in range(model.epoch, config.training_epochs):
         # put model in training mode (e.g. use dropout)
         model.train()
         epoch_loss = 0.0
@@ -108,6 +149,11 @@ if __name__  == '__main__':
         val_writer.add_scalar('per_epoch/metric', epoch_metric_val, epoch)
 
         model.epoch += 1
+
+    # save the final model
+    model.save('final.tar')
+
+    ###########################
 
     model.eval()
     model.current_writer = None

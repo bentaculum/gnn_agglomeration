@@ -28,6 +28,9 @@ class Config():
                                  default='summary', help='relative directory to save temporary summary')
         self.parser.add_argument('--no_summary', action='store_true',
                                  default=False, help='if passed, tensorboardx will not be used to monitor the training')
+        self.parser.add_argument('--model_dir', type=str,
+                                 default='model', help='relative directory to save temporary model, for both training and inference')
+
         self.parser.add_argument('--validation_split', type=float,
                                  default=0.1, help='define size of validation set, 0 <= ... <= 1')
         self.parser.add_argument('--test_split', type=float,
@@ -41,10 +44,10 @@ class Config():
         self.parser.add_argument('--hidden_layers', type=int,
                                  default=3, help='number of hidden layers in the n layer MoNet')
         self.parser.add_argument('--hidden_units', type=int,
-                                 default=64, help='number of hidden units in the GNN')
+                                 default=64, help='number of units per hidden layer in the GNN')
         self.parser.add_argument('--samples', type=int,
                                  default=10, help='Number of random graphs to create, if a new dataset is created')
-        self.parser.add_argument('--hidden_activation', type=str,
+        self.parser.add_argument('--non_linearity', type=str,
                                  default='sigmoid', help='Activation function from torch.nn.functional, used for hidden layers, e.g. relu | sigmoid | tanh')
         self.parser.add_argument('--batch_size_train', type=int,
                                  default=1, help='batch size for training')
@@ -54,6 +57,13 @@ class Config():
                                  default='dropout', help='dropout | dropout2d')
         self.parser.add_argument('--dropout_prob', type=float,
                                  default=0.5, help='dropout probability during training')
+        self.parser.add_argument('--adam_lr', type=float,
+                                 default=0.01, help='Learning rate for ADAM optimizer')
+        self.parser.add_argument('--adam_weight_decay', type=float,
+                                 default=5e-4, help='Weight decay for ADAM optimizer')
+
+        self.parser.add_argument('--load_model', type=str,
+                                 default=None, help="Load model from file. 'latest' | relative/path/to/tarfile")
 
 
     def parse_args(self):

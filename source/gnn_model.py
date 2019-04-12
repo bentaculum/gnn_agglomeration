@@ -4,16 +4,27 @@ import os
 import tensorboardX
 
 class GnnModel(torch.nn.Module, ABC):
-    def __init__(self, config, train_writer, val_writer):
+    def __init__(self,
+                 config,
+                 train_writer,
+                 val_writer,
+                 epoch=0,
+                 train_batch_iteration=0,
+                 val_batch_iteration=0):
+
         super(GnnModel, self).__init__()
+
         self.config = config
         self.layers()
         self.optimizer()
 
-        self.epoch = 0
+        self.epoch = epoch
         self.train_writer = train_writer
         self.val_writer = val_writer
         self.current_writer = None
+
+        self.train_batch_iteration = train_batch_iteration
+        self.val_batch_iteration = val_batch_iteration
 
     @abstractmethod
     def layers(self):
@@ -28,7 +39,10 @@ class GnnModel(torch.nn.Module, ABC):
         pass
 
     def optimizer(self):
-        self.optimizer = torch.optim.Adam(self.parameters(), lr=0.01, weight_decay=5e-4)
+        self.optimizer = torch.optim.Adam(
+            self.parameters(),
+            lr=self.config.adam_lr,
+            weight_decay=self.config.adam_weight_decay)
 
     @abstractmethod
     def out_to_predictions(self, out):
@@ -96,4 +110,16 @@ class GnnModel(torch.nn.Module, ABC):
         if grad is not None:
             self.current_writer.add_histogram(os.path.join(namespace, var_name, 'gradients'), grad, iteration)
 
+    def save(self, name):
+        """
+        Should only be called after the end of a training+validation epoch
+        """
 
+        torch.save({
+            'epoch': self.epoch,
+            'train_batch_iteration': self.train_batch_iteration,
+            'val_batch_iteration': self.val_batch_iteration,
+            'config': self.config,
+            'model_state_dict': self.state_dict(),
+            'optimizer_state_dict': self.optimizer.state_dict(),
+        }, os.path.join(self.config.temp_dir, self.config.model_dir, name))

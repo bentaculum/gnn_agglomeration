@@ -18,8 +18,8 @@ class MyGraph():
         # connect all edges within distance theta_max O(n^2)
         edges = []
         y = torch.zeros(self.config.nodes, dtype=torch.long)
-        for i in range(pos.size()[0]):
-            for j in range(i+1, pos.size()[0]):
+        for i in range(pos.size(0)):
+            for j in range(i+1, pos.size(0)):
                 node1 = pos[i]
                 node2 = pos[j]
                 # print(torch.dist(node1, node2))
@@ -44,7 +44,7 @@ class MyGraph():
         # prepare the targets to be displayed
         labels_dict = {}
 
-        for i in range(self.data.x.size()[0]):
+        for i in range(self.data.x.size(0)):
             pos_dict[i] = self.data.x[i].tolist()
             labels_dict[i] = int(self.data.y[i].item())
 
@@ -63,7 +63,7 @@ class MyGraph():
         # prepare the targets to be displayed
         labels_dict = {}
 
-        for i in range(self.data.pos.size()[0]):
+        for i in range(self.data.pos.size(0)):
             pos_dict[i] = self.data.pos[i].tolist()
             labels_dict[i] = '{};{}'.format(int(pred[i]), int(self.data.y[i].item()))
 

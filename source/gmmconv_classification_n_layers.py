@@ -5,8 +5,22 @@ from gnn_model import GnnModel
 
 
 class GmmConvClassification(GnnModel):
-    def __init__(self, config, train_writer, val_writer):
-        super(GmmConvClassification, self).__init__(config, train_writer, val_writer)
+    def __init__(self,
+                 config,
+                 train_writer,
+                 val_writer,
+                 epoch=0,
+                 train_batch_iteration=0,
+                 val_batch_iteration=0):
+
+        super(GmmConvClassification, self).__init__(
+            config=config,
+            train_writer=train_writer,
+            val_writer=val_writer,
+            epoch=epoch,
+            train_batch_iteration=train_batch_iteration,
+            val_batch_iteration=val_batch_iteration)
+
         self.loss_name = 'NLL loss'
 
     def layers(self):
@@ -39,7 +53,7 @@ class GmmConvClassification(GnnModel):
 
         x = self.conv_in(x=x, edge_index=edge_index, pseudo=edge_attr)
         self.write_to_variable_summary(x, 'in_layer', 'preactivations')
-        x = getattr(F, self.config.hidden_activation)(x)
+        x = getattr(F, self.config.non_linearity)(x)
         self.write_to_variable_summary(x, 'in_layer', 'output')
         x = getattr(F, self.config.dropout_type)(x, p=self.config.dropout_prob, training=self.training)
 
@@ -52,7 +66,7 @@ class GmmConvClassification(GnnModel):
 
             x = l(x=x, edge_index=edge_index, pseudo=edge_attr)
             self.write_to_variable_summary(x, 'layer_{}'.format(i), 'preactivations')
-            x = getattr(F, self.config.hidden_activation)(x)
+            x = getattr(F, self.config.non_linearity)(x)
             self.write_to_variable_summary(x, 'layer_{}'.format(i), 'output')
             x = getattr(F, self.config.dropout_type)(x, p=self.config.dropout_prob, training=self.training)
 
@@ -80,7 +94,7 @@ class GmmConvClassification(GnnModel):
 
     def metric(self, predictions, targets):
         correct = predictions.eq(targets).sum().item()
-        acc = correct / targets.size()[0]
+        acc = correct / targets.size(0)
         return acc
     def predictions_to_list(self, predictions):
         return predictions.tolist()
