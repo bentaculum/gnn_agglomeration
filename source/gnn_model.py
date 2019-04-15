@@ -3,6 +3,9 @@ from abc import ABC, abstractmethod
 import os
 import tensorboardX
 
+from classification_problem import ClassificationProblem
+from regression_problem import RegressionProblem
+
 class GnnModel(torch.nn.Module, ABC):
     def __init__(self,
                  config,
@@ -10,7 +13,8 @@ class GnnModel(torch.nn.Module, ABC):
                  val_writer,
                  epoch=0,
                  train_batch_iteration=0,
-                 val_batch_iteration=0):
+                 val_batch_iteration=0,
+                 model_type='ClassificationProblem'):
 
         super(GnnModel, self).__init__()
 
@@ -26,6 +30,12 @@ class GnnModel(torch.nn.Module, ABC):
         self.train_batch_iteration = train_batch_iteration
         self.val_batch_iteration = val_batch_iteration
 
+        try:
+            self.model_type = globals()[model_type](config=self.config)
+        except Exception as e:
+            print(e)
+            raise NotImplementedError('The model type you have specified is not implemented')
+
     @abstractmethod
     def layers(self):
         pass
@@ -34,9 +44,10 @@ class GnnModel(torch.nn.Module, ABC):
     def forward(self, data):
         pass
 
-    @abstractmethod
     def loss(self, inputs, targets):
-        pass
+        self.current_loss = self.model_type.loss(inputs=inputs, targets=targets)
+        self.write_to_variable_summary(self.current_loss, 'out_layer', self.model_type.loss_name)
+        return self.current_loss
 
     def optimizer(self):
         self.optimizer = torch.optim.Adam(
@@ -44,13 +55,11 @@ class GnnModel(torch.nn.Module, ABC):
             lr=self.config.adam_lr,
             weight_decay=self.config.adam_weight_decay)
 
-    @abstractmethod
     def out_to_predictions(self, out):
-        pass
+        return self.model_type.out_to_predictions(out=out)
 
-    @abstractmethod
     def metric(self, predictions, targets):
-        pass
+        return self.model_type.metric(predictions=predictions, targets=targets)
 
     def evaluate_metric(self, data):
         out = self.forward(data)
@@ -61,9 +70,8 @@ class GnnModel(torch.nn.Module, ABC):
         pred = self.out_to_predictions(out)
         return self.metric(pred, targets)
 
-    @abstractmethod
     def predictions_to_list(self, predictions):
-        pass
+        return self.model_type.predictions_to_list(predictions=predictions)
 
     def print_current_loss(self, epoch, batch_i):
         print('epoch {}, batch {}, {}: {} '.format(epoch, batch_i, self.loss_name, self.current_loss))

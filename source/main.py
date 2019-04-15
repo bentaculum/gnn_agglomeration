@@ -78,7 +78,9 @@ if __name__  == '__main__':
             model = globals()[config.model](
                 config=config,
                 train_writer=train_writer,
-                val_writer=val_writer)
+                val_writer=val_writer,
+                model_type=config.model_type
+            )
         else:
             # restore the checkpoint
             model = globals()[config.model](
@@ -87,7 +89,8 @@ if __name__  == '__main__':
                 val_writer=val_writer,
                 epoch=checkpoint['epoch'],
                 train_batch_iteration=checkpoint['train_batch_iteration'],
-                val_batch_iteration=checkpoint['val_batch_iteration']
+                val_batch_iteration=checkpoint['val_batch_iteration'],
+                model_type=config.model_type
             )
             model.load_state_dict(checkpoint['model_state_dict'])
             model.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])

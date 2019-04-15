@@ -11,7 +11,8 @@ class GmmConvClassification(GnnModel):
                  val_writer,
                  epoch=0,
                  train_batch_iteration=0,
-                 val_batch_iteration=0):
+                 val_batch_iteration=0,
+                 model_type=None):
 
         super(GmmConvClassification, self).__init__(
             config=config,
@@ -19,9 +20,9 @@ class GmmConvClassification(GnnModel):
             val_writer=val_writer,
             epoch=epoch,
             train_batch_iteration=train_batch_iteration,
-            val_batch_iteration=val_batch_iteration)
+            val_batch_iteration=val_batch_iteration,
+            model_type=model_type)
 
-        self.loss_name = 'NLL loss'
 
     def layers(self):
         self.conv_in = GMMConv(
