@@ -38,9 +38,9 @@ class Config():
 
 
         self.parser.add_argument('--model', type=str,
-                                 default='GmmConvClassification', help='GcnRegression | GcnClassification | GmmConvClassification')
+                                 default='GmmConvModel', help='GcnModel | GmmConvModel')
         self.parser.add_argument('--model_type', type=str,
-                                 default='classification', help='ClassificationProblem | RegressionProblem')
+                                 default='ClassificationProblem', help='ClassificationProblem | RegressionProblem')
         self.parser.add_argument('--training_epochs', type=int,
                                  default=1000, help='number of training epochs')
         self.parser.add_argument('--hidden_layers', type=int,

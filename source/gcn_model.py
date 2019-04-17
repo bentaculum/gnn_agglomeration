@@ -4,14 +4,28 @@ from torch_geometric.nn import GCNConv
 from gnn_model import GnnModel
 
 
-class GcnRegression(GnnModel):
-    def __init__(self, config, train_writer, val_writer):
-        super(GcnRegression, self).__init__(config, train_writer, val_writer)
-        self.loss_name = 'MSE loss'
+class GcnModel(GnnModel):
+    def __init__(self,
+                 config,
+                 train_writer,
+                 val_writer,
+                 epoch=0,
+                 train_batch_iteration=0,
+                 val_batch_iteration=0,
+                 model_type=None):
+        super(GcnModel, self).__init__(
+            config=config,
+            train_writer=train_writer,
+            val_writer=val_writer,
+            epoch=epoch,
+            train_batch_iteration=train_batch_iteration,
+            val_batch_iteration=val_batch_iteration,
+            model_type=model_type
+        )
 
     def layers(self):
         self.conv1 = GCNConv(self.config.feature_dimensionality, self.config.hidden_units)
-        self.conv2 = GCNConv(self.config.hidden_units, 1)
+        self.conv2 = GCNConv(self.config.hidden_units, self.model_type.out_channels)
 
     def forward(self, data):
         x, edge_index = data.x, data.edge_index
@@ -33,21 +47,3 @@ class GcnRegression(GnnModel):
         self.write_to_variable_summary(x, 'conv2', 'preactivations')
 
         return x
-
-    def loss(self, inputs, targets):
-        self.current_loss =  F.mse_loss(inputs, targets.float(), reduction='mean')
-        self.write_to_variable_summary(self.current_loss, 'out_layer', 'mse_loss')
-        return self.current_loss
-
-
-    def out_to_predictions(self, out):
-        return out.round()
-
-    def metric(self, predictions, targets):
-        correct = torch.squeeze(predictions).eq(targets.float()).sum().item()
-        acc = correct / targets.size(0)
-        return acc
-
-    def predictions_to_list(self, predictions):
-        return torch.squeeze(predictions).tolist()
-

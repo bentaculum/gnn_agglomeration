@@ -11,6 +11,7 @@ class ClassificationProblem(ModelType):
         super(ClassificationProblem, self).__init__(config)
 
         self.loss_name = 'NLL loss'
+        self.out_channels = self.config.max_neighbors + 1
 
     def loss(self, inputs, targets):
         return F.nll_loss(inputs, targets, reduction='mean')

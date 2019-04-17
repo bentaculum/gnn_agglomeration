@@ -4,7 +4,7 @@ from torch_geometric.nn import GMMConv
 from gnn_model import GnnModel
 
 
-class GmmConvClassification(GnnModel):
+class GmmConvModel(GnnModel):
     def __init__(self,
                  config,
                  train_writer,
@@ -14,7 +14,7 @@ class GmmConvClassification(GnnModel):
                  val_batch_iteration=0,
                  model_type=None):
 
-        super(GmmConvClassification, self).__init__(
+        super(GmmConvModel, self).__init__(
             config=config,
             train_writer=train_writer,
             val_writer=val_writer,
@@ -22,7 +22,6 @@ class GmmConvClassification(GnnModel):
             train_batch_iteration=train_batch_iteration,
             val_batch_iteration=val_batch_iteration,
             model_type=model_type)
-
 
     def layers(self):
         self.conv_in = GMMConv(
@@ -40,7 +39,7 @@ class GmmConvClassification(GnnModel):
 
         self.conv_out = GMMConv(
             in_channels=self.config.hidden_units,
-            out_channels=self.config.max_neighbors + 1,
+            out_channels=self.model_type.out_channels,
             dim=self.config.pseudo_dimensionality)
 
     def forward(self, data):
@@ -83,19 +82,3 @@ class GmmConvClassification(GnnModel):
         log_softmax = F.log_softmax(x, dim=1)
         self.write_to_variable_summary(log_softmax, 'out_layer', 'log_softmax')
         return log_softmax
-
-    def loss(self, inputs, targets):
-        self.current_loss = F.nll_loss(inputs, targets, reduction='mean')
-        self.write_to_variable_summary(self.current_loss, 'out_layer', 'nll_loss')
-        return self.current_loss
-
-    def out_to_predictions(self, out):
-        _, pred = out.max(dim=1)
-        return pred
-
-    def metric(self, predictions, targets):
-        correct = predictions.eq(targets).sum().item()
-        acc = correct / targets.size(0)
-        return acc
-    def predictions_to_list(self, predictions):
-        return predictions.tolist()

@@ -19,6 +19,12 @@ class GnnModel(torch.nn.Module, ABC):
         super(GnnModel, self).__init__()
 
         self.config = config
+        try:
+            self.model_type = globals()[model_type](config=self.config)
+        except Exception as e:
+            print(e)
+            raise NotImplementedError('The model type you have specified is not implemented')
+
         self.layers()
         self.optimizer()
 
@@ -30,11 +36,6 @@ class GnnModel(torch.nn.Module, ABC):
         self.train_batch_iteration = train_batch_iteration
         self.val_batch_iteration = val_batch_iteration
 
-        try:
-            self.model_type = globals()[model_type](config=self.config)
-        except Exception as e:
-            print(e)
-            raise NotImplementedError('The model type you have specified is not implemented')
 
     @abstractmethod
     def layers(self):
@@ -74,7 +75,7 @@ class GnnModel(torch.nn.Module, ABC):
         return self.model_type.predictions_to_list(predictions=predictions)
 
     def print_current_loss(self, epoch, batch_i):
-        print('epoch {}, batch {}, {}: {} '.format(epoch, batch_i, self.loss_name, self.current_loss))
+        print('epoch {}, batch {}, {}: {} '.format(epoch, batch_i, self.model_type.loss_name, self.current_loss))
 
     def evaluate(self, data):
         out = self.forward(data)

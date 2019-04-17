@@ -6,3 +6,4 @@ data
 temp
 *.DS_Store*
 runs
+*.pyc
