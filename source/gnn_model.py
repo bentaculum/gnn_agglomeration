@@ -74,6 +74,9 @@ class GnnModel(torch.nn.Module, ABC):
     def predictions_to_list(self, predictions):
         return self.model_type.predictions_to_list(predictions=predictions)
 
+    def plot_targets_vs_predictions(self, targets, predictions):
+        self.model_type.plot_targets_vs_predictions(targets=targets, predictions=predictions)
+
     def print_current_loss(self, epoch, batch_i):
         print('epoch {}, batch {}, {}: {} '.format(epoch, batch_i, self.model_type.loss_name, self.current_loss))
 

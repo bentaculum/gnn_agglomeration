@@ -28,3 +28,7 @@ class ModelType(torch.nn.Module, ABC):
     @abstractmethod
     def metric(self, predictions, targets):
         pass
+
+    @abstractmethod
+    def plot_targets_vs_predictions(self, targets, predictions):
+        pass

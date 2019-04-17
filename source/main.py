@@ -175,12 +175,17 @@ if __name__  == '__main__':
     data_loader_test = DataLoader(test_dataset, batch_size=config.batch_size_eval, shuffle=False)
     test_loss = 0.0
     test_metric = 0.0
+    test_predictions = []
+    test_targets = []
 
     for i, data in enumerate(data_loader_test):
         data = data.to(device)
         out = model(data)
         test_loss += model.loss(out, data.y).item() * data.num_graphs
         test_metric += model.out_to_metric(out, data.y) * data.num_graphs
+        pred = model.out_to_predictions(out)
+        test_predictions.extend(model.predictions_to_list(pred))
+        test_targets.extend(data.y.tolist())
     test_loss /= test_dataset.__len__()
     test_metric /= test_dataset.__len__()
 
@@ -203,6 +208,9 @@ if __name__  == '__main__':
     print('Mean accuracy on test set: {}'.format(
         test_metric))
     print('')
+
+    # plot targets vs predictions
+    model.plot_targets_vs_predictions(targets=test_targets, predictions=test_predictions)
 
     # plot the first graph in the dataset
     g = MyGraph(config, train_dataset[0])
