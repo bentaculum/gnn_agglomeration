@@ -24,26 +24,44 @@ class GcnModel(GnnModel):
         )
 
     def layers(self):
-        self.conv1 = GCNConv(self.config.feature_dimensionality, self.config.hidden_units)
-        self.conv2 = GCNConv(self.config.hidden_units, self.model_type.out_channels)
+        self.conv_in = GCNConv(self.config.feature_dimensionality, self.config.hidden_units)
+        self.hidden_layers = torch.nn.ModuleList()
+        for i in range(self.config.hidden_layers):
+            layer = GCNConv(self.config.hidden_units, self.config.hidden_units)
+            self.hidden_layers.append(layer)
+            
+        self.conv_out = GCNConv(self.config.hidden_units, self.model_type.out_channels)
 
     def forward(self, data):
         x, edge_index = data.x, data.edge_index
 
         if self.training:
-            self.write_to_variable_summary(self.conv1.weight, 'conv1', 'params_weights')
-            self.write_to_variable_summary(self.conv1.bias, 'conv1', 'params_bias')
+            self.write_to_variable_summary(self.conv_in.weight, 'conv_in', 'params_weights')
+            self.write_to_variable_summary(self.conv_in.bias, 'conv_in', 'params_bias')
 
-        x = self.conv1(x, edge_index)
-        self.write_to_variable_summary(x, 'conv1', 'preactivations')
+        x = self.conv_in(x, edge_index)
+        self.write_to_variable_summary(x, 'conv_in', 'preactivations')
         x = getattr(F, self.config.non_linearity)(x)
-        self.write_to_variable_summary(x, 'conv1', 'outputs')
+        self.write_to_variable_summary(x, 'conv_in', 'outputs')
         x = getattr(F, self.config.dropout_type)(x, p=self.config.dropout_prob, training=self.training)
 
+
+
+        for i, l in enumerate(self.hidden_layers):
+            if self.training:
+                self.write_to_variable_summary(l.weight, 'layer_{}'.format(i), 'params_weights')
+                self.write_to_variable_summary(l.bias, 'layer_{}'.format(i), 'params_bias')
+
+            x = l(x, edge_index)
+            self.write_to_variable_summary(x, 'layer_{}'.format(i), 'preactivations')
+            x = getattr(F, self.config.non_linearity)(x)
+            self.write_to_variable_summary(x, 'layer_{}'.format(i), 'outputs')
+            x = getattr(F, self.config.dropout_type)(x, p=self.config.dropout_prob, training=self.training)
+
         if self.training:
-            self.write_to_variable_summary(self.conv2.weight, 'conv2', 'params_weights')
-            self.write_to_variable_summary(self.conv2.bias, 'conv2', 'params_bias')
-        x = self.conv2(x, edge_index)
-        self.write_to_variable_summary(x, 'conv2', 'preactivations')
+            self.write_to_variable_summary(self.conv_out.weight, 'conv_out', 'params_weights')
+            self.write_to_variable_summary(self.conv_out.bias, 'conv_out', 'params_bias')
+        x = self.conv_out(x, edge_index)
+        self.write_to_variable_summary(x, 'conv_out', 'preactivations')
 
         return x
