@@ -36,13 +36,13 @@ class GcnModel(GnnModel):
         x, edge_index = data.x, data.edge_index
 
         if self.training:
-            self.write_to_variable_summary(self.conv_in.weight, 'conv_in', 'params_weights')
-            self.write_to_variable_summary(self.conv_in.bias, 'conv_in', 'params_bias')
+            self.write_to_variable_summary(self.conv_in.weight, 'in_layer', 'params_weights')
+            self.write_to_variable_summary(self.conv_in.bias, 'in_layer', 'params_bias')
 
         x = self.conv_in(x, edge_index)
-        self.write_to_variable_summary(x, 'conv_in', 'preactivations')
+        self.write_to_variable_summary(x, 'in_layer', 'preactivations')
         x = getattr(F, self.config.non_linearity)(x)
-        self.write_to_variable_summary(x, 'conv_in', 'outputs')
+        self.write_to_variable_summary(x, 'in_layer', 'outputs')
         x = getattr(F, self.config.dropout_type)(x, p=self.config.dropout_prob, training=self.training)
 
 
@@ -59,9 +59,12 @@ class GcnModel(GnnModel):
             x = getattr(F, self.config.dropout_type)(x, p=self.config.dropout_prob, training=self.training)
 
         if self.training:
-            self.write_to_variable_summary(self.conv_out.weight, 'conv_out', 'params_weights')
-            self.write_to_variable_summary(self.conv_out.bias, 'conv_out', 'params_bias')
+            self.write_to_variable_summary(self.conv_out.weight, 'out_layer', 'params_weights')
+            self.write_to_variable_summary(self.conv_out.bias, 'out_layer', 'params_bias')
+
         x = self.conv_out(x, edge_index)
-        self.write_to_variable_summary(x, 'conv_out', 'preactivations')
+        self.write_to_variable_summary(x, 'out_layer', 'preactivations')
+        x = self.model_type.out_nonlinearity(x)
+        self.write_to_variable_summary(x, 'out_layer', 'outputs')
 
         return x

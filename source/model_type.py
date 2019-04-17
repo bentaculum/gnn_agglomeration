@@ -1,4 +1,5 @@
 import torch
+from torch.nn import functional as F
 from abc import ABC, abstractmethod
 import os
 import tensorboardX
@@ -9,10 +10,15 @@ class ModelType(torch.nn.Module, ABC):
     loss_name: str
     out_channels: int
 
+
     def __init__(self, config):
         super(ModelType, self).__init__()
 
         self.config = config
+
+    @abstractmethod
+    def out_nonlinearity(self, x):
+        pass
 
     @abstractmethod
     def loss(self, inputs, targets):

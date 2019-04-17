@@ -78,7 +78,7 @@ class GmmConvModel(GnnModel):
 
         x = self.conv_out(x=x, edge_index=edge_index, pseudo=edge_attr)
         self.write_to_variable_summary(x, 'out_layer', 'preactivations')
+        x = self.model_type.out_nonlinearity(x)
+        self.write_to_variable_summary(x, 'out_layer', 'outputs')
 
-        log_softmax = F.log_softmax(x, dim=1)
-        self.write_to_variable_summary(log_softmax, 'out_layer', 'log_softmax')
-        return log_softmax
+        return x

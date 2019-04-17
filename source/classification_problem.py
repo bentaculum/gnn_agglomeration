@@ -16,6 +16,9 @@ class ClassificationProblem(ModelType):
         self.loss_name = 'NLL loss'
         self.out_channels = self.config.max_neighbors + 1
 
+    def out_nonlinearity(self, x):
+        return F.log_softmax(x, dim=1)
+
     def loss(self, inputs, targets):
         return F.nll_loss(inputs, targets, reduction='mean')
 

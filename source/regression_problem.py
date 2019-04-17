@@ -17,6 +17,9 @@ class RegressionProblem(ModelType):
         self.loss_name = 'MSE Loss'
         self.out_channels = 1
 
+    def out_nonlinearity(self, x):
+        return x
+
     def loss(self, inputs, targets):
         return F.mse_loss(inputs, targets.float(), reduction='mean')
 
