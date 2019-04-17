@@ -1,6 +1,8 @@
 from config import Config
 from gcn_model import GcnModel
 from gmm_conv_model import GmmConvModel
+from regression_problem import RegressionProblem
+from result_plotting import ResultPlotting
 
 from random_graph_dataset import RandomGraphDataset
 from my_graph import MyGraph
@@ -163,7 +165,7 @@ if __name__  == '__main__':
     # train loss
     final_loss_train = 0.0
     final_metric_train = 0.0
-    for i, data in enumerate(data_loader_train):
+    for data in data_loader_train:
         data = data.to(device)
         out = model(data)
         final_loss_train += model.loss(out, data.y).item() * data.num_graphs
@@ -178,7 +180,7 @@ if __name__  == '__main__':
     test_predictions = []
     test_targets = []
 
-    for i, data in enumerate(data_loader_test):
+    for data in data_loader_test:
         data = data.to(device)
         out = model(data)
         test_loss += model.loss(out, data.y).item() * data.num_graphs
@@ -209,9 +211,22 @@ if __name__  == '__main__':
         test_metric))
     print('')
 
-    # plot targets vs predictions
+    # plot targets vs predictions. default is a confusion matrix
     model.plot_targets_vs_predictions(targets=test_targets, predictions=test_predictions)
 
-    # plot the first graph in the dataset
+    # if Regression, plot targets vs. continuous outputs
+    if isinstance(model.model_type, RegressionProblem):
+        test_outputs = []
+        for data in data_loader_test:
+            data = data.to(device)
+            out = torch.squeeze(model(data)).tolist()
+            test_outputs.extend(out)
+        model.model_type.plot_targets_vs_outputs(targets=test_targets, outputs=test_outputs)
+
+    # plot errors by location
+    plotter = ResultPlotting(config=config)
+    plotter.plot_errors_by_location(data=test_dataset, predictions=test_predictions, targets=test_targets)
+
+    # plot the first graph in the dataset, just as an example of how a graph looks like
     g = MyGraph(config, train_dataset[0])
     g.plot_predictions(model.predictions_to_list(model.out_to_predictions(model(train_dataset[0]))))

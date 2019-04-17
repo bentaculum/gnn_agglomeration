@@ -30,12 +30,13 @@ class Config():
                                  default=False, help='if passed, tensorboardx will not be used to monitor the training')
         self.parser.add_argument('--model_dir', type=str,
                                  default='model', help='relative directory to save temporary model, for both training and inference')
+        self.parser.add_argument('--plot_error_locations', action='store_true',
+                                 default=False, help='if passed, the plot errors by location will be created')
 
         self.parser.add_argument('--validation_split', type=float,
                                  default=0.1, help='define size of validation set, 0 <= ... <= 1')
         self.parser.add_argument('--test_split', type=float,
                                  default=0.1, help='define size of test set, 0 <= ... <= 1')
-
 
         self.parser.add_argument('--model', type=str,
                                  default='GmmConvModel', help='GcnModel | GmmConvModel')

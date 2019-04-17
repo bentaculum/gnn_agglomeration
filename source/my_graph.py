@@ -5,6 +5,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import os
 
+
 class MyGraph():
     # TODO let this class inherit directly from torch_geometric.data.Data
 
