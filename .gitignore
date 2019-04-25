@@ -1,5 +1,5 @@
 .idea
-venv
+venv*
 tutorial
 *__pycache__*
 data
