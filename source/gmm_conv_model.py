@@ -27,20 +27,23 @@ class GmmConvModel(GnnModel):
         self.conv_in = GMMConv(
             in_channels=self.config.feature_dimensionality,
             out_channels=self.config.hidden_units,
-            dim=self.config.pseudo_dimensionality)
+            dim=self.config.pseudo_dimensionality,
+            kernel_size=self.config.kernel_size)
 
         self.hidden_layers = torch.nn.ModuleList()
         for i in range(self.config.hidden_layers):
             layer = GMMConv(
                 in_channels=self.config.hidden_units,
                 out_channels=self.config.hidden_units,
-                dim=self.config.pseudo_dimensionality)
+                dim=self.config.pseudo_dimensionality,
+                kernel_size=self.config.kernel_size)
             self.hidden_layers.append(layer)
 
         self.conv_out = GMMConv(
             in_channels=self.config.hidden_units,
             out_channels=self.model_type.out_channels,
-            dim=self.config.pseudo_dimensionality)
+            dim=self.config.pseudo_dimensionality,
+            kernel_size=self.config.kernel_size)
 
     def forward(self, data):
         x, edge_index, edge_attr = data.x, data.edge_index, data.edge_attr
