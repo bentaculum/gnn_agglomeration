@@ -24,20 +24,21 @@ class MinimalGmmConvModel(GnnModel):
             model_type=model_type)
 
     def layers(self):
-        self.conv_in = GMMConv(
-            in_channels=self.config.feature_dimensionality,
-            out_channels=self.model_type.out_channels,
-            dim=self.config.pseudo_dimensionality,
-            kernel_size=self.config.kernel_size,
-            bias=self.config.use_bias)
+        # self.conv_in = GMMConv(
+        #     in_channels=self.config.feature_dimensionality,
+        #     out_channels=self.model_type.out_channels,
+        #     dim=self.config.pseudo_dimensionality,
+        #     kernel_size=self.config.kernel_size,
+        #     bias=self.config.use_bias)
 
-       # self.conv_in = GMMConv(
-       #     in_channels=self.config.feature_dimensionality,
-       #     out_channels=self.config.hidden_units,
-       #     dim=self.config.pseudo_dimensionality,
-       #     kernel_size=self.config.kernel_size,
-        #    bias=self.config.use_bias)
-        # self.fc = torch.nn.Linear(in_features=self.config.hidden_units, out_features=self.model_type.out_channels, bias=self.config.use_bias)
+        self.conv_in = GMMConv(
+           in_channels=self.config.feature_dimensionality,
+           out_channels=self.config.hidden_units,
+           dim=self.config.pseudo_dimensionality,
+           kernel_size=self.config.kernel_size,
+           bias=self.config.use_bias)
+
+        self.fc = torch.nn.Linear(in_features=self.config.hidden_units, out_features=self.model_type.out_channels, bias=self.config.use_bias)
 
     def forward(self, data):
         x, edge_index, edge_attr = data.x, data.edge_index, data.edge_attr
@@ -50,8 +51,19 @@ class MinimalGmmConvModel(GnnModel):
                 self.write_to_variable_summary(self.conv_in.lin.bias, 'in_layer', 'weights_matmul_bias')
 
         x = self.conv_in(x=x, edge_index=edge_index, pseudo=edge_attr)
-        self.write_to_variable_summary(x, 'in_layer', 'outputs')
+        self.write_to_variable_summary(x, 'in_layer', 'pre_activations')
+
         # x = getattr(F, self.config.dropout_type)(x, p=self.config.dropout_prob, training=self.training)
-        # x = self.fc(x)
+
+        x = getattr(F, self.config.non_linearity)(x)
+        self.write_to_variable_summary(x, 'in_layer', 'outputs')
+
+        if self.training:
+            self.write_to_variable_summary(self.fc.weight, 'fc_layer', 'weights')
+            self.write_to_variable_summary(self.fc.bias, 'fc_layer', 'bias')
+
+        x = self.fc(x)
+        self.write_to_variable_summary(x, 'fc_layer', 'outputs')
 
         return x
+
