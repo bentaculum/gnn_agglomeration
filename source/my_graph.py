@@ -56,7 +56,7 @@ class MyGraph():
         plt.savefig(os.path.join(self.config.temp_dir, 'graph.png'))
         # plt.show()
 
-    def plot_predictions(self, pred):
+    def plot_predictions(self, pred, graph_nr):
         # transpose the edge matrix for format requirements
         g = nx.Graph(incoming_graph_data=self.data.edge_index.transpose(0,1).tolist())
         # add the positions in euclidian space to the model
@@ -77,7 +77,7 @@ class MyGraph():
             self.config.theta))
 
         self.add_to_plotting_style()
-        img_path = os.path.join(self.config.temp_dir, 'graph_with_predictions.png')
+        img_path = os.path.join(self.config.temp_dir, 'graph_with_predictions_{}.png'.format(graph_nr))
         if os.path.isfile(img_path):
             os.remove(img_path)
         plt.savefig(img_path)
