@@ -31,6 +31,14 @@ class MinimalGmmConvModel(GnnModel):
             kernel_size=self.config.kernel_size,
             bias=self.config.use_bias)
 
+       # self.conv_in = GMMConv(
+       #     in_channels=self.config.feature_dimensionality,
+       #     out_channels=self.config.hidden_units,
+       #     dim=self.config.pseudo_dimensionality,
+       #     kernel_size=self.config.kernel_size,
+        #    bias=self.config.use_bias)
+        # self.fc = torch.nn.Linear(in_features=self.config.hidden_units, out_features=self.model_type.out_channels, bias=self.config.use_bias)
+
     def forward(self, data):
         x, edge_index, edge_attr = data.x, data.edge_index, data.edge_attr
 
@@ -44,7 +52,6 @@ class MinimalGmmConvModel(GnnModel):
         x = self.conv_in(x=x, edge_index=edge_index, pseudo=edge_attr)
         self.write_to_variable_summary(x, 'in_layer', 'outputs')
         # x = getattr(F, self.config.dropout_type)(x, p=self.config.dropout_prob, training=self.training)
-
-        # TODO add a separate fully connected layer over the output channels of the Conv Layer
+        # x = self.fc(x)
 
         return x
