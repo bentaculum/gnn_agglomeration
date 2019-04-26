@@ -72,7 +72,7 @@ class MyGraph():
         plt.savefig(os.path.join(self.config.temp_dir, 'graph.png'))
         # plt.show()
 
-    def plot_predictions(self, pred):
+    def plot_predictions(self, pred, graph_nr):
         # transpose the edge matrix for format requirements
         g = nx.Graph(
             incoming_graph_data=self.data.edge_index.transpose(0, 1).tolist())

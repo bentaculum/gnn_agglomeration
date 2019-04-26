@@ -243,8 +243,8 @@ if __name__ == '__main__':
     # plotter.plot_errors_by_location(
     #     data=test_dataset, predictions=test_predictions, targets=test_targets)
 
-    # plot the first graph in the dataset, just as an example of how a graph
-    # looks like
-    g = MyGraph(config, train_dataset[0])
-    g.plot_predictions(model.predictions_to_list(
-        model.out_to_predictions(model(train_dataset[0]))))
+    # plot the graphs in the test dataset for visual inspection
+    for i, g in enumerate(test_dataset):
+        graph = MyGraph(config, g)
+        graph.plot_predictions(model.predictions_to_list(
+            model.out_to_predictions(model(g))), i)
