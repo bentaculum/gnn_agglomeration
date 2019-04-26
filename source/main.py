@@ -1,6 +1,7 @@
 from config import Config
 from gcn_model import GcnModel
 from gmm_conv_model import GmmConvModel
+from minimal_gmm_conv_model import MinimalGmmConvModel
 from regression_problem import RegressionProblem
 from result_plotting import ResultPlotting
 
