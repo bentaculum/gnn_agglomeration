@@ -13,7 +13,7 @@ import shutil
 from torch_geometric.data import DataLoader
 from tensorboardX import SummaryWriter
 
-if __name__  == '__main__':
+if __name__ == '__main__':
     config = Config().parse_args()
 
     # load model
