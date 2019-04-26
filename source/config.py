@@ -8,7 +8,7 @@ class Config():
                                  default=100, help='Number of nodes in the graph')
         self.parser.add_argument('--euclidian_dimensionality', type=int,
                                  default=2, help='Dimension of the Euclidian space, used in data.pos')
-        self.parser.add_argument('--feature_dimensionality',type=int,
+        self.parser.add_argument('--feature_dimensionality', type=int,
                                  default=1, help='Dimension of the feature space, used in data.x')
         self.parser.add_argument('--pseudo_dimensionality', type=int,
                                  default=2, help='Dimension of the pseudo coordinates for GmmConv')

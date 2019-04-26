@@ -66,6 +66,9 @@ class MyGraph():
 
         for i in range(self.data.pos.size(0)):
             pos_dict[i] = self.data.pos[i].tolist()
+            if self.config.euclidian_dimensionality == 1:
+                pos_dict[i].append(0)
+
             labels_dict[i] = '{};{}'.format(int(pred[i]), int(self.data.y[i].item()))
 
         self.set_plotting_style()
@@ -73,6 +76,7 @@ class MyGraph():
         plt.title("Number of neighbors within euclidian distance {}.\nEach node displays 'pred:target'".format(
             self.config.theta))
 
+        self.add_to_plotting_style()
         img_path = os.path.join(self.config.temp_dir, 'graph_with_predictions.png')
         if os.path.isfile(img_path):
             os.remove(img_path)
@@ -84,4 +88,12 @@ class MyGraph():
         plt.figure(figsize=(8, 8))
         plt.xlabel('x (euclidian)')
         plt.ylabel('y (euclidian)')
+        plt.xlim(-0.2, 1.2)
+        plt.ylim(-0.2, 1.2)
+
+    def add_to_plotting_style(self):
+        plt.tick_params(axis='x', which='both', bottom=True, labelbottom=True)
+        plt.tick_params(axis='y', which='both', left=True, labelleft=True)
+        plt.grid(linestyle='--', color='gray')
+
 
