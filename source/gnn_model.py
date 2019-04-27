@@ -109,13 +109,13 @@ class GnnModel(torch.nn.Module, ABC):
         else:
             iteration = self.val_batch_iteration
 
-        mean = torch.mean(var.data)
+        mean = torch.mean(var.detach())
         self.current_writer.add_scalar(os.path.join(namespace, var_name, 'mean'), mean, iteration)
-        stddev = torch.std(var.data)
+        stddev = torch.std(var.detach())
         self.current_writer.add_scalar(os.path.join(namespace, var_name, 'stddev'), stddev, iteration)
         # self.current_writer.add_scalar(os.path.join(namespace, var_name, 'max'), torch.max(var), iteration)
         # self.current_writer.add_scalar(os.path.join(namespace, var_name, 'min'), torch.min(var), iteration)
-        self.current_writer.add_histogram(os.path.join(namespace, var_name), var.data, iteration)
+        self.current_writer.add_histogram(os.path.join(namespace, var_name), var.detach(), iteration)
 
         #plot gradients of weights
         grad = var.grad
