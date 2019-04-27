@@ -60,7 +60,7 @@ class GmmConvModel(GnnModel):
 
         x = self.conv_in(x=x, edge_index=edge_index, pseudo=edge_attr)
         self.write_to_variable_summary(x, 'in_layer', 'preactivations')
-        x = getattr(F, self.config.non_linearity)(x)
+        x = getattr(torch, self.config.non_linearity)(x)
         self.write_to_variable_summary(x, 'in_layer', 'outputs')
         x = getattr(F, self.config.dropout_type)(x, p=self.config.dropout_prob, training=self.training)
 
@@ -74,7 +74,7 @@ class GmmConvModel(GnnModel):
 
             x = l(x=x, edge_index=edge_index, pseudo=edge_attr)
             self.write_to_variable_summary(x, 'layer_{}'.format(i), 'preactivations')
-            x = getattr(F, self.config.non_linearity)(x)
+            x = getattr(torch, self.config.non_linearity)(x)
             self.write_to_variable_summary(x, 'layer_{}'.format(i), 'outputs')
             x = getattr(F, self.config.dropout_type)(x, p=self.config.dropout_prob, training=self.training)
 
