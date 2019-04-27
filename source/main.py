@@ -83,6 +83,7 @@ def main(_config, _run, _log):
     # create and load dataset
     dataset = RandomGraphDataset(root=config.dataset_abs_path, config=config)
     config.max_neighbors = dataset.max_neighbors()
+    config.targets_mean, config.targets_std = dataset.targets_mean_std()
     # TODO if model is loaded, use the same train val test split.
     # shuffle can return the permutation of the dataset, which can then be used to permute the same way
     # dataset, perm = dataset.shuffle(return_perm=True)

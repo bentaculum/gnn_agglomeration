@@ -1,6 +1,7 @@
 import torch
 from torch_geometric.data import InMemoryDataset
 import torch_geometric.transforms as T
+import numpy as np
 
 from my_graph import MyGraph
 
@@ -63,3 +64,12 @@ class RandomGraphDataset(InMemoryDataset):
                     dic[t_int] = 1
 
         return dic
+
+    def targets_mean_std(self):
+        # TODO this should be preprocessed and saved to file for large datasets
+        targets = []
+        for i in range(self.__len__()):
+            targets.extend(self.get(i).y)
+
+        targets = np.array(targets)
+        return np.mean(targets), np.std(targets)

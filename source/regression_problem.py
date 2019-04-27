@@ -21,10 +21,13 @@ class RegressionProblem(ModelType):
         return x
 
     def loss(self, inputs, targets):
-        return F.mse_loss(inputs, targets.float(), reduction='mean')
+        # TODO standardizing on the fly might be costly
+        std_targets = (targets.float() - self.config.targets_mean) / self.config.targets_std
+        return F.mse_loss(inputs, std_targets, reduction='mean')
 
     def out_to_predictions(self, out):
-        return out.round().long()
+        std_out = out * self.config.targets_std + self.config.targets_mean
+        return std_out.round().long()
 
     def metric(self, predictions, targets):
         correct = torch.squeeze(predictions).eq(targets).sum().item()
