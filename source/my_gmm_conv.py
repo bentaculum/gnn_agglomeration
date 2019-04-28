@@ -22,8 +22,10 @@ class MyGMMConv(MessagePassing):
 
     def reset_parameters(self):
         size = self.in_channels
-        uniform(size, self.mu)
-        uniform(size, self.sigma)
+        torch.nn.init.uniform_(self.mu, a=-0.01, b=0.01)
+        torch.nn.init.uniform_(self.sigma, a=-0.01, b=0.01)
+        # uniform(size, self.mu)
+        # uniform(size, self.sigma)
         reset(self.lin)
 
     def forward(self, x, edge_index, pseudo):
