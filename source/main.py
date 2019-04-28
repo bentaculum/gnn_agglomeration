@@ -1,3 +1,9 @@
+import torch
+import os
+import shutil
+from torch_geometric.data import DataLoader
+from tensorboardX import SummaryWriter
+
 from config import Config
 from gcn_model import GcnModel
 from gmm_conv_model import GmmConvModel
@@ -8,11 +14,6 @@ from result_plotting import ResultPlotting
 from random_graph_dataset import RandomGraphDataset
 from my_graph import MyGraph
 
-import torch
-import os
-import shutil
-from torch_geometric.data import DataLoader
-from tensorboardX import SummaryWriter
 
 if __name__ == '__main__':
     config = Config().parse_args()
@@ -65,6 +66,12 @@ if __name__ == '__main__':
     # split into train and test
     split_train_idx = int(config.samples * (1 - config.test_split - config.validation_split))
     split_validation_idx = int(config.samples * (1 - config.test_split))
+
+    # checks for very small datasets to ensure at least one sample per split
+    assert split_train_idx > 0
+    if split_train_idx == split_validation_idx:
+        split_train_idx -= 1
+    assert split_validation_idx <= config.samples
 
     train_dataset = dataset[:split_train_idx]
     validation_dataset = dataset[split_train_idx:split_validation_idx]
