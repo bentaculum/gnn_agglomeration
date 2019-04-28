@@ -1,7 +1,8 @@
 import torch
 import torch.nn.functional as F
-from torch_geometric.nn import GMMConv
+# from torch_geometric.nn import GMMConv
 from gnn_model import GnnModel
+from my_gmm_conv import MyGMMConv as GMMConv
 
 
 class GmmConvModel(GnnModel):

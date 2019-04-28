@@ -1,6 +1,6 @@
 import torch
 import torch.nn.functional as F
-from torch_geometric.nn import GMMConv
+# from torch_geometric.nn import GMMConv
 from gnn_model import GnnModel
 
 import numpy as np
@@ -9,6 +9,7 @@ import os
 import scipy.stats
 import matplotlib.pyplot as plt
 
+from my_gmm_conv import MyGMMConv as GMMConv
 
 class MinimalGmmConvModel(GnnModel):
     def __init__(self,
