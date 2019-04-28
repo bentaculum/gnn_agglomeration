@@ -21,6 +21,7 @@ class MyGraph():
         y = torch.zeros(self.config.nodes, dtype=torch.long)
         for i in range(pos.size(0)):
             for j in range(i+1, pos.size(0)):
+                # no self-loop edges on vertices
                 node1 = pos[i]
                 node2 = pos[j]
                 # print(torch.dist(node1, node2))

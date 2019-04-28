@@ -212,6 +212,10 @@ if __name__ == '__main__':
         test_metric))
     print('')
 
+    # plot the learned gaussian kernels
+    if isinstance(model, MinimalGmmConvModel):
+        model.plot_gaussian_kernels()
+
     # plot targets vs predictions. default is a confusion matrix
     model.plot_targets_vs_predictions(targets=test_targets, predictions=test_predictions)
 

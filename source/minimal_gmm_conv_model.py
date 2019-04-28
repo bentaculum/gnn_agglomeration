@@ -3,6 +3,12 @@ import torch.nn.functional as F
 from torch_geometric.nn import GMMConv
 from gnn_model import GnnModel
 
+import numpy as np
+import os
+
+import scipy.stats
+import matplotlib.pyplot as plt
+
 
 class MinimalGmmConvModel(GnnModel):
     def __init__(self,
@@ -51,19 +57,50 @@ class MinimalGmmConvModel(GnnModel):
                 self.write_to_variable_summary(self.conv_in.lin.bias, 'in_layer', 'weights_matmul_bias')
 
         x = self.conv_in(x=x, edge_index=edge_index, pseudo=edge_attr)
-        self.write_to_variable_summary(x, 'in_layer', 'pre_activations')
+        # self.write_to_variable_summary(x, 'in_layer', 'pre_activations')
 
         # x = getattr(F, self.config.dropout_type)(x, p=self.config.dropout_prob, training=self.training)
 
-        x = getattr(F, self.config.non_linearity)(x)
+        # x = getattr(torch, self.config.non_linearity)(x)
         self.write_to_variable_summary(x, 'in_layer', 'outputs')
 
         if self.training:
             self.write_to_variable_summary(self.fc.weight, 'fc_layer', 'weights')
-            self.write_to_variable_summary(self.fc.bias, 'fc_layer', 'bias')
+            if self.config.use_bias:
+                self.write_to_variable_summary(self.fc.bias, 'fc_layer', 'bias')
 
         x = self.fc(x)
+        self.write_to_variable_summary(x, 'fc_layer', 'pre_activations')
+        x = self.model_type.out_nonlinearity(x)
         self.write_to_variable_summary(x, 'fc_layer', 'outputs')
 
         return x
 
+    def plot_gaussian_kernels(self):
+
+        if self.config.pseudo_dimensionality > 1:
+            print('Cannot plot gaussian kernels because pseudo dimensionality > 1')
+            return
+
+        print('Plotting the gaussian kernels ...')
+        K = self.config.kernel_size
+
+        # one picture per input channel
+        for i in range(self.conv_in.in_channels):
+
+            for j in range(K):
+                mu = self.conv_in.mu[i*K+j].detach().numpy()
+                sigma = self.conv_in.sigma[i*K+j].detach().numpy()
+
+                x = np.linspace(mu - 3*sigma, mu + 3*sigma, 100)
+                y = MinimalGmmConvModel.gaussian_kernel(x, mu, sigma)
+                # plt.plot(x, scipy.stats.norm.pdf(x, mu, sigma))
+                plt.plot(x,y)
+
+            plt.savefig(os.path.join(self.config.temp_dir, 'layer0_kernel{}'.format(i)))
+
+    def gaussian_kernel(x, mu, sigma):
+        gaussian = -0.5 * (x - mu) ** 2
+        gaussian = gaussian / (1e-14 + sigma ** 2)
+        gaussian = np.exp(gaussian)
+        return gaussian
