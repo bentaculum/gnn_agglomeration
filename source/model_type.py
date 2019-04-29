@@ -38,8 +38,10 @@ class ModelType(torch.nn.Module, ABC):
 
     def plot_targets_vs_predictions(self, targets, predictions):
         ch = chartify.Chart(blank_labels=True, x_axis_type='categorical', y_axis_type='categorical')
+        df = pd.DataFrame({'t': targets, 'p': predictions}).groupby(['t', 'p']).size().reset_index(name='count').\
+            sort_values(['t', 'p'], ascending=[True, True])
         ch.plot.heatmap(
-            pd.DataFrame({'t': targets, 'p': predictions}).groupby(['t','p']).size().reset_index(name='count'),
+            data_frame=df,
             x_column='t', y_column='p', color_column='count', text_column='count'
         ).axes.set_xaxis_label('targets') \
             .axes.set_yaxis_label('predictions') \
