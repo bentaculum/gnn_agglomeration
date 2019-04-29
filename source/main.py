@@ -126,9 +126,9 @@ if __name__ == '__main__':
             model.train_batch_iteration += 1
 
         epoch_loss /= train_dataset.__len__()
-        train_writer.add_scalar('per_epoch/loss', epoch_loss, epoch)
+        train_writer.add_scalar('_per_epoch/loss', epoch_loss, epoch)
         epoch_metric_train /= train_dataset.__len__()
-        train_writer.add_scalar('per_epoch/metric', epoch_metric_train, epoch)
+        train_writer.add_scalar('_per_epoch/metric', epoch_metric_train, epoch)
 
         # validation
         model.eval()
@@ -148,9 +148,9 @@ if __name__ == '__main__':
         model.val_batch_iteration = model.train_batch_iteration
 
         validation_loss /= validation_dataset.__len__()
-        val_writer.add_scalar('per_epoch/loss', validation_loss, epoch)
+        val_writer.add_scalar('_per_epoch/loss', validation_loss, epoch)
         epoch_metric_val /= validation_dataset.__len__()
-        val_writer.add_scalar('per_epoch/metric', epoch_metric_val, epoch)
+        val_writer.add_scalar('_per_epoch/metric', epoch_metric_val, epoch)
 
         model.epoch += 1
 
