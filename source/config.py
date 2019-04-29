@@ -47,7 +47,7 @@ class Config():
         self.parser.add_argument('--training_epochs', type=int,
                                  default=1000, help='number of training epochs')
         self.parser.add_argument('--hidden_layers', type=int,
-                                 default=1, help='number of hidden layers in the n layer MoNet')
+                                 default=0, help='number of hidden layers in the n layer MoNet')
         self.parser.add_argument('--hidden_units', type=int,
                                  default=64, help='number of units per hidden layer in the GNN')
         self.parser.add_argument('--use_bias', type=str2bool,
