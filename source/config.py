@@ -12,6 +12,8 @@ class Config():
                                  default=1, help='Dimension of the feature space, used in data.x')
         self.parser.add_argument('--pseudo_dimensionality', type=int,
                                  default=2, help='Dimension of the pseudo coordinates for GmmConv')
+        self.parser.add_argument('--kernel_size', type=int,
+                                 default=1, help='kernel size for SplineConv')
         self.parser.add_argument('--data_transform', type=str,
                                  default='Polar', help='define the edge attributes of the graphs e.g. Cartesian | Distance | LocalCartesian | Polar')
 
