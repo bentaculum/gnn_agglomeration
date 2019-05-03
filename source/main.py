@@ -3,6 +3,7 @@ from gcn_model import GcnModel
 from gmm_conv_model import GmmConvModel
 from spline_conv_model import SplineConvModel
 from minimal_spline_conv_model import MinimalSplineConvModel
+from gat_conv_model import GatConvModel
 from regression_problem import RegressionProblem
 from result_plotting import ResultPlotting
 
