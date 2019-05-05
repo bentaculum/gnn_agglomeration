@@ -74,13 +74,6 @@ tensorflow-estimator==1.13.0
 termcolor==1.1.0
 terminado==0.8.2
 testpath==0.4.2
-torch==1.0.1.post2
-torch-cluster==1.2.4
-torch-geometric==1.1.2
-torch-scatter==1.1.2
-torch-sparse==0.2.4
-torch-spline-conv==1.0.6
-torchvision==0.2.2.post3
 tornado==6.0.2
 traitlets==4.3.2
 wcwidth==0.1.7
