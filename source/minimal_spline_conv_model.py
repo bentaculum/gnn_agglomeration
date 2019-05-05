@@ -21,7 +21,10 @@ class MinimalSplineConvModel(GnnModel):
 
         # Params from the SplineCNN paper
         config.kernel_size = 4
-        config.adam_weight_decay = 0.005
+        # config.adam_weight_decay = 0.005
+        config.hidden_units = 16
+        config.spline_degree = 2
+        config.non_linearity = 'elu'
 
         super(MinimalSplineConvModel, self).__init__(
             config=config,
@@ -38,6 +41,7 @@ class MinimalSplineConvModel(GnnModel):
             out_channels=self.config.hidden_units,
             dim=self.config.pseudo_dimensionality,
             kernel_size=self.config.kernel_size,
+            degree=self.config.spline_degree,
             norm=False,
             root_weight=False,
             bias=self.config.use_bias)
@@ -65,7 +69,7 @@ class MinimalSplineConvModel(GnnModel):
                     self.conv_in.root, 'in_layer', 'weights_root_mul')
         x = self.conv_in(x=x, edge_index=edge_index, pseudo=edge_attr)
         self.write_to_variable_summary(x, 'in_layer', 'pre_activations')
-        x = getattr(torch, self.config.non_linearity)(x)
+        x = getattr(F, self.config.non_linearity)(x)
         self.write_to_variable_summary(x, 'in_layer', 'outputs')
         x = getattr(F, self.config.dropout_type)(
             x, p=self.config.dropout_prob, training=self.training)
@@ -78,7 +82,7 @@ class MinimalSplineConvModel(GnnModel):
                     self.fc.bias, 'fc_layer', 'bias')
         x = self.fc(x)
         self.write_to_variable_summary(x, 'fc_layer', 'pre_activations')
-        x = getattr(torch, self.config.non_linearity)(x)
+        x = getattr(F, self.config.non_linearity)(x)
         self.write_to_variable_summary(x, 'fc_layer', 'outputs')
         x = getattr(F, self.config.dropout_type)(
             x, p=self.config.dropout_prob, training=self.training)

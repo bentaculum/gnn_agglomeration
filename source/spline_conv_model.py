@@ -15,10 +15,10 @@ class SplineConvModel(GnnModel):
                  model_type=None):
 
         # Params from the SplineCNN paper
-        # config.non_linearity = 'elu'
-        # config.kernel_size = 2
-        # config.hidden_units = 16
-        # config.adam_weight_decay = 0.005
+        config.non_linearity = 'elu'
+        config.kernel_size = 4
+        config.hidden_units = 16
+        config.adam_weight_decay = 0.005
 
         super(SplineConvModel, self).__init__(
             config=config,
