@@ -6,6 +6,7 @@ import tensorboardX
 from classification_problem import ClassificationProblem
 from regression_problem import RegressionProblem
 
+
 class GnnModel(torch.nn.Module, ABC):
     def __init__(self,
                  config,
@@ -23,7 +24,8 @@ class GnnModel(torch.nn.Module, ABC):
             self.model_type = globals()[model_type](config=self.config)
         except Exception as e:
             print(e)
-            raise NotImplementedError('The model type you have specified is not implemented')
+            raise NotImplementedError(
+                'The model type you have specified is not implemented')
 
         self.layers()
         self.optimizer()
@@ -36,7 +38,6 @@ class GnnModel(torch.nn.Module, ABC):
         self.train_batch_iteration = train_batch_iteration
         self.val_batch_iteration = val_batch_iteration
 
-
     @abstractmethod
     def layers(self):
         pass
@@ -46,8 +47,10 @@ class GnnModel(torch.nn.Module, ABC):
         pass
 
     def loss(self, inputs, targets):
-        self.current_loss = self.model_type.loss(inputs=inputs, targets=targets)
-        self.write_to_variable_summary(self.current_loss, 'out_layer', self.model_type.loss_name)
+        self.current_loss = self.model_type.loss(
+            inputs=inputs, targets=targets)
+        self.write_to_variable_summary(
+            self.current_loss, 'out_layer', self.model_type.loss_name)
         return self.current_loss
 
     def optimizer(self):
@@ -75,10 +78,12 @@ class GnnModel(torch.nn.Module, ABC):
         return self.model_type.predictions_to_list(predictions=predictions)
 
     def plot_targets_vs_predictions(self, targets, predictions):
-        self.model_type.plot_targets_vs_predictions(targets=targets, predictions=predictions)
+        self.model_type.plot_targets_vs_predictions(
+            targets=targets, predictions=predictions)
 
     def print_current_loss(self, epoch, batch_i):
-        print('epoch {}, batch {}, {}: {} '.format(epoch, batch_i, self.model_type.loss_name, self.current_loss))
+        print('epoch {}, batch {}, {}: {} '.format(
+            epoch, batch_i, self.model_type.loss_name, self.current_loss))
 
     def evaluate(self, data):
         out = self.forward(data)
@@ -110,17 +115,21 @@ class GnnModel(torch.nn.Module, ABC):
             iteration = self.val_batch_iteration
 
         mean = torch.mean(var.data)
-        self.current_writer.add_scalar(os.path.join(namespace, var_name, 'mean'), mean, iteration)
+        self.current_writer.add_scalar(os.path.join(
+            namespace, var_name, 'mean'), mean, iteration)
         stddev = torch.std(var.data)
-        self.current_writer.add_scalar(os.path.join(namespace, var_name, 'stddev'), stddev, iteration)
+        self.current_writer.add_scalar(os.path.join(
+            namespace, var_name, 'stddev'), stddev, iteration)
         # self.current_writer.add_scalar(os.path.join(namespace, var_name, 'max'), torch.max(var), iteration)
         # self.current_writer.add_scalar(os.path.join(namespace, var_name, 'min'), torch.min(var), iteration)
-        self.current_writer.add_histogram(os.path.join(namespace, var_name), var.data, iteration)
+        self.current_writer.add_histogram(os.path.join(
+            namespace, var_name), var.data, iteration)
 
-        #plot gradients of weights
+        # plot gradients of weights
         grad = var.grad
         if grad is not None:
-            self.current_writer.add_histogram(os.path.join(namespace, var_name, 'gradients'), grad, iteration)
+            self.current_writer.add_histogram(os.path.join(
+                namespace, var_name, 'gradients'), grad, iteration)
 
     def save(self, name):
         """

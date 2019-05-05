@@ -33,4 +33,5 @@ class ResultPlotting:
             .axes.set_yaxis_label('y') \
             .set_title('Errors by location in euclidian space') \
             .set_subtitle('Each number corresponds to prediction-target for a misclassified node')
-        ch.save(filename=os.path.join(self.config.temp_dir, 'errors_by_location.png'), format='png')
+        ch.save(filename=os.path.join(self.config.temp_dir,
+                                      'errors_by_location.png'), format='png')

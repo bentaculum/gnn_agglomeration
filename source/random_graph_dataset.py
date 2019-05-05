@@ -4,11 +4,13 @@ import torch_geometric.transforms as T
 
 from my_graph import MyGraph
 
+
 class RandomGraphDataset(InMemoryDataset):
     def __init__(self, root, config, transform=None, pre_transform=None):
         self.config = config
         transform = getattr(T, config.data_transform)(norm=True)
-        super(RandomGraphDataset, self).__init__(root, transform, pre_transform)
+        super(RandomGraphDataset, self).__init__(
+            root, transform, pre_transform)
         self.data, self.slices = torch.load(self.processed_paths[0])
 
     @property

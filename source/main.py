@@ -41,7 +41,6 @@ if __name__ == '__main__':
     if not os.path.isdir(config.temp_dir):
         os.makedirs(config.temp_dir)
 
-
     # clear old stuff from the temp dir
     summary_dir = os.path.join(config.temp_dir, config.summary_dir)
     if os.path.isdir(summary_dir):
@@ -54,10 +53,11 @@ if __name__ == '__main__':
     os.makedirs(summary_dir)
     os.makedirs(model_dir)
 
-
     # set up the summary writer for tensorboardX
-    train_writer = SummaryWriter(os.path.join(config.temp_dir, 'summary', 'training'))
-    val_writer = SummaryWriter(os.path.join(config.temp_dir, 'summary', 'validation'))
+    train_writer = SummaryWriter(os.path.join(
+        config.temp_dir, 'summary', 'training'))
+    val_writer = SummaryWriter(os.path.join(
+        config.temp_dir, 'summary', 'validation'))
 
     # create and load dataset
     dataset = RandomGraphDataset(root=config.dataset_path, config=config)
@@ -65,17 +65,20 @@ if __name__ == '__main__':
     dataset = dataset.shuffle()
 
     # split into train and test
-    split_train_idx = int(config.samples * (1 - config.test_split - config.validation_split))
+    split_train_idx = int(
+        config.samples * (1 - config.test_split - config.validation_split))
     split_validation_idx = int(config.samples * (1 - config.test_split))
 
     train_dataset = dataset[:split_train_idx]
     validation_dataset = dataset[split_train_idx:split_validation_idx]
     test_dataset = dataset[split_validation_idx:]
 
-    device = torch.device('cpu')
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    data_loader_train = DataLoader(train_dataset, batch_size=config.batch_size_train, shuffle=True)
-    data_loader_validation = DataLoader(validation_dataset, batch_size=config.batch_size_eval, shuffle=False)
+    data_loader_train = DataLoader(
+        train_dataset, batch_size=config.batch_size_train, shuffle=True)
+    data_loader_validation = DataLoader(
+        validation_dataset, batch_size=config.batch_size_eval, shuffle=False)
 
     try:
         if checkpoint is None:
@@ -101,7 +104,8 @@ if __name__ == '__main__':
 
     except Exception as e:
         print(e)
-        raise NotImplementedError('The model you have specified is not implemented')
+        raise NotImplementedError(
+            'The model you have specified is not implemented')
 
     model = model.to(device)
 
@@ -119,7 +123,8 @@ if __name__ == '__main__':
             model.print_current_loss(epoch, batch_i)
             epoch_loss += loss.item() * data.num_graphs
             # TODO introduce weighting per node
-            epoch_metric_train += model.out_to_metric(out, data.y) * data.num_graphs
+            epoch_metric_train += model.out_to_metric(
+                out, data.y) * data.num_graphs
 
             # clear the gradient variables of the model
             model.optimizer.zero_grad()
@@ -143,7 +148,8 @@ if __name__ == '__main__':
             loss = model.loss(out, data.y)
             model.print_current_loss(epoch, 'validation {}'.format(batch_i))
             validation_loss += loss.item() * data.num_graphs
-            epoch_metric_val += model.out_to_metric(out, data.y) * data.num_graphs
+            epoch_metric_val += model.out_to_metric(
+                out, data.y) * data.num_graphs
             model.val_batch_iteration += 1
 
         # The numbering of train and val does not correspond 1-to-1!
@@ -172,12 +178,14 @@ if __name__ == '__main__':
         data = data.to(device)
         out = model(data)
         final_loss_train += model.loss(out, data.y).item() * data.num_graphs
-        final_metric_train += model.out_to_metric(out, data.y) * data.num_graphs
+        final_metric_train += model.out_to_metric(
+            out, data.y) * data.num_graphs
     final_loss_train /= train_dataset.__len__()
     final_metric_train /= train_dataset.__len__()
 
     # test loss
-    data_loader_test = DataLoader(test_dataset, batch_size=config.batch_size_eval, shuffle=False)
+    data_loader_test = DataLoader(
+        test_dataset, batch_size=config.batch_size_eval, shuffle=False)
     test_loss = 0.0
     test_metric = 0.0
     test_predictions = []
@@ -196,7 +204,8 @@ if __name__ == '__main__':
 
     # final print routine
     print('')
-    print('Maximum # of neighbors within distance {} in dataset: {}'.format(config.theta, config.max_neighbors))
+    print('Maximum # of neighbors within distance {} in dataset: {}'.format(
+        config.theta, config.max_neighbors))
     print('# of neighbors, distribution:')
     dic = dataset.neighbors_distribution()
     for key, value in sorted(dic.items(), key=lambda x: x[0]):
@@ -215,7 +224,8 @@ if __name__ == '__main__':
     print('')
 
     # plot targets vs predictions. default is a confusion matrix
-    model.plot_targets_vs_predictions(targets=test_targets, predictions=test_predictions)
+    model.plot_targets_vs_predictions(
+        targets=test_targets, predictions=test_predictions)
 
     # if Regression, plot targets vs. continuous outputs
     if isinstance(model.model_type, RegressionProblem):
@@ -224,12 +234,16 @@ if __name__ == '__main__':
             data = data.to(device)
             out = torch.squeeze(model(data)).tolist()
             test_outputs.extend(out)
-        model.model_type.plot_targets_vs_outputs(targets=test_targets, outputs=test_outputs)
+        model.model_type.plot_targets_vs_outputs(
+            targets=test_targets, outputs=test_outputs)
 
     # plot errors by location
     plotter = ResultPlotting(config=config)
-    plotter.plot_errors_by_location(data=test_dataset, predictions=test_predictions, targets=test_targets)
+    plotter.plot_errors_by_location(
+        data=test_dataset, predictions=test_predictions, targets=test_targets)
 
-    # plot the first graph in the dataset, just as an example of how a graph looks like
+    # plot the first graph in the dataset, just as an example of how a graph
+    # looks like
     g = MyGraph(config, train_dataset[0])
-    g.plot_predictions(model.predictions_to_list(model.out_to_predictions(model(train_dataset[0]))))
+    g.plot_predictions(model.predictions_to_list(
+        model.out_to_predictions(model(train_dataset[0]))))

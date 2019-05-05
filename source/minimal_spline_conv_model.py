@@ -42,38 +42,53 @@ class MinimalSplineConvModel(GnnModel):
             root_weight=False,
             bias=self.config.use_bias)
 
-        self.fc = torch.nn.Linear(in_features=self.config.hidden_units, out_features=self.config.hidden_units, bias=self.config.use_bias)
-        self.fc2 = torch.nn.Linear(in_features=self.config.hidden_units, out_features=self.model_type.out_channels, bias=self.config.use_bias)
+        self.fc = torch.nn.Linear(
+            in_features=self.config.hidden_units,
+            out_features=self.config.hidden_units,
+            bias=self.config.use_bias)
+        self.fc2 = torch.nn.Linear(
+            in_features=self.config.hidden_units,
+            out_features=self.model_type.out_channels,
+            bias=self.config.use_bias)
 
     def forward(self, data):
         x, edge_index, edge_attr = data.x, data.edge_index, data.edge_attr
 
         if self.training:
-            self.write_to_variable_summary(self.conv_in.weight, 'in_layer', 'weights')
+            self.write_to_variable_summary(
+                self.conv_in.weight, 'in_layer', 'weights')
             if self.config.use_bias:
-                self.write_to_variable_summary(self.conv_in.bias, 'in_layer', 'weights_bias')
+                self.write_to_variable_summary(
+                    self.conv_in.bias, 'in_layer', 'weights_bias')
             if self.conv_in.root:
-                self.write_to_variable_summary(self.conv_in.root, 'in_layer', 'weights_root_mul')
+                self.write_to_variable_summary(
+                    self.conv_in.root, 'in_layer', 'weights_root_mul')
         x = self.conv_in(x=x, edge_index=edge_index, pseudo=edge_attr)
         self.write_to_variable_summary(x, 'in_layer', 'pre_activations')
         x = getattr(torch, self.config.non_linearity)(x)
         self.write_to_variable_summary(x, 'in_layer', 'outputs')
-        x = getattr(F, self.config.dropout_type)(x, p=self.config.dropout_prob, training=self.training)
+        x = getattr(F, self.config.dropout_type)(
+            x, p=self.config.dropout_prob, training=self.training)
 
         if self.training:
-            self.write_to_variable_summary(self.fc.weight, 'fc_layer', 'weights')
+            self.write_to_variable_summary(
+                self.fc.weight, 'fc_layer', 'weights')
             if self.config.use_bias:
-                self.write_to_variable_summary(self.fc.bias, 'fc_layer', 'bias')
+                self.write_to_variable_summary(
+                    self.fc.bias, 'fc_layer', 'bias')
         x = self.fc(x)
         self.write_to_variable_summary(x, 'fc_layer', 'pre_activations')
         x = getattr(torch, self.config.non_linearity)(x)
         self.write_to_variable_summary(x, 'fc_layer', 'outputs')
-        x = getattr(F, self.config.dropout_type)(x, p=self.config.dropout_prob, training=self.training)
+        x = getattr(F, self.config.dropout_type)(
+            x, p=self.config.dropout_prob, training=self.training)
 
         if self.training:
-            self.write_to_variable_summary(self.fc2.weight, 'out_layer', 'weights')
+            self.write_to_variable_summary(
+                self.fc2.weight, 'out_layer', 'weights')
             if self.config.use_bias:
-                self.write_to_variable_summary(self.fc2.bias, 'out_layer', 'bias')
+                self.write_to_variable_summary(
+                    self.fc2.bias, 'out_layer', 'bias')
         x = self.fc2(x)
         self.write_to_variable_summary(x, 'out_layer', 'pre_activations')
 

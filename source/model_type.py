@@ -6,10 +6,10 @@ import tensorboardX
 import chartify
 import pandas as pd
 
+
 class ModelType(torch.nn.Module, ABC):
     loss_name: str
     out_channels: int
-
 
     def __init__(self, config):
         super(ModelType, self).__init__()
@@ -37,13 +37,20 @@ class ModelType(torch.nn.Module, ABC):
         pass
 
     def plot_targets_vs_predictions(self, targets, predictions):
-        ch = chartify.Chart(blank_labels=True, x_axis_type='categorical', y_axis_type='categorical')
-        df = pd.DataFrame({'t': targets, 'p': predictions}).groupby(['t', 'p']).size().reset_index(name='count').\
-            sort_values(['t', 'p'], ascending=[True, True])
+        ch = chartify.Chart(
+            blank_labels=True,
+            x_axis_type='categorical',
+            y_axis_type='categorical')
+        df = pd.DataFrame({'t': targets, 'p': predictions}).groupby(['t', 'p']).size(
+        ).reset_index(name='count'). sort_values(['t', 'p'], ascending=[True, True])
         ch.plot.heatmap(
             data_frame=df,
             x_column='t', y_column='p', color_column='count', text_column='count'
         ).axes.set_xaxis_label('targets') \
             .axes.set_yaxis_label('predictions') \
             .set_title('Confusion matrix on test set')
-        ch.save(filename=os.path.join(self.config.temp_dir, 'confusion_matrix_test.png'), format='png')
+        ch.save(
+            filename=os.path.join(
+                self.config.temp_dir,
+                'confusion_matrix_test.png'),
+            format='png')

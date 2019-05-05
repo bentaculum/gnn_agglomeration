@@ -70,21 +70,28 @@ class SplineConvModel(GnnModel):
 
         for i, l in enumerate(self.layers_list):
             if self.training:
-                self.write_to_variable_summary(l.weight, 'layer_{}'.format(i), 'weights')
+                self.write_to_variable_summary(
+                    l.weight, 'layer_{}'.format(i), 'weights')
                 if self.config.use_bias:
-                    self.write_to_variable_summary(l.bias, 'layer_{}'.format(i), 'weights_bias')
+                    self.write_to_variable_summary(
+                        l.bias, 'layer_{}'.format(i), 'weights_bias')
                 if l.root:
-                    self.write_to_variable_summary(l.root, 'layer_{}'.format(i), 'weights_root_mul')
+                    self.write_to_variable_summary(
+                        l.root, 'layer_{}'.format(i), 'weights_root_mul')
 
             x = l(x=x, edge_index=edge_index, pseudo=edge_attr)
-            self.write_to_variable_summary(x, 'layer_{}'.format(i), 'preactivations')
+            self.write_to_variable_summary(
+                x, 'layer_{}'.format(i), 'preactivations')
 
             if i < len(self.layers_list) - 1:
                 x = getattr(F, self.config.non_linearity)(x)
-                self.write_to_variable_summary(x, 'layer_{}'.format(i), 'outputs')
-                x = getattr(F, self.config.dropout_type)(x, p=self.config.dropout_prob, training=self.training)
+                self.write_to_variable_summary(
+                    x, 'layer_{}'.format(i), 'outputs')
+                x = getattr(F, self.config.dropout_type)(
+                    x, p=self.config.dropout_prob, training=self.training)
             else:
                 x = self.model_type.out_nonlinearity(x)
-                self.write_to_variable_summary(x, 'layer_{}'.format(i), 'outputs')
+                self.write_to_variable_summary(
+                    x, 'layer_{}'.format(i), 'outputs')
 
         return x

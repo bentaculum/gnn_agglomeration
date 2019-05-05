@@ -33,5 +33,3 @@ class ClassificationProblem(ModelType):
         correct = predictions.eq(targets).sum().item()
         acc = correct / targets.size(0)
         return acc
-
-

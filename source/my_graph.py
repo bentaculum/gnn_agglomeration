@@ -14,32 +14,36 @@ class MyGraph():
         self.data = data
 
     def create_random_graph(self):
-        pos = torch.rand(self.config.nodes, self.config.euclidian_dimensionality)
+        pos = torch.rand(self.config.nodes,
+                         self.config.euclidian_dimensionality)
 
         # connect all edges within distance theta_max O(n^2)
         edges = []
         y = torch.zeros(self.config.nodes, dtype=torch.long)
         for i in range(pos.size(0)):
-            for j in range(i+1, pos.size(0)):
+            for j in range(i + 1, pos.size(0)):
                 node1 = pos[i]
                 node2 = pos[j]
                 # print(torch.dist(node1, node2))
                 if torch.dist(node1, node2) < self.config.theta_max:
-                    # add bi-directed edges to use directed pseudo-coordinates in MoNet
-                    edges.append([i,j])
-                    edges.append([j,i])
-                    # if distance < theta, count the nodes as a neighbor in euclidian space
+                    # add bi-directed edges to use directed pseudo-coordinates
+                    # in MoNet
+                    edges.append([i, j])
+                    edges.append([j, i])
+                    # if distance < theta, count the nodes as a neighbor in
+                    # euclidian space
                     if torch.dist(node1, node2) < self.config.theta:
                         y[i] += 1
                         y[j] += 1
 
-        edge_index = torch.tensor(edges, dtype=torch.long).transpose(0,1)
+        edge_index = torch.tensor(edges, dtype=torch.long).transpose(0, 1)
         x = torch.ones(self.config.nodes, self.config.feature_dimensionality)
 
         self.data = Data(x=x, edge_index=edge_index, y=y, pos=pos)
 
     def plot(self):
-        g = nx.Graph(incoming_graph_data=self.data.edge_index.transpose(0,1).tolist())
+        g = nx.Graph(
+            incoming_graph_data=self.data.edge_index.transpose(0, 1).tolist())
         # add the positions in euclidian space to the model
         pos_dict = {}
         # prepare the targets to be displayed
@@ -58,7 +62,8 @@ class MyGraph():
 
     def plot_predictions(self, pred):
         # transpose the edge matrix for format requirements
-        g = nx.Graph(incoming_graph_data=self.data.edge_index.transpose(0,1).tolist())
+        g = nx.Graph(
+            incoming_graph_data=self.data.edge_index.transpose(0, 1).tolist())
         # add the positions in euclidian space to the model
         pos_dict = {}
         # prepare the targets to be displayed
@@ -69,15 +74,18 @@ class MyGraph():
             if self.config.euclidian_dimensionality == 1:
                 pos_dict[i].append(0)
 
-            labels_dict[i] = '{};{}'.format(int(pred[i]), int(self.data.y[i].item()))
+            labels_dict[i] = '{};{}'.format(
+                int(pred[i]), int(self.data.y[i].item()))
 
         self.set_plotting_style()
         nx.draw_networkx(g, pos_dict, labels=labels_dict, font_size=10)
-        plt.title("Number of neighbors within euclidian distance {}.\nEach node displays 'pred:target'".format(
-            self.config.theta))
+        plt.title(
+            "Number of neighbors within euclidian distance {}.\nEach node displays 'pred:target'".format(
+                self.config.theta))
 
         self.add_to_plotting_style()
-        img_path = os.path.join(self.config.temp_dir, 'graph_with_predictions.png')
+        img_path = os.path.join(self.config.temp_dir,
+                                'graph_with_predictions.png')
         if os.path.isfile(img_path):
             os.remove(img_path)
         plt.savefig(img_path)
@@ -95,5 +103,3 @@ class MyGraph():
         plt.tick_params(axis='x', which='both', bottom=True, labelbottom=True)
         plt.tick_params(axis='y', which='both', left=True, labelleft=True)
         plt.grid(linestyle='--', color='gray')
-
-
