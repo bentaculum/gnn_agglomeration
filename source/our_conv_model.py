@@ -63,8 +63,9 @@ class OurConvModel(GnnModel):
             if self.training:
                 self.write_to_variable_summary(
                     l.weight, 'layer_{}'.format(i), 'weights')
-                self.write_to_variable_summary(
-                    l.att, 'layer_{}'.format(i), 'weights_attention')
+                # TODO adapt this to our custom attention mlp
+                # self.write_to_variable_summary(
+                #     l.att.weight, 'layer_{}'.format(i), 'weights_attention')
                 if self.config.use_bias:
                     self.write_to_variable_summary(
                         l.bias, 'layer_{}'.format(i), 'weights_bias')

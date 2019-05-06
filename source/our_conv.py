@@ -6,6 +6,8 @@ from torch_geometric.utils import remove_self_loops, add_self_loops, softmax
 
 from torch_geometric.nn.inits import glorot, zeros
 
+from attention_mlp import AttentionMLP
+
 
 class OurConv(MessagePassing):
     # TODO adapt docu
@@ -67,7 +69,16 @@ class OurConv(MessagePassing):
 
         self.weight = Parameter(torch.Tensor(in_channels,
                                              heads * out_channels))
-        self.att = Parameter(torch.Tensor(1, heads, 2 * out_channels + dim))
+        # self.att = Parameter(torch.Tensor(1, heads, 2 * out_channels + dim))
+
+        # TODO check if this is now the same for all attention heads
+        # self.att = torch.nn.Linear(
+        #     in_features=2 * out_channels + dim,
+        #     out_features=1,
+        #     bias=False
+        # )
+
+        self.att = AttentionMLP(heads=heads, in_features=2 * out_channels + dim, bias=True)
 
         if bias and concat:
             self.bias = Parameter(torch.Tensor(heads * out_channels))
@@ -80,7 +91,9 @@ class OurConv(MessagePassing):
 
     def reset_parameters(self):
         glorot(self.weight)
-        glorot(self.att)
+        # glorot(self.att)
+        # torch.nn.init.xavier_uniform_(self.att.weight)
+        self.att.reset_parameters()
         zeros(self.bias)
 
     def forward(self, x, edge_index, pseudo):
@@ -97,7 +110,9 @@ class OurConv(MessagePassing):
 
     def message(self, edge_index_i, x_i, x_j, num_nodes, pseudo):
         # Compute attention coefficients.
-        alpha = (torch.cat([x_i, x_j, pseudo], dim=-1) * self.att).sum(dim=-1)
+        # alpha = (torch.cat([x_i, x_j, pseudo], dim=-1) * self.att).sum(dim=-1)
+        alpha = torch.cat([x_i, x_j, pseudo], dim=-1)
+        alpha = self.att(alpha)
         alpha = F.leaky_relu(alpha, self.negative_slope)
         alpha = softmax(alpha, edge_index_i, num_nodes)
 
