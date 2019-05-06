@@ -12,6 +12,12 @@ class Config():
             default=100,
             help='Number of nodes in the graph')
         self.parser.add_argument(
+            '--self_loops',
+            type=str2bool,
+            default=True,
+            help='whether the random graph should have reflexive edges'
+        )
+        self.parser.add_argument(
             '--euclidian_dimensionality',
             type=int,
             default=2,
@@ -19,20 +25,20 @@ class Config():
         self.parser.add_argument(
             '--feature_dimensionality',
             type=int,
-            default=1,
+            default=2,
             help='Dimension of the feature space, used in data.x')
         self.parser.add_argument(
             '--pseudo_dimensionality',
             type=int,
             default=2,
-            help='Dimension of the pseudo coordinates for GmmConv')
+            help='Dimension of the pseudo coordinates, according to their type')
         self.parser.add_argument('--kernel_size', type=int,
                                  default=1, help='kernel size for SplineConv')
         self.parser.add_argument(
             '--data_transform',
             type=str,
-            default='Polar',
-            help='define the edge attributes of the graphs e.g. Cartesian | Distance | LocalCartesian | Polar')
+            default='Cartesian',
+            help='define the edge attributes (pseudo coordinates) of the graphs e.g. Cartesian | Distance | LocalCartesian | Polar')
 
         self.parser.add_argument(
             '--theta_max',
@@ -90,8 +96,8 @@ class Config():
         self.parser.add_argument(
             '--model',
             type=str,
-            default='GmmConvModel',
-            help='GcnModel | GmmConvModel')
+            default='OurConvModel',
+            help='GcnModel | GmmConvModel | etc.')
         self.parser.add_argument(
             '--model_type',
             type=str,
@@ -100,32 +106,32 @@ class Config():
         self.parser.add_argument(
             '--training_epochs',
             type=int,
-            default=1000,
+            default=100,
             help='number of training epochs')
         self.parser.add_argument(
             '--hidden_layers',
             type=int,
             default=0,
-            help='number of hidden layers in the n layer MoNet')
+            help='number of hidden layers')
         self.parser.add_argument(
             '--hidden_units',
             type=int,
-            default=64,
+            default=16,
             help='number of units per hidden layer in the GNN')
         self.parser.add_argument(
             '--use_bias',
             type=str2bool,
-            default=True,
+            default=False,
             help='whether to use an additive bias')
         self.parser.add_argument(
             '--samples',
             type=int,
-            default=10,
+            default=100,
             help='Number of random graphs to create, if a new dataset is created')
         self.parser.add_argument(
             '--non_linearity',
             type=str,
-            default='sigmoid',
+            default='relu',
             help='Activation function from torch.nn.functional, used for hidden layers, e.g. relu | sigmoid | tanh')
         self.parser.add_argument('--batch_size_train', type=int,
                                  default=1, help='batch size for training')
@@ -141,12 +147,12 @@ class Config():
         self.parser.add_argument(
             '--adam_lr',
             type=float,
-            default=0.01,
+            default=0.005,
             help='Learning rate for ADAM optimizer')
         self.parser.add_argument(
             '--adam_weight_decay',
             type=float,
-            default=5e-4,
+            default=0.0005,
             help='Weight decay for ADAM optimizer')
 
         self.parser.add_argument(

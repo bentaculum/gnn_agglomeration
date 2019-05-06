@@ -20,8 +20,10 @@ class MyGraph():
         # connect all edges within distance theta_max O(n^2)
         edges = []
         y = torch.zeros(self.config.nodes, dtype=torch.long)
-        for i in range(pos.size(0)):
-            for j in range(i + 1, pos.size(0)):
+        x = torch.arange(self.config.nodes) % self.config.feature_dimensionality
+
+        for i in range(self.config.nodes):
+            for j in range(i + 1 - int(self.config.self_loops), self.config.nodes):
                 node1 = pos[i]
                 node2 = pos[j]
                 # print(torch.dist(node1, node2))
@@ -33,11 +35,17 @@ class MyGraph():
                     # if distance < theta, count the nodes as a neighbor in
                     # euclidian space
                     if torch.dist(node1, node2) < self.config.theta:
-                        y[i] += 1
-                        y[j] += 1
+                        # Only if the two nodes belong to the same node class, increase the target
+                        if x[i] == x[j]:
+                            y[i] += 1
+                            y[j] += 1
+
 
         edge_index = torch.tensor(edges, dtype=torch.long).transpose(0, 1)
-        x = torch.ones(self.config.nodes, self.config.feature_dimensionality)
+
+        # x = torch.ones(self.config.nodes, self.config.feature_dimensionality)
+        # One hot encoded representation might be better, as this is categorical data
+        x = torch.nn.functional.one_hot(x, self.config.feature_dimensionality).float()
 
         self.data = Data(x=x, edge_index=edge_index, y=y, pos=pos)
 
