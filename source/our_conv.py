@@ -78,7 +78,7 @@ class OurConv(MessagePassing):
         #     bias=False
         # )
 
-        self.att = AttentionMLP(heads=heads, in_features=2 * out_channels + dim, bias=True)
+        self.att = AttentionMLP(heads=heads, in_features=2 * out_channels + dim, layers=1, hidden_units=5, bias=bias)
 
         if bias and concat:
             self.bias = Parameter(torch.Tensor(heads * out_channels))
