@@ -3,66 +3,54 @@ import math
 import torch
 from torch.nn.parameter import Parameter
 from torch.nn import init
+import torch.nn.functional as F
 
 
 class AttentionMLP(torch.nn.Module):
-    def __init__(self, heads, in_features, layers=0, hidden_units=None, bias=True):
+    def __init__(self, heads, in_features, layers=1, layer_dims=[1], bias=True, non_linearity='relu'):
         super(AttentionMLP, self).__init__()
+        assert len(layer_dims) == layers
 
         self.layers = layers
         self.bias = bias
-        if hidden_units is None:
-            hidden_units = in_features
+        self.non_linearity = non_linearity
 
-        if layers > 1:
-            raise NotImplementedError("Attention MLP with arbitrary number of hidden layers not implemented yet")
+        self.weight_list = []
+        self.bias_list = []
 
-        if layers == 1:
-            self.weight_in = Parameter(torch.Tensor(1, heads, hidden_units, in_features))
-            self.weight_out = Parameter(torch.Tensor(1, heads, hidden_units))
-            if bias:
-                self.bias_in = Parameter(torch.Tensor(1, heads, hidden_units))
-                self.bias_out = Parameter(torch.Tensor(1, heads))
-            else:
-                # from https://pytorch.org/docs/stable/notes/extending.html?highlight=module
-                self.register_parameter('bias_in', None)
-                self.register_parameter('bias_out', None)
+        w_in = Parameter(torch.Tensor(1, heads, layer_dims[0], in_features))
+        self.weight_list.append(w_in)
 
-        if layers == 0:
-            self.weight_out = Parameter(torch.Tensor(1, heads, in_features))
-            if bias:
-                self.bias_out = Parameter(torch.Tensor(1, heads))
-            else:
-                self.register_parameter('bias_out', None)
+        for i in range(layers-1):
+            w = Parameter(torch.Tensor(1, heads, layer_dims[i+1], layer_dims[i]))
+            self.weight_list.append(w)
+
+        if self.bias:
+            for i in range(layers):
+                b = Parameter(torch.Tensor(1, heads, layer_dims[i]))
+                self.bias_list.append(b)
 
         self.reset_parameters()
 
     def reset_parameters(self):
-        # from torch.nn.Linear
-        if self.layers == 1:
-            init.kaiming_uniform_(self.weight_in, a=math.sqrt(5))
-            if self.bias_in is not None:
-                fan_in, _ = init._calculate_fan_in_and_fan_out(self.weight_in)
-                bound = 1 / math.sqrt(fan_in)
-                init.uniform_(self.bias_in, -bound, bound)
+        # from torch.nn.Linear https://pytorch.org/docs/stable/_modules/torch/nn/modules/linear.html#Linear
+        for w in self.weight_list:
+            init.kaiming_uniform_(w, a=math.sqrt(5))
 
-        init.kaiming_uniform_(self.weight_out, a=math.sqrt(5))
-        if self.bias_out is not None:
-            fan_in, _ = init._calculate_fan_in_and_fan_out(self.weight_out)
+        for i, b in enumerate(self.bias_list):
+            fan_in, _ = init._calculate_fan_in_and_fan_out(self.weight_list[i])
             bound = 1 / math.sqrt(fan_in)
-            init.uniform_(self.bias_out, -bound, bound)
+            init.uniform_(b, -bound, bound)
 
     def forward(self, x):
-        if self.layers == 1:
+        for i, w in enumerate(self.weight_list):
             x = x.unsqueeze(-2)
-            x = (x*self.weight_in).sum(dim=-1)
+            x = (x*w).sum(dim=-1)
             if self.bias:
-                x += self.bias_in
-            # TODO parametrize non-linearity
-            x = torch.nn.functional.relu(x)
+                x += self.bias_list[i]
+            x = getattr(F, self.non_linearity)(x)
 
-        x = (x * self.weight_out).sum(dim=-1)
-        if self.bias:
-            x += self.bias_out
+        # after last layer, squeeze the last dimension, if it's of size 1
+        x = x.squeeze(dim=-1)
+
         return x
-

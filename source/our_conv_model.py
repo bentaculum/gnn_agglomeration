@@ -26,6 +26,12 @@ class OurConvModel(GnnModel):
     def layers(self):
         self.layers_list = torch.nn.ModuleList()
 
+        attention_nn_params = {
+            'layers': self.config.att_layers,
+            'layer_dims': self.config.att_layer_dims,
+            'non_linearity': self.config.att_non_linearity,
+        }
+
         conv_in = OurConv(
             in_channels=self.config.feature_dimensionality,
             out_channels=self.config.hidden_units,
@@ -33,8 +39,10 @@ class OurConvModel(GnnModel):
             heads=self.config.kernel_size,
             concat=False,
             negative_slope=0.2,
-            dropout=self.config.dropout_prob,
-            bias=self.config.use_bias)
+            dropout=self.config.att_dropout,
+            bias=self.config.use_bias,
+            attention_nn_params=attention_nn_params
+        )
 
         self.layers_list.append(conv_in)
 
@@ -47,8 +55,10 @@ class OurConvModel(GnnModel):
                 heads=self.config.kernel_size,
                 concat=False,
                 negative_slope=0.2,
-                dropout=self.config.dropout_prob,
-                bias=self.config.use_bias)
+                dropout=self.config.att_dropout,
+                bias=self.config.use_bias,
+                attention_nn_params=attention_nn_params
+            )
             self.layers_list.append(l)
 
         self.fc = torch.nn.Linear(
@@ -63,14 +73,17 @@ class OurConvModel(GnnModel):
             if self.training:
                 self.write_to_variable_summary(
                     l.weight, 'layer_{}'.format(i), 'weights')
-                # TODO fully adapt this to our custom attention mlp
-                self.write_to_variable_summary(
-                    l.att.weight_out, 'layer_{}'.format(i), 'weight_attention_mlp')
-                # self.write_to_variable_summary(
-                #     l.att, 'layer_{}'.format(i), 'weights_attention')
                 if self.config.use_bias:
                     self.write_to_variable_summary(
                         l.bias, 'layer_{}'.format(i), 'weights_bias')
+
+                for j in range(self.config.att_layers):
+                    self.write_to_variable_summary(
+                        l.att.weight_list[j], 'layer_{}'.format(i), 'att_mlp/weight_layer_{}'.format(j))
+                    if self.config.use_bias:
+                        self.write_to_variable_summary(
+                            l.att.bias_list[j], 'layer_{}'.format(i), 'att_mlp/bias_layer_{}'.format(j))
+
 
             x = l(x=x, edge_index=edge_index, pseudo=edge_attr)
             self.write_to_variable_summary(

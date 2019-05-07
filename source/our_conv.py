@@ -2,7 +2,7 @@ import torch
 from torch.nn import Parameter
 import torch.nn.functional as F
 from torch_geometric.nn.conv import MessagePassing
-from torch_geometric.utils import remove_self_loops, add_self_loops, softmax
+from torch_geometric.utils import softmax
 
 from torch_geometric.nn.inits import glorot, zeros
 
@@ -56,7 +56,8 @@ class OurConv(MessagePassing):
                  concat=True,
                  negative_slope=0.2,
                  dropout=0,
-                 bias=True):
+                 bias=True,
+                 attention_nn_params=None):
         super(OurConv, self).__init__('add')
 
         self.in_channels = in_channels
@@ -67,18 +68,16 @@ class OurConv(MessagePassing):
         self.negative_slope = negative_slope
         self.dropout = dropout
 
-        self.weight = Parameter(torch.Tensor(in_channels,
-                                             heads * out_channels))
-        # self.att = Parameter(torch.Tensor(1, heads, 2 * out_channels + dim))
+        self.weight = Parameter(torch.Tensor(in_channels, heads * out_channels))
 
-        # TODO check if this is now the same for all attention heads
-        # self.att = torch.nn.Linear(
-        #     in_features=2 * out_channels + dim,
-        #     out_features=1,
-        #     bias=False
-        # )
-
-        self.att = AttentionMLP(heads=heads, in_features=2 * out_channels + dim, layers=1, hidden_units=5, bias=bias)
+        self.att = AttentionMLP(
+            heads=self.heads,
+            in_features=2*out_channels+dim,
+            layers=attention_nn_params['layers'],
+            layer_dims=attention_nn_params['layer_dims'],
+            bias=bias,
+            non_linearity=attention_nn_params['non_linearity']
+        )
 
         if bias and concat:
             self.bias = Parameter(torch.Tensor(heads * out_channels))
@@ -102,6 +101,7 @@ class OurConv(MessagePassing):
         pseudo = pseudo.unsqueeze(-1) if pseudo.dim() == 1 else pseudo
         # add third dimensionality for attention head dimension
         pseudo = pseudo.unsqueeze(-1)
+
         # TODO: debatable whether the last dimension should be replicated as well, e.g. to self.out_channels
         pseudo = pseudo.expand(-1, self.heads, -1)
 
