@@ -170,7 +170,6 @@ class Config():
         self.parser.add_argument(
             '--att_layer_dims',
             type=int,
-            # action=Elem2list,
             nargs='+',
             default=[1],
             help='Attention NN: list of layer dimensions'
@@ -190,16 +189,6 @@ class Config():
 
     def parse_args(self):
         return self.parser.parse_args()
-
-
-class Elem2list(argparse.Action):
-    """Resolve paths during argument parsing"""
-
-    def __call__(self, parser, namespace, values, option_string=None):
-        if not isinstance(values, list):
-            setattr(namespace, self.dest, [values])
-        else:
-            setattr(namespace, self.dest, values)
 
 
 def str2bool(v):
