@@ -156,6 +156,33 @@ class Config():
             help='Weight decay for ADAM optimizer')
 
         self.parser.add_argument(
+            '--att_dropout',
+            type=float,
+            default=0.0,
+            help='Dropout probability for the final attention vector')
+
+        self.parser.add_argument(
+            '--att_layers',
+            type=int,
+            default=1,
+            help='Attention NN: number of layers'
+        )
+        self.parser.add_argument(
+            '--att_layer_dims',
+            type=int,
+            # action=Elem2list,
+            nargs='+',
+            default=[1],
+            help='Attention NN: list of layer dimensions'
+        )
+        self.parser.add_argument(
+            '--att_non_linearity',
+            type=str,
+            default='relu',
+            help='Attention NN: torch.nn.functional non linearity to use e.g. relu'
+        )
+
+        self.parser.add_argument(
             '--load_model',
             type=str,
             default=None,
@@ -163,6 +190,16 @@ class Config():
 
     def parse_args(self):
         return self.parser.parse_args()
+
+
+class Elem2list(argparse.Action):
+    """Resolve paths during argument parsing"""
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        if not isinstance(values, list):
+            setattr(namespace, self.dest, [values])
+        else:
+            setattr(namespace, self.dest, values)
 
 
 def str2bool(v):
