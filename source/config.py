@@ -8,7 +8,7 @@ class Config():
 
         self.parser.add_argument(
             '--nodes',
-            type=int,
+            type=positive_int,
             default=100,
             help='Number of nodes in the graph')
         self.parser.add_argument(
@@ -19,26 +19,27 @@ class Config():
         )
         self.parser.add_argument(
             '--euclidian_dimensionality',
-            type=int,
+            type=positive_int,
             default=2,
             help='Dimension of the Euclidian space, used in data.pos')
         self.parser.add_argument(
             '--feature_dimensionality',
-            type=int,
+            type=positive_int,
             default=2,
             help='Dimension of the feature space, used in data.x')
         self.parser.add_argument(
             '--pseudo_dimensionality',
-            type=int,
+            type=positive_int,
             default=2,
             help='Dimension of the pseudo coordinates, according to their type')
-        self.parser.add_argument('--kernel_size', type=int,
+        self.parser.add_argument('--kernel_size', type=positive_int,
                                  default=1, help='kernel size for SplineConv')
         self.parser.add_argument(
             '--data_transform',
             type=str,
             default='Cartesian',
-            help='define the edge attributes (pseudo coordinates) of the graphs e.g. Cartesian | Distance | LocalCartesian | Polar')
+            choices=['Cartesian', 'LocalCartesian', 'Distance', 'Polar'],
+            help='define the edge attributes (pseudo coordinates)')
 
         self.parser.add_argument(
             '--theta_max',
@@ -84,12 +85,12 @@ class Config():
 
         self.parser.add_argument(
             '--validation_split',
-            type=float,
+            type=unit_float,
             default=0.1,
             help='define size of validation set, 0 <= ... <= 1')
         self.parser.add_argument(
             '--test_split',
-            type=float,
+            type=unit_float,
             default=0.1,
             help='define size of test set, 0 <= ... <= 1')
 
@@ -102,20 +103,21 @@ class Config():
             '--model_type',
             type=str,
             default='ClassificationProblem',
+            choices=['ClassificationProblem', 'RegressionProblem'],
             help='ClassificationProblem | RegressionProblem')
         self.parser.add_argument(
             '--training_epochs',
-            type=int,
+            type=positive_int,
             default=100,
             help='number of training epochs')
         self.parser.add_argument(
             '--hidden_layers',
-            type=int,
+            type=nonnegative_int,
             default=0,
             help='number of hidden layers')
         self.parser.add_argument(
             '--hidden_units',
-            type=int,
+            type=positive_int,
             default=16,
             help='number of units per hidden layer in the GNN')
         self.parser.add_argument(
@@ -125,7 +127,7 @@ class Config():
             help='whether to use an additive bias')
         self.parser.add_argument(
             '--samples',
-            type=int,
+            type=positive_int,
             default=100,
             help='Number of random graphs to create, if a new dataset is created')
         self.parser.add_argument(
@@ -133,43 +135,47 @@ class Config():
             type=str,
             default='relu',
             help='Activation function from torch.nn.functional, used for hidden layers, e.g. relu | sigmoid | tanh')
-        self.parser.add_argument('--batch_size_train', type=int,
+        self.parser.add_argument('--batch_size_train', type=positive_int,
                                  default=1, help='batch size for training')
-        self.parser.add_argument('--batch_size_eval', type=int,
+        self.parser.add_argument('--batch_size_eval', type=positive_int,
                                  default=1, help='batch size for evaluation')
-        self.parser.add_argument('--dropout_type', type=str,
-                                 default='dropout', help='dropout | dropout2d')
+        self.parser.add_argument(
+            '--dropout_type',
+            type=str,
+            default='dropout',
+            choices=['dropout', 'dropout2d'],
+            help='dropout | dropout2d')
         self.parser.add_argument(
             '--dropout_prob',
-            type=float,
+            type=unit_float,
             default=0.5,
             help='dropout probability during training')
         self.parser.add_argument(
             '--adam_lr',
-            type=float,
+            type=unit_float,
             default=0.005,
             help='Learning rate for ADAM optimizer')
         self.parser.add_argument(
             '--adam_weight_decay',
-            type=float,
+            type=unit_float,
             default=0.0005,
             help='Weight decay for ADAM optimizer')
 
         self.parser.add_argument(
             '--att_dropout',
-            type=float,
+            type=unit_float,
             default=0.0,
             help='Dropout probability for the final attention vector')
 
         self.parser.add_argument(
             '--att_layers',
-            type=int,
+            type=positive_int,
             default=1,
             help='Attention NN: number of layers'
         )
         self.parser.add_argument(
             '--att_layer_dims',
-            type=int,
+            type=positive_int,
             nargs='+',
             default=[1],
             help='Attention NN: list of layer dimensions'
@@ -190,6 +196,24 @@ class Config():
     def parse_args(self):
         return self.parser.parse_args()
 
+
+def unit_float(x):
+    x = float(x)
+    if x < 0.0 or x > 1.0:
+        raise argparse.ArgumentTypeError("%r not in range [0.0, 1.0]"%(x,))
+    return x
+
+def positive_int(value):
+    ivalue = int(value)
+    if ivalue <= 0:
+        raise argparse.ArgumentTypeError("%s is an invalid positive int value" % value)
+    return ivalue
+
+def nonnegative_int(value):
+    ivalue = int(value)
+    if ivalue < 0:
+        raise argparse.ArgumentTypeError("%s is an invalid positive int value" % value)
+    return ivalue
 
 def str2bool(v):
     if v.lower() in ('yes', 'true', 't', 'y', '1'):
