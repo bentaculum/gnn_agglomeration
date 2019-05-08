@@ -70,6 +70,7 @@ class OurConv(MessagePassing):
 
         self.weight = Parameter(torch.Tensor(in_channels, heads * out_channels))
 
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.att = AttentionMLP(
             heads=self.heads,
             in_features=2*out_channels+dim,
@@ -78,6 +79,7 @@ class OurConv(MessagePassing):
             bias=bias,
             non_linearity=attention_nn_params['non_linearity']
         )
+        self.att.to(device)
 
         if bias and concat:
             self.bias = Parameter(torch.Tensor(heads * out_channels))
