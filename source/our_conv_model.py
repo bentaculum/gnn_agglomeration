@@ -37,7 +37,7 @@ class OurConvModel(GnnModel):
             out_channels=self.config.hidden_units,
             dim=self.config.pseudo_dimensionality,
             heads=self.config.kernel_size,
-            concat=False,
+            concat=self.config.att_heads_concat,
             negative_slope=0.2,
             dropout=self.config.att_dropout,
             bias=self.config.use_bias,
@@ -46,14 +46,18 @@ class OurConvModel(GnnModel):
 
         self.layers_list.append(conv_in)
 
-        # account for the attention heads sizing in the different layers
         for i in range(self.config.hidden_layers):
+            if self.config.att_heads_concat:
+                channels = self.config.hidden_units * (self.config.kernel_size**(i+1))
+            else:
+                channels = self.config.hidden_units
+
             l = OurConv(
-                in_channels=self.config.hidden_units,
-                out_channels=self.config.hidden_units,
+                in_channels=channels,
+                out_channels=channels,
                 dim=self.config.pseudo_dimensionality,
                 heads=self.config.kernel_size,
-                concat=False,
+                concat=self.config.att_heads_concat,
                 negative_slope=0.2,
                 dropout=self.config.att_dropout,
                 bias=self.config.use_bias,
@@ -61,8 +65,13 @@ class OurConvModel(GnnModel):
             )
             self.layers_list.append(l)
 
+        if self.config.att_heads_concat:
+            fc_in_features = self.config.hidden_units * (self.config.kernel_size**(self.config.hidden_layers + 1))
+        else:
+            fc_in_features = self.config.hidden_units
+
         self.fc = torch.nn.Linear(
-            in_features=self.config.hidden_units,
+            in_features=fc_in_features,
             out_features=self.model_type.out_channels,
             bias=self.config.use_bias)
 

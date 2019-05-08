@@ -162,6 +162,12 @@ class Config():
             help='Weight decay for ADAM optimizer')
 
         self.parser.add_argument(
+            '--att_heads_concat',
+            type=str2bool,
+            default=False,
+            help='whether to concat or average the outputs of the different attention heads'
+        )
+        self.parser.add_argument(
             '--att_dropout',
             type=unit_float,
             default=0.0,
