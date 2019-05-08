@@ -7,7 +7,14 @@ import torch.nn.functional as F
 
 
 class AttentionMLP(torch.nn.Module):
-    def __init__(self, heads, in_features, layers=1, layer_dims=[1], bias=True, non_linearity='relu'):
+    def __init__(
+            self,
+            heads,
+            in_features,
+            layers=1,
+            layer_dims=[1],
+            bias=True,
+            non_linearity='relu'):
         super(AttentionMLP, self).__init__()
         assert len(layer_dims) == layers
 
@@ -15,14 +22,15 @@ class AttentionMLP(torch.nn.Module):
         self.bias = bias
         self.non_linearity = non_linearity
 
-        self.weight_list = []
-        self.bias_list = []
+        self.weight_list = torch.nn.ParameterList()
+        self.bias_list = torch.nn.ParameterList()
 
         w_in = Parameter(torch.Tensor(1, heads, layer_dims[0], in_features))
         self.weight_list.append(w_in)
 
-        for i in range(layers-1):
-            w = Parameter(torch.Tensor(1, heads, layer_dims[i+1], layer_dims[i]))
+        for i in range(layers - 1):
+            w = Parameter(torch.Tensor(
+                1, heads, layer_dims[i + 1], layer_dims[i]))
             self.weight_list.append(w)
 
         if self.bias:
@@ -33,7 +41,8 @@ class AttentionMLP(torch.nn.Module):
         self.reset_parameters()
 
     def reset_parameters(self):
-        # from torch.nn.Linear https://pytorch.org/docs/stable/_modules/torch/nn/modules/linear.html#Linear
+        # from torch.nn.Linear
+        # https://pytorch.org/docs/stable/_modules/torch/nn/modules/linear.html#Linear
         for w in self.weight_list:
             init.kaiming_uniform_(w, a=math.sqrt(5))
 
@@ -45,7 +54,7 @@ class AttentionMLP(torch.nn.Module):
     def forward(self, x):
         for i, w in enumerate(self.weight_list):
             x = x.unsqueeze(-2)
-            x = (x*w).sum(dim=-1)
+            x = (x * w).sum(dim=-1)
             if self.bias:
                 x += self.bias_list[i]
             x = getattr(F, self.non_linearity)(x)

@@ -4,6 +4,7 @@ from gnn_model import GnnModel
 
 from our_conv import OurConv
 
+
 class OurConvModel(GnnModel):
     def __init__(self,
                  config,
@@ -48,7 +49,8 @@ class OurConvModel(GnnModel):
 
         for i in range(self.config.hidden_layers):
             if self.config.att_heads_concat:
-                channels = self.config.hidden_units * (self.config.kernel_size**(i+1))
+                channels = self.config.hidden_units * \
+                    (self.config.kernel_size**(i + 1))
             else:
                 channels = self.config.hidden_units
 
@@ -66,7 +68,8 @@ class OurConvModel(GnnModel):
             self.layers_list.append(l)
 
         if self.config.att_heads_concat:
-            fc_in_features = self.config.hidden_units * (self.config.kernel_size**(self.config.hidden_layers + 1))
+            fc_in_features = self.config.hidden_units * \
+                (self.config.kernel_size**(self.config.hidden_layers + 1))
         else:
             fc_in_features = self.config.hidden_units
 
@@ -88,11 +91,12 @@ class OurConvModel(GnnModel):
 
                 for j in range(self.config.att_layers):
                     self.write_to_variable_summary(
-                        l.att.weight_list[j], 'layer_{}'.format(i), 'att_mlp/weight_layer_{}'.format(j))
+                        l.att.weight_list[j],
+                        'layer_{}'.format(i),
+                        'att_mlp/weight_layer_{}'.format(j))
                     if self.config.use_bias:
                         self.write_to_variable_summary(
                             l.att.bias_list[j], 'layer_{}'.format(i), 'att_mlp/bias_layer_{}'.format(j))
-
 
             x = l(x=x, edge_index=edge_index, pseudo=edge_attr)
             self.write_to_variable_summary(

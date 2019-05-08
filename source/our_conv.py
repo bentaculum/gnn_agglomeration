@@ -68,18 +68,17 @@ class OurConv(MessagePassing):
         self.negative_slope = negative_slope
         self.dropout = dropout
 
-        self.weight = Parameter(torch.Tensor(in_channels, heads * out_channels))
+        self.weight = Parameter(torch.Tensor(
+            in_channels, heads * out_channels))
 
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.att = AttentionMLP(
             heads=self.heads,
-            in_features=2*out_channels+dim,
+            in_features=2 * out_channels + dim,
             layers=attention_nn_params['layers'],
             layer_dims=attention_nn_params['layer_dims'],
             bias=bias,
             non_linearity=attention_nn_params['non_linearity']
         )
-        self.att.to(device)
 
         if bias and concat:
             self.bias = Parameter(torch.Tensor(heads * out_channels))
@@ -92,10 +91,8 @@ class OurConv(MessagePassing):
 
     def reset_parameters(self):
         glorot(self.weight)
-        # glorot(self.att)
-        # torch.nn.init.xavier_uniform_(self.att.weight)
-        self.att.reset_parameters()
         zeros(self.bias)
+        self.att.reset_parameters()
 
     def forward(self, x, edge_index, pseudo):
         """"""
@@ -104,11 +101,16 @@ class OurConv(MessagePassing):
         # add third dimensionality for attention head dimension
         pseudo = pseudo.unsqueeze(-1)
 
-        # TODO: debatable whether the last dimension should be replicated as well, e.g. to self.out_channels
+        # TODO: debatable whether the last dimension should be replicated as
+        # well, e.g. to self.out_channels
         pseudo = pseudo.expand(-1, self.heads, -1)
 
         x = torch.mm(x, self.weight).view(-1, self.heads, self.out_channels)
-        return self.propagate(edge_index, x=x, num_nodes=x.size(0), pseudo=pseudo)
+        return self.propagate(
+            edge_index,
+            x=x,
+            num_nodes=x.size(0),
+            pseudo=pseudo)
 
     def message(self, edge_index_i, x_i, x_j, num_nodes, pseudo):
         # Compute attention coefficients.

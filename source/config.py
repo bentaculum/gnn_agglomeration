@@ -190,8 +190,7 @@ class Config():
             '--att_non_linearity',
             type=str,
             default='relu',
-            help='Attention NN: torch.nn.functional non linearity to use e.g. relu'
-        )
+            help='Attention NN: torch.nn.functional non linearity to use e.g. relu')
 
         self.parser.add_argument(
             '--load_model',
@@ -206,20 +205,25 @@ class Config():
 def unit_float(x):
     x = float(x)
     if x < 0.0 or x > 1.0:
-        raise argparse.ArgumentTypeError("%r not in range [0.0, 1.0]"%(x,))
+        raise argparse.ArgumentTypeError("%r not in range [0.0, 1.0]" % (x,))
     return x
+
 
 def positive_int(value):
     ivalue = int(value)
     if ivalue <= 0:
-        raise argparse.ArgumentTypeError("%s is an invalid positive int value" % value)
+        raise argparse.ArgumentTypeError(
+            "%s is an invalid positive int value" % value)
     return ivalue
+
 
 def nonnegative_int(value):
     ivalue = int(value)
     if ivalue < 0:
-        raise argparse.ArgumentTypeError("%s is an invalid positive int value" % value)
+        raise argparse.ArgumentTypeError(
+            "%s is an invalid positive int value" % value)
     return ivalue
+
 
 def str2bool(v):
     if v.lower() in ('yes', 'true', 't', 'y', '1'):
