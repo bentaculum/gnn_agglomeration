@@ -198,6 +198,12 @@ class Config():
             type=unit_float,
             default=0.0005,
             help='Weight decay for ADAM optimizer')
+        self.parser.add_argument(
+            '--batch_norm',
+            type=str2bool,
+            default=True,
+            help='whether to use Batch Normalization'
+        )
 
         self.parser.add_argument(
             '--att_heads_concat',

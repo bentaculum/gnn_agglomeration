@@ -32,6 +32,7 @@ class OurConvModel(GnnModel):
         assert len(self.config.dropout_probs) == self.config.hidden_layers + 1
 
         self.layers_list = torch.nn.ModuleList()
+        self.batch_norm_list = torch.nn.ModuleList()
 
         attention_nn_params = {
             'layers': self.config.att_layers,
@@ -39,9 +40,10 @@ class OurConvModel(GnnModel):
             'non_linearity': self.config.att_non_linearity,
         }
 
+        out_channels_in = self.config.hidden_units[0]
         conv_in = OurConv(
             in_channels=self.config.feature_dimensionality,
-            out_channels=self.config.hidden_units[0],
+            out_channels=out_channels_in,
             dim=self.config.pseudo_dimensionality,
             heads=self.config.kernel_size,
             concat=self.config.att_heads_concat,
@@ -50,8 +52,11 @@ class OurConvModel(GnnModel):
             bias=self.config.use_bias,
             attention_nn_params=attention_nn_params
         )
-
         self.layers_list.append(conv_in)
+
+        if self.config.batch_norm:
+            b = torch.nn.BatchNorm1d(out_channels_in * self.config.kernel_size)
+            self.batch_norm_list.append(b)
 
         for i in range(self.config.hidden_layers):
             if self.config.att_heads_concat:
@@ -75,6 +80,10 @@ class OurConvModel(GnnModel):
                 attention_nn_params=attention_nn_params
             )
             self.layers_list.append(l)
+
+            if self.config.batch_norm:
+                b = torch.nn.BatchNorm1d(out_channels * self.config.kernel_size)
+                self.batch_norm_list.append(b)
 
         if self.config.att_heads_concat:
             fc_in_features = self.config.hidden_units[-1] * \
@@ -114,6 +123,12 @@ class OurConvModel(GnnModel):
             x = getattr(F, self.config.non_linearity)(x)
             self.write_to_variable_summary(
                 x, 'layer_{}'.format(i), 'outputs')
+
+            if self.config.batch_norm:
+                x = self.batch_norm_list[i](x)
+                self.write_to_variable_summary(
+                    x, 'layer_{}'.format(i), 'outputs_batch_norm')
+
             x = getattr(F, self.config.dropout_type)(
                 x, p=self.config.dropout_probs[i], training=self.training)
 
