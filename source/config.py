@@ -47,7 +47,7 @@ class Config():
         self.parser.add_argument(
             '--theta_max',
             type=float,
-            default=0.2,
+            default=0.5,
             help='nodes with lower euclidian distance will be connected')
         self.parser.add_argument(
             '--theta',
