@@ -102,17 +102,40 @@ class GnnModel(torch.nn.Module, ABC):
 
     def write_to_variable_summary(self, var, namespace, var_name):
         """Write summary statistics for a Tensor (for tensorboardX visualization)"""
-        if self.config.no_summary:
+
+        if self.config.no_summary or self.config.log_per_epoch_only:
             return
 
+        # optional filter on namespaces
+        if self.config.log_namespaces:
+            if namespace not in self.config.log_namespaces:
+                return
+
+        # after the training loop, no more statistics should be recorded
         if self.current_writer is None:
-            # after the training loop, no more statistics should be recorded
             return
 
         if self.training is True:
             iteration = self.train_batch_iteration
         else:
             iteration = self.val_batch_iteration
+
+        # plot gradients of weights
+        grad = var.grad
+        if grad is not None:
+            grad_mean = torch.mean(grad)
+            self.current_writer.add_scalar(os.path.join(
+                namespace, var_name, 'gradients_mean'), grad_mean, iteration)
+            grad_stddev = torch.std(grad)
+            self.current_writer.add_scalar(os.path.join(
+                namespace, var_name, 'gradients_stddev'), grad_stddev, iteration)
+
+            if self.config.log_histograms:
+                self.current_writer.add_histogram(os.path.join(
+                    namespace, var_name, 'gradients'), grad, iteration)
+
+        if self.config.log_only_gradients:
+            return
 
         mean = torch.mean(var.data)
         self.current_writer.add_scalar(os.path.join(
@@ -122,14 +145,10 @@ class GnnModel(torch.nn.Module, ABC):
             namespace, var_name, 'stddev'), stddev, iteration)
         # self.current_writer.add_scalar(os.path.join(namespace, var_name, 'max'), torch.max(var), iteration)
         # self.current_writer.add_scalar(os.path.join(namespace, var_name, 'min'), torch.min(var), iteration)
-        self.current_writer.add_histogram(os.path.join(
-            namespace, var_name), var.data, iteration)
-
-        # plot gradients of weights
-        grad = var.grad
-        if grad is not None:
+        if self.config.log_histograms:
             self.current_writer.add_histogram(os.path.join(
-                namespace, var_name, 'gradients'), grad, iteration)
+                namespace, var_name), var.data, iteration)
+
 
     def save(self, name):
         """

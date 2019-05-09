@@ -67,11 +67,37 @@ class Config():
             type=str,
             default='summary',
             help='relative directory to save temporary summary')
+
         self.parser.add_argument(
             '--no_summary',
             action='store_true',
             default=False,
             help='if passed, tensorboardx will not be used to monitor the training')
+        self.parser.add_argument(
+            '--log_only_gradients',
+            type=str2bool,
+            default=False,
+            help='whether to write gradients to tensorboard')
+        self.parser.add_argument(
+            '--log_histograms',
+            type=str2bool,
+            default=True,
+            help='whether to perform the costly plotting of histograms'
+        )
+        self.parser.add_argument(
+            '--log_per_epoch_only',
+            type=str2bool,
+            default=False,
+            help='minimal logging, only the loss and the metric'
+        )
+        self.parser.add_argument(
+            '--log_namespaces',
+            type=str,
+            nargs='+',
+            default=None,
+            help='If you want to log only specific namespaces (e.g. layers), specify them here'
+        )
+
         self.parser.add_argument(
             '--model_dir',
             type=str,
@@ -82,6 +108,12 @@ class Config():
             action='store_true',
             default=False,
             help='if passed, the plot errors by location will be created')
+        self.parser.add_argument(
+            '--plot_graphs_testset',
+            type=str2bool,
+            default=False,
+            help='Whether to plot the graphs from the test set for visual inspection'
+        )
 
         self.parser.add_argument(
             '--validation_split',

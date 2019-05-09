@@ -135,9 +135,10 @@ if __name__ == '__main__':
             model.train_batch_iteration += 1
 
         epoch_loss /= train_dataset.__len__()
-        train_writer.add_scalar('_per_epoch/loss', epoch_loss, epoch)
         epoch_metric_train /= train_dataset.__len__()
-        train_writer.add_scalar('_per_epoch/metric', epoch_metric_train, epoch)
+        if not config.no_summary:
+            train_writer.add_scalar('_per_epoch/loss', epoch_loss, epoch)
+            train_writer.add_scalar('_per_epoch/metric', epoch_metric_train, epoch)
 
         # validation
         model.eval()
@@ -158,9 +159,10 @@ if __name__ == '__main__':
         model.val_batch_iteration = model.train_batch_iteration
 
         validation_loss /= validation_dataset.__len__()
-        val_writer.add_scalar('_per_epoch/loss', validation_loss, epoch)
         epoch_metric_val /= validation_dataset.__len__()
-        val_writer.add_scalar('_per_epoch/metric', epoch_metric_val, epoch)
+        if not config.no_summary:
+            val_writer.add_scalar('_per_epoch/loss', validation_loss, epoch)
+            val_writer.add_scalar('_per_epoch/metric', epoch_metric_val, epoch)
 
         model.epoch += 1
 
@@ -244,7 +246,8 @@ if __name__ == '__main__':
     #     data=test_dataset, predictions=test_predictions, targets=test_targets)
 
     # plot the graphs in the test dataset for visual inspection
-    for i, g in enumerate(test_dataset):
-        graph = MyGraph(config, g)
-        graph.plot_predictions(model.predictions_to_list(
-            model.out_to_predictions(model(g))), i)
+    if config.plot_graphs_testset:
+        for i, g in enumerate(test_dataset):
+            graph = MyGraph(config, g)
+            graph.plot_predictions(model.predictions_to_list(
+                model.out_to_predictions(model(g))), i)
