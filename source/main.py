@@ -229,19 +229,19 @@ if __name__ == '__main__':
         targets=test_targets, predictions=test_predictions)
 
     # if Regression, plot targets vs. continuous outputs
-    if isinstance(model.model_type, RegressionProblem):
-        test_outputs = []
-        for data in data_loader_test:
-            data = data.to(device)
-            out = torch.squeeze(model(data)).tolist()
-            test_outputs.extend(out)
-        model.model_type.plot_targets_vs_outputs(
-            targets=test_targets, outputs=test_outputs)
+    # if isinstance(model.model_type, RegressionProblem):
+    #     test_outputs = []
+    #     for data in data_loader_test:
+    #         data = data.to(device)
+    #         out = torch.squeeze(model(data)).tolist()
+    #         test_outputs.extend(out)
+    #     model.model_type.plot_targets_vs_outputs(
+    #         targets=test_targets, outputs=test_outputs)
 
     # plot errors by location
-    plotter = ResultPlotting(config=config)
-    plotter.plot_errors_by_location(
-        data=test_dataset, predictions=test_predictions, targets=test_targets)
+    # plotter = ResultPlotting(config=config)
+    # plotter.plot_errors_by_location(
+    #     data=test_dataset, predictions=test_predictions, targets=test_targets)
 
     # plot the first graph in the dataset, just as an example of how a graph
     # looks like

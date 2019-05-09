@@ -34,6 +34,7 @@ class RegressionProblem(ModelType):
     def predictions_to_list(self, predictions):
         return torch.squeeze(predictions).tolist()
 
+    # TODO adapt to seaborn
     def plot_targets_vs_outputs(self, targets, outputs):
         ch = chartify.Chart(blank_labels=True)
         ch.plot.scatter(

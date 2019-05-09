@@ -9,6 +9,7 @@ class ResultPlotting:
     def __init__(self, config):
         self.config = config
 
+    # TODO adapt to seaborn
     def plot_errors_by_location(self, data, predictions, targets):
         if not self.config.plot_error_locations:
             return
