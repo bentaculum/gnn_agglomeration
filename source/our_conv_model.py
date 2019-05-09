@@ -25,6 +25,12 @@ class OurConvModel(GnnModel):
             model_type=model_type)
 
     def layers(self):
+        # Assert some layer configs
+        # By default, we need to specify the size of the representation between input and output layer
+        assert len(self.config.hidden_units) == self.config.hidden_layers + 1
+        # Dropout should be there for input layer + all hidden layers
+        assert len(self.config.dropout_probs) == self.config.hidden_layers + 1
+
         self.layers_list = torch.nn.ModuleList()
 
         attention_nn_params = {
@@ -35,7 +41,7 @@ class OurConvModel(GnnModel):
 
         conv_in = OurConv(
             in_channels=self.config.feature_dimensionality,
-            out_channels=self.config.hidden_units,
+            out_channels=self.config.hidden_units[0],
             dim=self.config.pseudo_dimensionality,
             heads=self.config.kernel_size,
             concat=self.config.att_heads_concat,
@@ -49,14 +55,17 @@ class OurConvModel(GnnModel):
 
         for i in range(self.config.hidden_layers):
             if self.config.att_heads_concat:
-                channels = self.config.hidden_units * \
+                in_channels = self.config.hidden_units[i] * \
+                    (self.config.kernel_size**(i + 1))
+                out_channels = self.config.hidden_units[i+1] * \
                     (self.config.kernel_size**(i + 1))
             else:
-                channels = self.config.hidden_units
+                in_channels = self.config.hidden_units[i]
+                out_channels = self.config.hidden_units[i+1]
 
             l = OurConv(
-                in_channels=channels,
-                out_channels=channels,
+                in_channels=in_channels,
+                out_channels=out_channels,
                 dim=self.config.pseudo_dimensionality,
                 heads=self.config.kernel_size,
                 concat=self.config.att_heads_concat,
@@ -68,10 +77,10 @@ class OurConvModel(GnnModel):
             self.layers_list.append(l)
 
         if self.config.att_heads_concat:
-            fc_in_features = self.config.hidden_units * \
+            fc_in_features = self.config.hidden_units[-1] * \
                 (self.config.kernel_size**(self.config.hidden_layers + 1))
         else:
-            fc_in_features = self.config.hidden_units
+            fc_in_features = self.config.hidden_units[-1]
 
         self.fc = torch.nn.Linear(
             in_features=fc_in_features,
@@ -106,7 +115,7 @@ class OurConvModel(GnnModel):
             self.write_to_variable_summary(
                 x, 'layer_{}'.format(i), 'outputs')
             x = getattr(F, self.config.dropout_type)(
-                x, p=self.config.dropout_prob, training=self.training)
+                x, p=self.config.dropout_probs[i], training=self.training)
 
         if self.training:
             self.write_to_variable_summary(

@@ -36,6 +36,7 @@ class MinimalSplineConvModel(GnnModel):
             model_type=model_type)
 
     def layers(self):
+        # TODO adapt to per-layer configurability
         self.conv_in = SplineConv(
             in_channels=self.config.feature_dimensionality,
             out_channels=self.config.hidden_units,
@@ -72,7 +73,7 @@ class MinimalSplineConvModel(GnnModel):
         x = getattr(F, self.config.non_linearity)(x)
         self.write_to_variable_summary(x, 'in_layer', 'outputs')
         x = getattr(F, self.config.dropout_type)(
-            x, p=self.config.dropout_prob, training=self.training)
+            x, p=self.config.dropout_probs, training=self.training)
 
         if self.training:
             self.write_to_variable_summary(
@@ -85,7 +86,7 @@ class MinimalSplineConvModel(GnnModel):
         x = getattr(F, self.config.non_linearity)(x)
         self.write_to_variable_summary(x, 'fc_layer', 'outputs')
         x = getattr(F, self.config.dropout_type)(
-            x, p=self.config.dropout_prob, training=self.training)
+            x, p=self.config.dropout_probs, training=self.training)
 
         if self.training:
             self.write_to_variable_summary(

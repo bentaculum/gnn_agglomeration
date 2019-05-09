@@ -24,6 +24,7 @@ class GcnModel(GnnModel):
         )
 
     def layers(self):
+        # TODO adapt to per-layer configurability
         self.conv_in = GCNConv(
             self.config.feature_dimensionality, self.config.hidden_units)
         self.hidden_layers = torch.nn.ModuleList()
@@ -48,7 +49,7 @@ class GcnModel(GnnModel):
         x = getattr(F, self.config.non_linearity)(x)
         self.write_to_variable_summary(x, 'in_layer', 'outputs')
         x = getattr(F, self.config.dropout_type)(
-            x, p=self.config.dropout_prob, training=self.training)
+            x, p=self.config.dropout_probs, training=self.training)
 
         for i, l in enumerate(self.hidden_layers):
             if self.training:
@@ -63,7 +64,7 @@ class GcnModel(GnnModel):
             x = getattr(F, self.config.non_linearity)(x)
             self.write_to_variable_summary(x, 'layer_{}'.format(i), 'outputs')
             x = getattr(F, self.config.dropout_type)(
-                x, p=self.config.dropout_prob, training=self.training)
+                x, p=self.config.dropout_probs, training=self.training)
 
         if self.training:
             self.write_to_variable_summary(

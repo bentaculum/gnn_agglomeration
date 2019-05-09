@@ -20,6 +20,7 @@ class GnnModel(torch.nn.Module, ABC):
         super(GnnModel, self).__init__()
 
         self.config = config
+
         try:
             self.model_type = globals()[model_type](config=self.config)
         except Exception as e:

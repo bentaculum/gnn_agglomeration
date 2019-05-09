@@ -32,8 +32,11 @@ class Config():
             type=positive_int,
             default=2,
             help='Dimension of the pseudo coordinates, according to their type')
-        self.parser.add_argument('--kernel_size', type=positive_int,
-                                 default=1, help='kernel size for SplineConv')
+        self.parser.add_argument(
+            '--kernel_size',
+            type=positive_int,
+            default=1,
+            help='Attention: # of heads, Splines: # of control points, GMM: # of mixture components')
         self.parser.add_argument(
             '--data_transform',
             type=str,
@@ -143,21 +146,6 @@ class Config():
             default=100,
             help='number of training epochs')
         self.parser.add_argument(
-            '--hidden_layers',
-            type=nonnegative_int,
-            default=0,
-            help='number of hidden layers')
-        self.parser.add_argument(
-            '--hidden_units',
-            type=positive_int,
-            default=16,
-            help='number of units per hidden layer in the GNN')
-        self.parser.add_argument(
-            '--use_bias',
-            type=str2bool,
-            default=False,
-            help='whether to use an additive bias')
-        self.parser.add_argument(
             '--samples',
             type=positive_int,
             default=100,
@@ -171,6 +159,23 @@ class Config():
                                  default=1, help='batch size for training')
         self.parser.add_argument('--batch_size_eval', type=positive_int,
                                  default=1, help='batch size for evaluation')
+
+        self.parser.add_argument(
+            '--hidden_layers',
+            type=nonnegative_int,
+            default=0,
+            help='number of hidden layers')
+        self.parser.add_argument(
+            '--hidden_units',
+            type=positive_int,
+            nargs='+',
+            default=[1],
+            help='number of units per hidden layer in the GNN')
+        self.parser.add_argument(
+            '--use_bias',
+            type=str2bool,
+            default=False,
+            help='whether to use an additive bias')
         self.parser.add_argument(
             '--dropout_type',
             type=str,
@@ -178,10 +183,11 @@ class Config():
             choices=['dropout', 'dropout2d'],
             help='dropout | dropout2d')
         self.parser.add_argument(
-            '--dropout_prob',
+            '--dropout_probs',
             type=unit_float,
-            default=0.5,
-            help='dropout probability during training')
+            nargs='+',
+            default=[0.5],
+            help='dropout probabilites during training for the input layer and all the hidden layers')
         self.parser.add_argument(
             '--adam_lr',
             type=unit_float,

@@ -24,6 +24,7 @@ class GatConvModel(GnnModel):
             model_type=model_type)
 
     def layers(self):
+        # TODO adapt to per-layer configurability
         self.layers_list = torch.nn.ModuleList()
 
         conv_in = GATConv(
@@ -81,7 +82,7 @@ class GatConvModel(GnnModel):
                 self.write_to_variable_summary(
                     x, 'layer_{}'.format(i), 'outputs')
                 x = getattr(F, self.config.dropout_type)(
-                    x, p=self.config.dropout_prob, training=self.training)
+                    x, p=self.config.dropout_probs, training=self.training)
             else:
                 x = self.model_type.out_nonlinearity(x)
                 self.write_to_variable_summary(
