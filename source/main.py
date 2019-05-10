@@ -19,14 +19,14 @@ from tensorboardX import SummaryWriter
 
 from sacred import Experiment
 from bunch import Bunch
+import sys
 
 ex = Experiment()
 
 @ex.main
 def main(_config):
     # Bunch supports dictionary access with argparse.Namespace syntax
-    # TODO use argparse syntax: argparse.Namespace(**config)
-
+    # TODO maybe use argparse syntax: argparse.Namespace(**config)
     config = Bunch(_config)
 
     # load model
@@ -263,7 +263,9 @@ def main(_config):
 
 
 if __name__ == '__main__':
-    config_from_argparse = Config().parse_args()
-    config_dict = vars(config_from_argparse[0])
+    config_from_argparse, remaining_args = Config().parse_args()
+    config_dict = vars(config_from_argparse)
+    # remove all argparse arguments from sys.argv
+    argv = [sys.argv[0], *remaining_args]
     ex.add_config(config_dict)
-    r = ex.run()
+    r = ex.run_commandline(argv)
