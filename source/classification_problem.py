@@ -13,7 +13,7 @@ class ClassificationProblem(ModelType):
     def __init__(self, config):
         super(ClassificationProblem, self).__init__(config)
 
-        self.loss_name = 'NLL loss'
+        self.loss_name = 'NLL_loss'
         self.out_channels = self.config.max_neighbors + 1
 
     def out_nonlinearity(self, x):

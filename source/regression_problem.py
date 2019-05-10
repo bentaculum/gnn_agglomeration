@@ -14,7 +14,7 @@ class RegressionProblem(ModelType):
     def __init__(self, config):
         super(RegressionProblem, self).__init__(config)
 
-        self.loss_name = 'MSE Loss'
+        self.loss_name = 'MSE_Loss'
         self.out_channels = 1
 
     def out_nonlinearity(self, x):
