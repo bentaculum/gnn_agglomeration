@@ -243,7 +243,7 @@ class Config():
             help="Load model from file. 'latest' | relative/path/to/tarfile")
 
     def parse_args(self):
-        return self.parser.parse_args()
+        return self.parser.parse_known_args()
 
 
 def unit_float(x):

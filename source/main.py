@@ -17,8 +17,17 @@ import shutil
 from torch_geometric.data import DataLoader
 from tensorboardX import SummaryWriter
 
-if __name__ == '__main__':
-    config = Config().parse_args()
+from sacred import Experiment
+from bunch import Bunch
+
+ex = Experiment()
+
+@ex.main
+def main(_config):
+    # Bunch supports dictionary access with argparse.Namespace syntax
+    # TODO use argparse syntax: argparse.Namespace(**config)
+
+    config = Bunch(_config)
 
     # load model
     # Overwrite the config file with the one that has been saved
@@ -251,3 +260,10 @@ if __name__ == '__main__':
             graph = MyGraph(config, g)
             graph.plot_predictions(model.predictions_to_list(
                 model.out_to_predictions(model(g))), i)
+
+
+if __name__ == '__main__':
+    config_from_argparse = Config().parse_args()
+    config_dict = vars(config_from_argparse[0])
+    ex.add_config(config_dict)
+    r = ex.run()
