@@ -20,6 +20,7 @@ from tensorboardX import SummaryWriter
 from sacred import Experiment
 from bunch import Bunch
 import sys
+from sacred.observers import MongoObserver
 
 ex = Experiment()
 
@@ -268,4 +269,5 @@ if __name__ == '__main__':
     # remove all argparse arguments from sys.argv
     argv = [sys.argv[0], *remaining_args]
     ex.add_config(config_dict)
+    ex.observers.append(MongoObserver.create())
     r = ex.run_commandline(argv)
