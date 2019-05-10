@@ -55,7 +55,12 @@ class OurConvModel(GnnModel):
         self.layers_list.append(conv_in)
 
         if self.config.batch_norm:
-            b = torch.nn.BatchNorm1d(out_channels_in * self.config.kernel_size)
+            if self.config.att_heads_concat:
+                batch_norm_size_in = out_channels_in * self.config.kernel_size
+            else:
+                batch_norm_size_in = out_channels_in
+            b = torch.nn.BatchNorm1d(batch_norm_size_in)
+
             self.batch_norm_list.append(b)
 
         for i in range(self.config.hidden_layers):
@@ -82,7 +87,11 @@ class OurConvModel(GnnModel):
             self.layers_list.append(l)
 
             if self.config.batch_norm:
-                b = torch.nn.BatchNorm1d(out_channels * self.config.kernel_size)
+                if self.config.att_heads_concat:
+                    batch_norm_size = out_channels * self.config.kernel_size
+                else:
+                    batch_norm_size = out_channels
+                b = torch.nn.BatchNorm1d(batch_norm_size)
                 self.batch_norm_list.append(b)
 
         if self.config.att_heads_concat:
