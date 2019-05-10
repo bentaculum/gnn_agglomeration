@@ -103,7 +103,7 @@ if __name__ == '__main__':
             model.load_state_dict(checkpoint['model_state_dict'])
             model.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
-    except Exception as e:
+    except KeyError as e:
         print(e)
         raise NotImplementedError(
             'The model you have specified is not implemented')
