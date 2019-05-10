@@ -35,7 +35,7 @@ class Config():
         self.parser.add_argument(
             '--kernel_size',
             type=positive_int,
-            default=1,
+            default=2,
             help='Attention: # of heads, Splines: # of control points, GMM: # of mixture components')
         self.parser.add_argument(
             '--data_transform',
@@ -58,7 +58,7 @@ class Config():
         self.parser.add_argument(
             '--dataset_path',
             type=str,
-            default='../data/example10',
+            default='../data/example_latest',
             help='the directory to read the Dataset from')
         self.parser.add_argument(
             '--temp_dir',
@@ -133,7 +133,7 @@ class Config():
             '--model',
             type=str,
             default='OurConvModel',
-            help='GcnModel | GmmConvModel | etc.')
+            help='OurConvModel | GcnModel | GmmConvModel | etc.')
         self.parser.add_argument(
             '--model_type',
             type=str,
@@ -208,7 +208,7 @@ class Config():
         self.parser.add_argument(
             '--att_heads_concat',
             type=str2bool,
-            default=False,
+            default=True,
             help='whether to concat or average the outputs of the different attention heads'
         )
         self.parser.add_argument(
