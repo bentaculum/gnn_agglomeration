@@ -17,6 +17,7 @@ import shutil
 from torch_geometric.data import DataLoader
 from tensorboardX import SummaryWriter
 
+import sacred
 from sacred import Experiment
 from bunch import Bunch
 import sys
@@ -26,10 +27,11 @@ from sacred.observers import MongoObserver, TelegramObserver
 ex = Experiment()
 
 @ex.main
-def main(_config):
+def main(_config, _run):
     # Bunch supports dictionary access with argparse.Namespace syntax
     # TODO maybe use argparse syntax: argparse.Namespace(**config)
     config = Bunch(_config)
+
 
     # load model
     # Overwrite the config file with the one that has been saved
@@ -64,6 +66,10 @@ def main(_config):
     # make dir structure in temp dir
     os.makedirs(summary_dir)
     os.makedirs(model_dir)
+
+    # Save the tensorboardx summaries with sacred
+    if not config.no_summary:
+        _run.info["tensorflow"]["logdirs"] = [summary_dir]
 
     # set up the summary writer for tensorboardX
     train_writer = SummaryWriter(os.path.join(
@@ -267,12 +273,15 @@ def main(_config):
 if __name__ == '__main__':
     config_from_argparse, remaining_args = Config().parse_args()
     config_dict = vars(config_from_argparse)
-    # remove all argparse arguments from sys.argv
-    argv = [sys.argv[0], *remaining_args]
     ex.add_config(config_dict)
+
+    sacred_default_flags = ['--enforce_clean', '-l', 'NOTSET']
+    # remove all argparse arguments from sys.argv
+    argv = [sys.argv[0], *sacred_default_flags, *remaining_args]
 
     ex.observers.append(MongoObserver.create())
     telegram_obs = TelegramObserver.from_config('../telegram.json')
     ex.observers.append(telegram_obs)
+    ex.captured_out_filter = sacred.utils.apply_backspaces_and_linefeeds
 
     r = ex.run_commandline(argv)
