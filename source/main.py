@@ -20,7 +20,8 @@ from tensorboardX import SummaryWriter
 from sacred import Experiment
 from bunch import Bunch
 import sys
-from sacred.observers import MongoObserver
+from sacred.observers import MongoObserver, TelegramObserver
+
 
 ex = Experiment()
 
@@ -269,5 +270,9 @@ if __name__ == '__main__':
     # remove all argparse arguments from sys.argv
     argv = [sys.argv[0], *remaining_args]
     ex.add_config(config_dict)
+
     ex.observers.append(MongoObserver.create())
+    telegram_obs = TelegramObserver.from_config('../telegram.json')
+    ex.observers.append(telegram_obs)
+
     r = ex.run_commandline(argv)
