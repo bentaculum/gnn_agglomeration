@@ -242,6 +242,20 @@ class Config():
             default=None,
             help="Load model from file. 'latest' | relative/path/to/tarfile")
 
+        self.parser.add_argument(
+            '--telegram',
+            type=str2bool,
+            default=True,
+            help='whether to have a Sacred Telegram Observer'
+        )
+
+        self.parser.add_argument(
+            '--confusion_matrix_path',
+            type=str,
+            default='confusion_matrix_test.png',
+            help='file name of confusion matrix'
+        )
+
     def parse_args(self):
         return self.parser.parse_known_args()
 

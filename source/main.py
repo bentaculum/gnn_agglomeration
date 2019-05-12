@@ -22,16 +22,32 @@ from sacred import Experiment
 from bunch import Bunch
 import sys
 from sacred.observers import MongoObserver, TelegramObserver
-
+from sacred.stflow import LogFileWriter
+import atexit
+import tarfile
 
 ex = Experiment()
 
 @ex.main
+@ex.capture
+@LogFileWriter(ex)
 def main(_config, _run):
     # Bunch supports dictionary access with argparse.Namespace syntax
     # TODO maybe use argparse syntax: argparse.Namespace(**config)
     config = Bunch(_config)
 
+    @atexit.register
+    def atexit_tasks():
+        # save the tensorboardx summary files
+        summary_dir = os.path.join(config.temp_dir, config.summary_dir)
+        summary_compressed = summary_dir + '.tar.gz'
+        #remove old tar file
+        if os.path.isfile(summary_compressed):
+            os.remove(summary_compressed)
+
+        with tarfile.open(summary_compressed, mode='w:gz') as archive:
+            archive.add(summary_dir, arcname='summary', recursive=True)
+        _run.add_artifact(filename=summary_compressed, name='summary.tar.gz')
 
     # load model
     # Overwrite the config file with the one that has been saved
@@ -69,6 +85,7 @@ def main(_config, _run):
 
     # Save the tensorboardx summaries with sacred
     if not config.no_summary:
+        _run.info["tensorflow"] = dict()
         _run.info["tensorflow"]["logdirs"] = [summary_dir]
 
     # set up the summary writer for tensorboardX
@@ -156,6 +173,8 @@ def main(_config, _run):
         if not config.no_summary:
             train_writer.add_scalar('_per_epoch/loss', epoch_loss, epoch)
             train_writer.add_scalar('_per_epoch/metric', epoch_metric_train, epoch)
+        _run.log_scalar('loss_train', epoch_loss, epoch)
+        _run.log_scalar('accuracy_train', epoch_metric_train, epoch)
 
         # validation
         model.eval()
@@ -181,10 +200,15 @@ def main(_config, _run):
             val_writer.add_scalar('_per_epoch/loss', validation_loss, epoch)
             val_writer.add_scalar('_per_epoch/metric', epoch_metric_val, epoch)
 
+        _run.log_scalar('loss_val', validation_loss, epoch)
+        _run.log_scalar('accuracy_val', epoch_metric_val, epoch)
+
         model.epoch += 1
 
     # save the final model
-    model.save('final.tar')
+    final_model_name = 'final.tar'
+    model.save(final_model_name)
+    _run.add_artifact(filename=os.path.join(config.temp_dir, config.model_dir, final_model_name), name=final_model_name)
 
     ###########################
 
@@ -222,6 +246,7 @@ def main(_config, _run):
     test_loss /= test_dataset.__len__()
     test_metric /= test_dataset.__len__()
 
+
     # final print routine
     print('')
     print('Maximum # of neighbors within distance {} in dataset: {}'.format(
@@ -246,6 +271,7 @@ def main(_config, _run):
     # plot targets vs predictions. default is a confusion matrix
     model.plot_targets_vs_predictions(
         targets=test_targets, predictions=test_predictions)
+    _run.add_artifact(filename=os.path.join(config.temp_dir, config.confusion_matrix_path), name=config.confusion_matrix_path)
 
     # if Regression, plot targets vs. continuous outputs
     # if isinstance(model.model_type, RegressionProblem):
@@ -269,19 +295,25 @@ def main(_config, _run):
             graph.plot_predictions(model.predictions_to_list(
                 model.out_to_predictions(model(g))), i)
 
+    return '\ntrain acc: {0:.3f}\ntest acc: {1:.3f}'.format(final_metric_train, test_metric)
+
 
 if __name__ == '__main__':
     config_from_argparse, remaining_args = Config().parse_args()
     config_dict = vars(config_from_argparse)
     ex.add_config(config_dict)
 
-    sacred_default_flags = ['--enforce_clean', '-l', 'NOTSET']
+    # sacred_default_flags = ['--enforce_clean', '-l', 'NOTSET']
+    sacred_default_flags = []
     # remove all argparse arguments from sys.argv
     argv = [sys.argv[0], *sacred_default_flags, *remaining_args]
 
     ex.observers.append(MongoObserver.create())
-    telegram_obs = TelegramObserver.from_config('../telegram.json')
-    ex.observers.append(telegram_obs)
+
+    if config_dict['telegram']:
+        telegram_obs = TelegramObserver.from_config('../telegram.json')
+        ex.observers.append(telegram_obs)
+
     ex.captured_out_filter = sacred.utils.apply_backspaces_and_linefeeds
 
     r = ex.run_commandline(argv)
