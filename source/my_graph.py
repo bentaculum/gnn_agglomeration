@@ -69,7 +69,7 @@ class MyGraph():
         nx.draw_networkx(g, pos_dict, labels=labels_dict)
         plt.title("Number of neighbors within euclidian distance {}".format(
             self.config.theta))
-        plt.savefig(os.path.join(self.config.temp_dir, 'graph.png'))
+        plt.savefig(os.path.join(self.config.run_abs_path, 'graph.png'))
         # plt.show()
 
     def plot_predictions(self, pred, graph_nr):
@@ -96,7 +96,7 @@ class MyGraph():
                 self.config.theta))
 
         self.add_to_plotting_style()
-        img_path = os.path.join(self.config.temp_dir,
+        img_path = os.path.join(self.config.run_abs_path,
                                 'graph_with_predictions.png')
         if os.path.isfile(img_path):
             os.remove(img_path)

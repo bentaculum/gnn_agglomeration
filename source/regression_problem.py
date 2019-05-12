@@ -54,6 +54,6 @@ class RegressionProblem(ModelType):
 
         ch.save(
             filename=os.path.join(
-                self.config.temp_dir,
+                self.config.run_abs_path,
                 'targets_vs_outputs_test.png'),
             format='png')

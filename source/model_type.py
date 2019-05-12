@@ -49,4 +49,4 @@ class ModelType(torch.nn.Module, ABC):
         plt.title('Confusion matrix')
         plt.xlabel('Targets')
         plt.ylabel('Predictions')
-        fig.savefig(os.path.join(self.config.temp_dir, self.config.confusion_matrix_path))
+        fig.savefig(os.path.join(self.config.run_abs_path, self.config.confusion_matrix_path))

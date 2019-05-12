@@ -39,7 +39,7 @@ def main(_config, _run):
     @atexit.register
     def atexit_tasks():
         # save the tensorboardx summary files
-        summary_dir = os.path.join(config.temp_dir, config.summary_dir)
+        summary_dir = os.path.join(config.run_abs_path, config.summary_dir)
         summary_compressed = summary_dir + '.tar.gz'
         #remove old tar file
         if os.path.isfile(summary_compressed):
@@ -57,7 +57,7 @@ def main(_config, _run):
     if config.load_model is not None:
         path = config.load_model
         if config.load_model == 'latest':
-            path = os.path.join(config.temp_dir, config.model_dir, 'final.tar')
+            path = os.path.join(config.run_abs_path, config.model_dir, 'final.tar')
 
         checkpoint = torch.load(path)
         new_config = vars(config)
@@ -68,14 +68,14 @@ def main(_config, _run):
             setattr(config, k, v)
 
     # make necessary directory structure
-    if not os.path.isdir(config.temp_dir):
-        os.makedirs(config.temp_dir)
+    if not os.path.isdir(config.run_abs_path):
+        os.makedirs(config.run_abs_path)
 
     # clear old stuff from the temp dir
-    summary_dir = os.path.join(config.temp_dir, config.summary_dir)
+    summary_dir = os.path.join(config.run_abs_path, config.summary_dir)
     if os.path.isdir(summary_dir):
         shutil.rmtree(summary_dir)
-    model_dir = os.path.join(config.temp_dir, config.model_dir)
+    model_dir = os.path.join(config.run_abs_path, config.model_dir)
     if os.path.isdir(model_dir):
         shutil.rmtree(model_dir)
 
@@ -90,12 +90,12 @@ def main(_config, _run):
 
     # set up the summary writer for tensorboardX
     train_writer = SummaryWriter(os.path.join(
-        config.temp_dir, 'summary', 'training'))
+        config.run_abs_path, 'summary', 'training'))
     val_writer = SummaryWriter(os.path.join(
-        config.temp_dir, 'summary', 'validation'))
+        config.run_abs_path, 'summary', 'validation'))
 
     # create and load dataset
-    dataset = RandomGraphDataset(root=config.dataset_path, config=config)
+    dataset = RandomGraphDataset(root=config.dataset_abs_path, config=config)
     config.max_neighbors = dataset.max_neighbors()
     dataset = dataset.shuffle()
 
@@ -208,7 +208,7 @@ def main(_config, _run):
     # save the final model
     final_model_name = 'final.tar'
     model.save(final_model_name)
-    _run.add_artifact(filename=os.path.join(config.temp_dir, config.model_dir, final_model_name), name=final_model_name)
+    _run.add_artifact(filename=os.path.join(config.run_abs_path, config.model_dir, final_model_name), name=final_model_name)
 
     ###########################
 
@@ -271,7 +271,7 @@ def main(_config, _run):
     # plot targets vs predictions. default is a confusion matrix
     model.plot_targets_vs_predictions(
         targets=test_targets, predictions=test_predictions)
-    _run.add_artifact(filename=os.path.join(config.temp_dir, config.confusion_matrix_path), name=config.confusion_matrix_path)
+    _run.add_artifact(filename=os.path.join(config.run_abs_path, config.confusion_matrix_path), name=config.confusion_matrix_path)
 
     # if Regression, plot targets vs. continuous outputs
     # if isinstance(model.model_type, RegressionProblem):
@@ -311,7 +311,7 @@ if __name__ == '__main__':
     ex.observers.append(MongoObserver.create())
 
     if config_dict['telegram']:
-        telegram_obs = TelegramObserver.from_config('../telegram.json')
+        telegram_obs = TelegramObserver.from_config(os.path.join(config_dict['root_dir'], 'telegram.json'))
         ex.observers.append(telegram_obs)
 
     ex.captured_out_filter = sacred.utils.apply_backspaces_and_linefeeds

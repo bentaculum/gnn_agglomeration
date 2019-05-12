@@ -163,4 +163,4 @@ class GnnModel(torch.nn.Module, ABC):
             'config': self.config,
             'model_state_dict': self.state_dict(),
             'optimizer_state_dict': self.optimizer.state_dict(),
-        }, os.path.join(self.config.temp_dir, self.config.model_dir, name))
+        }, os.path.join(self.config.run_abs_path, self.config.model_dir, name))

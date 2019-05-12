@@ -1,4 +1,5 @@
 import argparse
+import os
 
 
 class Config():
@@ -58,12 +59,12 @@ class Config():
         self.parser.add_argument(
             '--dataset_path',
             type=str,
-            default='../data/example_latest',
+            default='data/example_latest',
             help='the directory to read the Dataset from')
         self.parser.add_argument(
-            '--temp_dir',
+            '--run_path',
             type=str,
-            default='../temp',
+            default='temp',
             help='directory to save temporary outputs')
         self.parser.add_argument(
             '--summary_dir',
@@ -257,7 +258,18 @@ class Config():
         )
 
     def parse_args(self):
-        return self.parser.parse_known_args()
+        config, remaining_args = self.parser.parse_known_args()
+
+        # detect root path, one level up from the config file
+        config.root_dir = os.path.dirname(
+            os.path.dirname(os.path.realpath(__file__))
+        )
+
+        # adapt all paths in the config file
+        config.dataset_abs_path = os.path.join(config.root_dir, config.dataset_path)
+        config.run_abs_path = os.path.join(config.root_dir, config.run_path)
+
+        return config, remaining_args
 
 
 def unit_float(x):
