@@ -1,5 +1,6 @@
 import argparse
 import os
+import datetime
 
 
 class Config():
@@ -64,7 +65,7 @@ class Config():
         self.parser.add_argument(
             '--run_path',
             type=str,
-            default='temp',
+            default='runs',
             help='directory to save temporary outputs')
         self.parser.add_argument(
             '--summary_dir',
@@ -257,7 +258,15 @@ class Config():
             help='file name of confusion matrix'
         )
 
+        self.parser.add_argument(
+            '--temp',
+            type=str2bool,
+            default=False,
+            help='If true, save results to temp folder. If false, create timestamped directory.'
+        )
+
     def parse_args(self):
+        now = datetime.datetime.now().isoformat()
         config, remaining_args = self.parser.parse_known_args()
 
         # detect root path, one level up from the config file
@@ -267,7 +276,13 @@ class Config():
 
         # adapt all paths in the config file
         config.dataset_abs_path = os.path.join(config.root_dir, config.dataset_path)
-        config.run_abs_path = os.path.join(config.root_dir, config.run_path)
+
+        if config.temp:
+            # save to a temporary directory that will be overwritten
+            config.run_abs_path = os.path.join(config.root_dir, config.run_path, 'temp')
+        else:
+            # create a custom directory for each run
+            config.run_abs_path = os.path.join(config.root_dir, config.run_path, now)
 
         return config, remaining_args
 
