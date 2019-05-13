@@ -4,6 +4,7 @@ import os
 import datetime
 import logging
 import json
+import sacred
 
 
 class Config():
@@ -273,6 +274,26 @@ class Config():
             default=10,
             help='how often to save a checkpoint of the model that can be used for restarting'
         )
+        self.parser.add_argument(
+            '--machine',
+            type=str,
+            choices=['localhost', 'slowpoke1'],
+            default='localhost',
+            help='machine-dependent parameters to be imported, e.g. for connecting to the MongoDB'
+
+        )
+
+    def localhost(self):
+        return {
+            'mongo_url': 'localhost:27017',
+            'mongo_db': 'sacred',
+        }
+
+    def slowpoke1(self):
+        return {
+            'mongo_url': 'slowpoke1.int.janelia.org:27017',
+            'mongo_db': 'sacred',
+        }
 
     def parse_args(self):
         config, remaining_args = self.parser.parse_known_args()
@@ -322,6 +343,7 @@ class Config():
         # set the absolute paths in the config file
         config['run_abs_path'] = os.path.join(config['root_dir'], config['run_path'], rel_run_path)
         config['dataset_abs_path'] = os.path.join(config['root_dir'], config['dataset_path'])
+        config.update(getattr(self, config['machine'])())
 
         return config, remaining_args
 
@@ -356,3 +378,5 @@ def str2bool(v):
         return False
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
+
+

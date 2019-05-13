@@ -1,16 +1,3 @@
-from config import Config
-from gcn_model import GcnModel
-from gmm_conv_model import GmmConvModel
-from spline_conv_model import SplineConvModel
-from minimal_spline_conv_model import MinimalSplineConvModel
-from gat_conv_model import GatConvModel
-from our_conv_model import OurConvModel
-from regression_problem import RegressionProblem
-from result_plotting import ResultPlotting
-
-from random_graph_dataset import RandomGraphDataset
-from my_graph import MyGraph
-
 import torch
 import os
 import shutil
@@ -26,6 +13,20 @@ import atexit
 import tarfile
 import argparse
 
+from config import Config
+from gcn_model import GcnModel
+from gmm_conv_model import GmmConvModel
+from spline_conv_model import SplineConvModel
+from minimal_spline_conv_model import MinimalSplineConvModel
+from gat_conv_model import GatConvModel
+from our_conv_model import OurConvModel
+from regression_problem import RegressionProblem
+from result_plotting import ResultPlotting
+
+from random_graph_dataset import RandomGraphDataset
+from my_graph import MyGraph
+
+
 ex = Experiment()
 
 @ex.main
@@ -34,6 +35,8 @@ ex = Experiment()
 def main(_config, _run, _log):
     config = argparse.Namespace(**_config)
     _log.info('Logging to {}'.format(config.run_abs_path))
+
+
     @atexit.register
     def atexit_tasks():
         # save the tensorboardx summary files
@@ -310,7 +313,12 @@ if __name__ == '__main__':
     # remove all argparse arguments from sys.argv
     argv = [sys.argv[0], *sacred_default_flags, *remaining_args]
 
-    ex.observers.append(MongoObserver.create())
+    ex.observers.append(
+        MongoObserver.create(
+            url=config_dict['mongo_url'],
+            db_name=config_dict['mongo_db']
+        )
+    )
 
     if config_dict['telegram']:
         telegram_obs = TelegramObserver.from_config(os.path.join(config_dict['root_dir'], 'telegram.json'))
