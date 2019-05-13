@@ -26,4 +26,4 @@ neighbors within a threshold distance θ. In particular:
 1. In there, set up a new database called sacred with `use sacred`
 1. Maybe: Insert a dummy entry with `db.movie.insert({"name":"tutorials point"})`
 1. To set up Omniboard, follow the steps [here](https://vivekratnavel.github.io/omniboard/#/quick-start)
-1. Execute `omniboard -m localhost:27017:sacred` to start up Omniboard at `localhost:9000`
+1. Execute `omniboard -m <host>:27017:sacred` to start up Omniboard at `localhost:9000`
