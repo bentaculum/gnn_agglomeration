@@ -4,7 +4,6 @@ import os
 import datetime
 import logging
 import json
-from bunch import Bunch
 
 
 class Config():

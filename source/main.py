@@ -19,23 +19,21 @@ from tensorboardX import SummaryWriter
 
 import sacred
 from sacred import Experiment
-from bunch import Bunch
 import sys
 from sacred.observers import MongoObserver, TelegramObserver
 from sacred.stflow import LogFileWriter
 import atexit
 import tarfile
+import argparse
 
 ex = Experiment()
 
 @ex.main
 @ex.capture
 @LogFileWriter(ex)
-def main(_config, _run):
-    # Bunch supports dictionary access with argparse.Namespace syntax
-    # TODO maybe use argparse syntax: argparse.Namespace(**config)
-    config = Bunch(_config)
-
+def main(_config, _run, _log):
+    config = argparse.Namespace(**_config)
+    _log.info('Logging to {}'.format(config.run_abs_path))
     @atexit.register
     def atexit_tasks():
         # save the tensorboardx summary files
@@ -80,7 +78,11 @@ def main(_config, _run):
     # create and load dataset
     dataset = RandomGraphDataset(root=config.dataset_abs_path, config=config)
     config.max_neighbors = dataset.max_neighbors()
-    # dataset = dataset.shuffle()
+    # TODO if model is loaded, use the same train val test split.
+    # shuffle can return the permutation of the dataset, which can then be used to permute the same way
+    # dataset, perm = dataset.shuffle(return_perm=True)
+    # when loading a model:
+    # dataset = dataset.__indexing__(permutation)
 
     # TODO if model is loaded, use the same train val test split
     # split into train and test
@@ -117,8 +119,8 @@ def main(_config, _run):
             else:
                 checkpoint_versions = [x for x in checkpoint_versions if x.startswith('epoch')].sort()
                 checkpoint_to_load = checkpoint_versions[-1]
-            print('Loading checkpoint {} {} ...'.format(load_model_dir, checkpoint_to_load))
 
+            _log.info('Loading checkpoint {} ...'.format(os.path.join(load_model_dir, checkpoint_to_load)))
             checkpoint = torch.load(os.path.join(load_model_dir, checkpoint_to_load))
 
             # restore the checkpoint
@@ -257,15 +259,15 @@ def main(_config, _run):
     for key, value in sorted(dic.items(), key=lambda x: x[0]):
         print("{} : {}".format(key, value))
     print('')
-    print('Mean train loss ({} samples): {}'.format(
+    print('Mean train loss ({0} samples): {1:.3f}'.format(
         train_dataset.__len__(),
         final_loss_train))
-    print('Mean accuracy on train set: {}'.format(
+    print('Mean accuracy on train set: {0:.3f}'.format(
         final_metric_train))
-    print('Mean test loss ({} samples): {}'.format(
+    print('Mean test loss ({0} samples): {1:.3f}'.format(
         test_dataset.__len__(),
         test_loss))
-    print('Mean accuracy on test set: {}'.format(
+    print('Mean accuracy on test set: {0:.3f}'.format(
         test_metric))
     print('')
 
