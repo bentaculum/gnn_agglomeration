@@ -39,51 +39,34 @@ def main(_config, _run):
     @atexit.register
     def atexit_tasks():
         # save the tensorboardx summary files
-        summary_dir = os.path.join(config.run_abs_path, config.summary_dir)
-        summary_compressed = summary_dir + '.tar.gz'
-        #remove old tar file
+        summary_dir_exit = os.path.join(config.run_abs_path, config.summary_dir)
+        summary_compressed = summary_dir_exit + '.tar.gz'
+        # remove old tar file
         if os.path.isfile(summary_compressed):
             os.remove(summary_compressed)
 
         with tarfile.open(summary_compressed, mode='w:gz') as archive:
-            archive.add(summary_dir, arcname='summary', recursive=True)
+            archive.add(summary_dir_exit, arcname='summary', recursive=True)
         _run.add_artifact(filename=summary_compressed, name='summary.tar.gz')
-
-    # load model
-    # Overwrite the config file with the one that has been saved
-    # Then overwrite again with possible new params that have been set in the command line
-    # TODO make this nicer
-    checkpoint = None
-    if config.load_model is not None:
-        path = config.load_model
-        if config.load_model == 'latest':
-            path = os.path.join(config.run_abs_path, config.model_dir, 'final.tar')
-
-        checkpoint = torch.load(path)
-        new_config = vars(config)
-        config = checkpoint['config']
-
-        # overwrite with possible new config variables
-        for k, v in new_config.items():
-            setattr(config, k, v)
 
     # make necessary directory structure
     if not os.path.isdir(config.run_abs_path):
         os.makedirs(config.run_abs_path)
 
-    # clear old stuff from the temp dir
-    summary_dir = os.path.join(config.run_abs_path, config.summary_dir)
-    if os.path.isdir(summary_dir):
-        shutil.rmtree(summary_dir)
-    model_dir = os.path.join(config.run_abs_path, config.model_dir)
-    if os.path.isdir(model_dir):
-        shutil.rmtree(model_dir)
+    # clear old stuff from the run dir, if it's not a restart
+    if config.load_model is None:
+        summary_dir = os.path.join(config.run_abs_path, config.summary_dir)
+        if os.path.isdir(summary_dir):
+            shutil.rmtree(summary_dir)
+        model_dir = os.path.join(config.run_abs_path, config.model_dir)
+        if os.path.isdir(model_dir):
+            shutil.rmtree(model_dir)
 
-    # make dir structure in temp dir
-    os.makedirs(summary_dir)
-    os.makedirs(model_dir)
+        # make dir structure in temp dir
+        os.makedirs(summary_dir)
+        os.makedirs(model_dir)
 
-    # Save the tensorboardx summaries with sacred
+    # Pass the path of tensorboardX summaries to sacred
     if not config.no_summary:
         _run.info["tensorflow"] = dict()
         _run.info["tensorflow"]["logdirs"] = [summary_dir]
@@ -97,8 +80,9 @@ def main(_config, _run):
     # create and load dataset
     dataset = RandomGraphDataset(root=config.dataset_abs_path, config=config)
     config.max_neighbors = dataset.max_neighbors()
-    dataset = dataset.shuffle()
+    # dataset = dataset.shuffle()
 
+    # TODO if model is loaded, use the same train val test split
     # split into train and test
     split_train_idx = int(
         config.samples * (1 - config.test_split - config.validation_split))
@@ -116,7 +100,7 @@ def main(_config, _run):
         validation_dataset, batch_size=config.batch_size_eval, shuffle=False)
 
     try:
-        if checkpoint is None:
+        if config.load_model is None:
             model = globals()[config.model](
                 config=config,
                 train_writer=train_writer,
@@ -124,6 +108,19 @@ def main(_config, _run):
                 model_type=config.model_type
             )
         else:
+            # TODO allow to load previous models
+            # find latest state of model
+            load_model_dir = os.path.join(config.root_dir, config.run_abs_path, config.model_dir)
+            checkpoint_versions = [name for name in os.listdir(load_model_dir) if name.endswith('.tar')]
+            if 'final.tar' in checkpoint_versions:
+                checkpoint_to_load = 'final.tar'
+            else:
+                checkpoint_versions = [x for x in checkpoint_versions if x.startswith('epoch')].sort()
+                checkpoint_to_load = checkpoint_versions[-1]
+            print('Loading checkpoint {} {} ...'.format(load_model_dir, checkpoint_to_load))
+
+            checkpoint = torch.load(os.path.join(load_model_dir, checkpoint_to_load))
+
             # restore the checkpoint
             model = globals()[config.model](
                 config=config,
@@ -205,10 +202,14 @@ def main(_config, _run):
 
         model.epoch += 1
 
+        # save intermediate models
+        if model.epoch % config.checkpoint_interval == 0:
+            model.save('epoch_{}'.format(model.epoch))
+
     # save the final model
-    final_model_name = 'final.tar'
+    final_model_name = 'final'
     model.save(final_model_name)
-    _run.add_artifact(filename=os.path.join(config.run_abs_path, config.model_dir, final_model_name), name=final_model_name)
+    _run.add_artifact(filename=os.path.join(config.run_abs_path, config.model_dir, final_model_name + '.tar'), name=final_model_name)
 
     ###########################
 
@@ -299,8 +300,7 @@ def main(_config, _run):
 
 
 if __name__ == '__main__':
-    config_from_argparse, remaining_args = Config().parse_args()
-    config_dict = vars(config_from_argparse)
+    config_dict, remaining_args = Config().parse_args()
     ex.add_config(config_dict)
 
     # sacred_default_flags = ['--enforce_clean', '-l', 'NOTSET']

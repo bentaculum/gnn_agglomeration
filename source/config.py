@@ -1,6 +1,10 @@
+import torch
 import argparse
 import os
 import datetime
+import logging
+import json
+from bunch import Bunch
 
 
 class Config():
@@ -264,9 +268,14 @@ class Config():
             default=False,
             help='If true, save results to temp folder. If false, create timestamped directory.'
         )
+        self.parser.add_argument(
+            '--checkpoint_interval',
+            type=positive_int,
+            default=10,
+            help='how often to save a checkpoint of the model that can be used for restarting'
+        )
 
     def parse_args(self):
-        now = datetime.datetime.now().isoformat()
         config, remaining_args = self.parser.parse_known_args()
 
         # detect root path, one level up from the config file
@@ -274,15 +283,46 @@ class Config():
             os.path.dirname(os.path.realpath(__file__))
         )
 
-        # adapt all paths in the config file
-        config.dataset_abs_path = os.path.join(config.root_dir, config.dataset_path)
+        # LOAD OLD CONFIG
+        if config.load_model is not None:
+            if config.load_model == 'latest':
+                # find latest model in the runs path
+                all_runs_dir = os.path.join(config.root_dir, config.run_path)
+                # TODO filter for correct format of directory name, instead of '2019'
+                runs = [name for name in os.listdir(all_runs_dir) if name.startswith('2019')]
+                runs.sort()
+                rel_run_path = runs[-1]
+            else:
+                rel_run_path = config.load_model
 
-        if config.temp:
-            # save to a temporary directory that will be overwritten
-            config.run_abs_path = os.path.join(config.root_dir, config.run_path, 'temp')
+            with open(os.path.join(config.root_dir, config.run_path, rel_run_path, 'config.json')) as json_file:
+                old_config = json.load(json_file)
+            new_config = vars(config)
+
+            # overwrite with possible new config variables, and log a warning
+            # Unfortunately this will use the config default values if no arguments are passed.
+            # So the command line args have to be fully set again for loading a model
+            for k, v in new_config.items():
+                if v != old_config[k] and v is not None:
+                    logging.warning('{} = {} from loaded config is overwritten with "{}"'.format(k, old_config[k], v))
+                    old_config[k] = v
+
+            config = old_config
+
+        # for new model, go to a new directory
         else:
-            # create a custom directory for each run
-            config.run_abs_path = os.path.join(config.root_dir, config.run_path, now)
+            if config.temp:
+                # save to a temporary directory that will be overwritten
+                rel_run_path = 'temp'
+            else:
+                # create a custom directory for each run
+                rel_run_path = datetime.datetime.now().isoformat()
+
+            config = vars(config)
+
+        # set the absolute paths in the config file
+        config['run_abs_path'] = os.path.join(config['root_dir'], config['run_path'], rel_run_path)
+        config['dataset_abs_path'] = os.path.join(config['root_dir'], config['dataset_path'])
 
         return config, remaining_args
 

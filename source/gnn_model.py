@@ -2,6 +2,7 @@ import torch
 from abc import ABC, abstractmethod
 import os
 import tensorboardX
+import json
 
 from classification_problem import ClassificationProblem
 from regression_problem import RegressionProblem
@@ -150,17 +151,24 @@ class GnnModel(torch.nn.Module, ABC):
             self.current_writer.add_histogram(os.path.join(
                 namespace, var_name), var.data, iteration)
 
-
     def save(self, name):
         """
         Should only be called after the end of a training+validation epoch
         """
+        # delete older models
+        load_model_dir = os.path.join(self.config.root_dir, self.config.run_abs_path, self.config.model_dir)
+        checkpoint_versions = [name for name in os.listdir(load_model_dir) if (name.endswith('.tar') and name.startswith('epoch'))]
+        if len(checkpoint_versions) >= 3:
+            os.remove(checkpoint_versions.sort()[0])
 
+        # save the new one
         torch.save({
             'epoch': self.epoch,
             'train_batch_iteration': self.train_batch_iteration,
             'val_batch_iteration': self.val_batch_iteration,
-            'config': self.config,
             'model_state_dict': self.state_dict(),
             'optimizer_state_dict': self.optimizer.state_dict(),
-        }, os.path.join(self.config.run_abs_path, self.config.model_dir, name))
+        }, os.path.join(self.config.run_abs_path, self.config.model_dir, name + '.tar'))
+
+        with open(os.path.join(self.config.run_abs_path, 'config.json'), 'w') as f:
+            json.dump(vars(self.config), f)
