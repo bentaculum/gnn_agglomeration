@@ -29,6 +29,7 @@ from my_graph import MyGraph
 
 ex = Experiment()
 
+
 @ex.main
 @ex.capture
 @LogFileWriter(ex)
@@ -36,11 +37,11 @@ def main(_config, _run, _log):
     config = argparse.Namespace(**_config)
     _log.info('Logging to {}'.format(config.run_abs_path))
 
-
     @atexit.register
     def atexit_tasks():
         # save the tensorboardx summary files
-        summary_dir_exit = os.path.join(config.run_abs_path, config.summary_dir)
+        summary_dir_exit = os.path.join(
+            config.run_abs_path, config.summary_dir)
         summary_compressed = summary_dir_exit + '.tar.gz'
         # remove old tar file
         if os.path.isfile(summary_compressed):
@@ -70,7 +71,8 @@ def main(_config, _run, _log):
     # Pass the path of tensorboardX summaries to sacred
     if not config.no_summary:
         _run.info["tensorflow"] = dict()
-        _run.info["tensorflow"]["logdirs"] = [summary_dir]
+        _run.info["tensorflow"]["logdirs"] = [os.path.join(
+            config.run_abs_path, config.summary_dir)]
 
     # set up the summary writer for tensorboardX
     train_writer = SummaryWriter(os.path.join(
@@ -115,16 +117,21 @@ def main(_config, _run, _log):
         else:
             # TODO allow to load previous models
             # find latest state of model
-            load_model_dir = os.path.join(config.root_dir, config.run_abs_path, config.model_dir)
-            checkpoint_versions = [name for name in os.listdir(load_model_dir) if name.endswith('.tar')]
+            load_model_dir = os.path.join(
+                config.root_dir, config.run_abs_path, config.model_dir)
+            checkpoint_versions = [name for name in os.listdir(
+                load_model_dir) if name.endswith('.tar')]
             if 'final.tar' in checkpoint_versions:
                 checkpoint_to_load = 'final.tar'
             else:
-                checkpoint_versions = [x for x in checkpoint_versions if x.startswith('epoch')].sort()
+                checkpoint_versions = [
+                    x for x in checkpoint_versions if x.startswith('epoch')].sort()
                 checkpoint_to_load = checkpoint_versions[-1]
 
-            _log.info('Loading checkpoint {} ...'.format(os.path.join(load_model_dir, checkpoint_to_load)))
-            checkpoint = torch.load(os.path.join(load_model_dir, checkpoint_to_load))
+            _log.info('Loading checkpoint {} ...'.format(
+                os.path.join(load_model_dir, checkpoint_to_load)))
+            checkpoint = torch.load(os.path.join(
+                load_model_dir, checkpoint_to_load))
 
             # restore the checkpoint
             model = globals()[config.model](
@@ -174,7 +181,8 @@ def main(_config, _run, _log):
         epoch_metric_train /= train_dataset.__len__()
         if not config.no_summary:
             train_writer.add_scalar('_per_epoch/loss', epoch_loss, epoch)
-            train_writer.add_scalar('_per_epoch/metric', epoch_metric_train, epoch)
+            train_writer.add_scalar(
+                '_per_epoch/metric', epoch_metric_train, epoch)
         _run.log_scalar('loss_train', epoch_loss, epoch)
         _run.log_scalar('accuracy_train', epoch_metric_train, epoch)
 
@@ -214,7 +222,12 @@ def main(_config, _run, _log):
     # save the final model
     final_model_name = 'final'
     model.save(final_model_name)
-    _run.add_artifact(filename=os.path.join(config.run_abs_path, config.model_dir, final_model_name + '.tar'), name=final_model_name)
+    _run.add_artifact(
+        filename=os.path.join(
+            config.run_abs_path,
+            config.model_dir,
+            final_model_name + '.tar'),
+        name=final_model_name)
 
     ###########################
 
@@ -252,7 +265,6 @@ def main(_config, _run, _log):
     test_loss /= test_dataset.__len__()
     test_metric /= test_dataset.__len__()
 
-
     # final print routine
     print('')
     print('Maximum # of neighbors within distance {} in dataset: {}'.format(
@@ -277,7 +289,11 @@ def main(_config, _run, _log):
     # plot targets vs predictions. default is a confusion matrix
     model.plot_targets_vs_predictions(
         targets=test_targets, predictions=test_predictions)
-    _run.add_artifact(filename=os.path.join(config.run_abs_path, config.confusion_matrix_path), name=config.confusion_matrix_path)
+    _run.add_artifact(
+        filename=os.path.join(
+            config.run_abs_path,
+            config.confusion_matrix_path),
+        name=config.confusion_matrix_path)
 
     # if Regression, plot targets vs. continuous outputs
     # if isinstance(model.model_type, RegressionProblem):
@@ -292,7 +308,7 @@ def main(_config, _run, _log):
     # plot errors by location
     # plotter = ResultPlotting(config=config)
     # plotter.plot_errors_by_location(
-    #     data=test_dataset, predictions=test_predictions, targets=test_targets)
+    # data=test_dataset, predictions=test_predictions, targets=test_targets)
 
     # plot the graphs in the test dataset for visual inspection
     if config.plot_graphs_testset:
@@ -301,7 +317,8 @@ def main(_config, _run, _log):
             graph.plot_predictions(model.predictions_to_list(
                 model.out_to_predictions(model(g))), i)
 
-    return '\ntrain acc: {0:.3f}\ntest acc: {1:.3f}'.format(final_metric_train, test_metric)
+    return '\ntrain acc: {0:.3f}\ntest acc: {1:.3f}'.format(
+        final_metric_train, test_metric)
 
 
 if __name__ == '__main__':
@@ -321,7 +338,8 @@ if __name__ == '__main__':
     )
 
     if config_dict['telegram']:
-        telegram_obs = TelegramObserver.from_config(os.path.join(config_dict['root_dir'], 'telegram.json'))
+        telegram_obs = TelegramObserver.from_config(
+            os.path.join(config_dict['root_dir'], 'telegram.json'))
         ex.observers.append(telegram_obs)
 
     ex.captured_out_filter = sacred.utils.apply_backspaces_and_linefeeds

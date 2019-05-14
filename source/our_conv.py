@@ -99,7 +99,8 @@ class OurConv(MessagePassing):
         """"""
         # add second dimensionality in case pseudo is 1D
         pseudo = pseudo.unsqueeze(-1) if pseudo.dim() == 1 else pseudo
-        # add third dimensionality for attention head dimension, at penultimate position
+        # add third dimensionality for attention head dimension, at penultimate
+        # position
         pseudo = pseudo.unsqueeze(-2)
 
         # TODO: debatable whether the last dimension should be replicated as

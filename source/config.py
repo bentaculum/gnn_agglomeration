@@ -6,6 +6,7 @@ import logging
 import json
 import pytz
 
+
 class Config():
     def __init__(self):
         self.parser = argparse.ArgumentParser(
@@ -120,8 +121,7 @@ class Config():
             '--plot_graphs_testset',
             type=str2bool,
             default=False,
-            help='Whether to plot the graphs from the test set for visual inspection'
-        )
+            help='Whether to plot the graphs from the test set for visual inspection')
 
         self.parser.add_argument(
             '--validation_split',
@@ -313,9 +313,10 @@ class Config():
             if config.load_model == 'latest':
                 # find latest model in the runs path
                 all_runs_dir = os.path.join(config.root_dir, config.run_path)
-                # TODO filter for correct format of directory name, instead of '2019'
-                runs = [name for name in os.listdir(all_runs_dir) if name.startswith('2019')]
-                runs.sort()
+                # TODO filter for correct format of directory name, instead of
+                # '2019'
+                runs = sorted([name for name in os.listdir(
+                    all_runs_dir) if name.startswith('2019')])
                 rel_run_path = runs[-1]
             else:
                 rel_run_path = config.load_model
@@ -326,10 +327,13 @@ class Config():
 
             # overwrite with possible new config variables, and log a warning
             # Unfortunately this will use the config default values if no arguments are passed.
-            # So the command line args have to be fully set again for loading a model
+            # So the command line args have to be fully set again for loading a
+            # model
             for k, v in new_config.items():
                 if v != old_config[k] and v is not None:
-                    logging.warning('{} = {} from loaded config is overwritten with "{}"'.format(k, old_config[k], v))
+                    logging.warning(
+                        '{} = {} from loaded config is overwritten with "{}"'.format(
+                            k, old_config[k], v))
                     old_config[k] = v
 
             config = old_config
@@ -341,13 +345,16 @@ class Config():
                 rel_run_path = 'temp'
             else:
                 # create a custom directory for each run
-                rel_run_path = datetime.datetime.now(pytz.timezone('US/Eastern')).strftime('%Y%m%dT%H%M%S.%f%z')
+                rel_run_path = datetime.datetime.now(
+                    pytz.timezone('US/Eastern')).strftime('%Y%m%dT%H%M%S.%f%z')
 
             config = vars(config)
 
         # set the absolute paths in the config file
-        config['run_abs_path'] = os.path.join(config['root_dir'], config['run_path'], rel_run_path)
-        config['dataset_abs_path'] = os.path.join(config['root_dir'], config['dataset_path'])
+        config['run_abs_path'] = os.path.join(
+            config['root_dir'], config['run_path'], rel_run_path)
+        config['dataset_abs_path'] = os.path.join(
+            config['root_dir'], config['dataset_path'])
         config.update(getattr(self, config['machine'])())
 
         return config, remaining_args
@@ -383,5 +390,3 @@ def str2bool(v):
         return False
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
-
-

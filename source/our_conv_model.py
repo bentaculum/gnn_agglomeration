@@ -26,7 +26,8 @@ class OurConvModel(GnnModel):
 
     def layers(self):
         # Assert some layer configs
-        # By default, we need to specify the size of the representation between input and output layer
+        # By default, we need to specify the size of the representation between
+        # input and output layer
         assert len(self.config.hidden_units) == self.config.hidden_layers + 1
         # Dropout should be there for input layer + all hidden layers
         assert len(self.config.dropout_probs) == self.config.hidden_layers + 1
@@ -68,11 +69,11 @@ class OurConvModel(GnnModel):
             if self.config.att_heads_concat:
                 in_channels = self.config.hidden_units[i] * \
                     (self.config.kernel_size**(i + 1))
-                out_channels = self.config.hidden_units[i+1] * \
+                out_channels = self.config.hidden_units[i + 1] * \
                     (self.config.kernel_size**(i + 1))
             else:
                 in_channels = self.config.hidden_units[i]
-                out_channels = self.config.hidden_units[i+1]
+                out_channels = self.config.hidden_units[i + 1]
 
             l = OurConv(
                 in_channels=in_channels,

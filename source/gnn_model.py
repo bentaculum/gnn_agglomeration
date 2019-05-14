@@ -129,8 +129,13 @@ class GnnModel(torch.nn.Module, ABC):
             self.current_writer.add_scalar(os.path.join(
                 namespace, var_name, 'gradients_mean'), grad_mean, iteration)
             grad_stddev = torch.std(grad)
-            self.current_writer.add_scalar(os.path.join(
-                namespace, var_name, 'gradients_stddev'), grad_stddev, iteration)
+            self.current_writer.add_scalar(
+                os.path.join(
+                    namespace,
+                    var_name,
+                    'gradients_stddev'),
+                grad_stddev,
+                iteration)
 
             if self.config.log_histograms:
                 self.current_writer.add_histogram(os.path.join(
@@ -157,7 +162,9 @@ class GnnModel(torch.nn.Module, ABC):
         """
         # delete older models
         load_model_dir = os.path.join(
-            self.config.root_dir, self.config.run_abs_path, self.config.model_dir)
+            self.config.root_dir,
+            self.config.run_abs_path,
+            self.config.model_dir)
         checkpoint_versions = [name for name in os.listdir(load_model_dir) if (
             name.endswith('.tar') and name.startswith('epoch'))]
         if len(checkpoint_versions) >= 3:

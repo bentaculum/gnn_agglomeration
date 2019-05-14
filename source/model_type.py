@@ -40,13 +40,26 @@ class ModelType(torch.nn.Module, ABC):
     def plot_targets_vs_predictions(self, targets, predictions):
         np.set_printoptions(suppress=True)
         size = max(max(targets), max(predictions))
-        cm = np.zeros([size+1, size+1], dtype=int)
+        cm = np.zeros([size + 1, size + 1], dtype=int)
         for i in range(len(targets)):
             cm[predictions[i], targets[i]] += 1
         cm = np.flip(cm, axis=0)
-        ax = sns.heatmap(cm, xticklabels=list(range(size+1)), yticklabels=list(reversed(range(size+1))), annot=True, fmt='g')
+        ax = sns.heatmap(
+            cm,
+            xticklabels=list(
+                range(
+                    size + 1)),
+            yticklabels=list(
+                reversed(
+                    range(
+                        size + 1))),
+            annot=True,
+            fmt='g')
         fig = ax.get_figure()
         plt.title('Confusion matrix')
         plt.xlabel('Targets')
         plt.ylabel('Predictions')
-        fig.savefig(os.path.join(self.config.run_abs_path, self.config.confusion_matrix_path))
+        fig.savefig(
+            os.path.join(
+                self.config.run_abs_path,
+                self.config.confusion_matrix_path))
