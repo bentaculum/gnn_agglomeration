@@ -131,7 +131,7 @@ def main(_config, _run, _log):
             _log.info('Loading checkpoint {} ...'.format(
                 os.path.join(load_model_dir, checkpoint_to_load)))
             checkpoint = torch.load(os.path.join(
-                load_model_dir, checkpoint_to_load))
+                load_model_dir, checkpoint_to_load), map_location=device)
 
             # restore the checkpoint
             model = globals()[config.model](
