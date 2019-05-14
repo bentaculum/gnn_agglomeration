@@ -131,8 +131,9 @@ def main(_config, _run, _log):
             _log.info('Loading checkpoint {} ...'.format(
                 os.path.join(load_model_dir, checkpoint_to_load)))
             map_device = 'cuda' if torch.cuda.is_available() else 'cpu'
+            print(map_device)
             checkpoint = torch.load(os.path.join(
-                load_model_dir, checkpoint_to_load), map_location=map_device)
+                load_model_dir, checkpoint_to_load))
 
             # restore the checkpoint
             model = globals()[config.model](
@@ -144,8 +145,16 @@ def main(_config, _run, _log):
                 val_batch_iteration=checkpoint['val_batch_iteration'],
                 model_type=config.model_type
             )
+            print(device)
+            model.to(device)
             model.load_state_dict(checkpoint['model_state_dict'])
+            model.to(device)
             model.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+            model.to(device)
+            for state in model.optimizer.state.values():
+                for k, v in state.items():
+                    if isinstance(v, torch.Tensor):
+                        state[k] = v.to(device)
 
     except KeyError as e:
         print(e)
