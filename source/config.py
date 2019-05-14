@@ -4,8 +4,7 @@ import os
 import datetime
 import logging
 import json
-import sacred
-
+import pytz
 
 class Config():
     def __init__(self):
@@ -103,7 +102,7 @@ class Config():
             '--log_namespaces',
             type=str,
             nargs='+',
-            default=None,
+            default=[],
             help='If you want to log only specific namespaces (e.g. layers), specify them here'
         )
 
@@ -336,7 +335,7 @@ class Config():
                 rel_run_path = 'temp'
             else:
                 # create a custom directory for each run
-                rel_run_path = datetime.datetime.now().isoformat()
+                rel_run_path = datetime.datetime.now(pytz.timezone('US/Eastern')).strftime('%Y%m%dT%H%M%S.%f%z')
 
             config = vars(config)
 

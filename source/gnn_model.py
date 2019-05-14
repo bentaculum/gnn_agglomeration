@@ -109,7 +109,7 @@ class GnnModel(torch.nn.Module, ABC):
             return
 
         # optional filter on namespaces
-        if self.config.log_namespaces:
+        if len(self.config.log_namespaces) > 0:
             if namespace not in self.config.log_namespaces:
                 return
 
