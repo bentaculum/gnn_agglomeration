@@ -14,16 +14,19 @@ class AttentionMLP(torch.nn.Module):
             layers=1,
             layer_dims=[1],
             bias=True,
-            non_linearity='relu'):
+            non_linearity='relu',
+            batch_norm=True):
         super(AttentionMLP, self).__init__()
         assert len(layer_dims) == layers
 
         self.layers = layers
         self.bias = bias
         self.non_linearity = non_linearity
+        self.batch_norm = batch_norm
 
         self.weight_list = torch.nn.ParameterList()
         self.bias_list = torch.nn.ParameterList()
+        self.batch_norm_list = torch.nn.ModuleList()
 
         w_in = Parameter(torch.Tensor(1, heads, layer_dims[0], in_features))
         self.weight_list.append(w_in)
@@ -33,10 +36,14 @@ class AttentionMLP(torch.nn.Module):
                 1, heads, layer_dims[i + 1], layer_dims[i]))
             self.weight_list.append(w)
 
-        if self.bias:
+        if bias:
             for i in range(layers):
                 b = Parameter(torch.Tensor(1, heads, layer_dims[i]))
                 self.bias_list.append(b)
+        if batch_norm:
+            for i in range(layers):
+                bn = torch.nn.BatchNorm1d(heads)
+                self.batch_norm_list.append(bn)
 
         self.reset_parameters()
 
@@ -58,6 +65,8 @@ class AttentionMLP(torch.nn.Module):
             if self.bias:
                 x += self.bias_list[i]
             x = getattr(F, self.non_linearity)(x)
+            if self.batch_norm:
+                x = self.batch_norm_list[i](x)
 
         # after last layer, squeeze the last dimension, if it's of size 1
         x = x.squeeze(dim=-1)

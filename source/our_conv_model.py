@@ -38,6 +38,7 @@ class OurConvModel(GnnModel):
             'layers': self.config.att_layers,
             'layer_dims': self.config.att_layer_dims,
             'non_linearity': self.config.att_non_linearity,
+            'batch_norm': self.config.att_batch_norm,
         }
 
         out_channels_in = self.config.hidden_units[0]

@@ -240,6 +240,12 @@ class Config():
             type=str,
             default='relu',
             help='Attention NN: torch.nn.functional non linearity to use e.g. relu')
+        self.parser.add_argument(
+            '--att_batch_norm',
+            type=str2bool,
+            default=True,
+            help='Attention NN: whether to use batch normalization'
+        )
 
         self.parser.add_argument(
             '--load_model',
