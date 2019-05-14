@@ -53,7 +53,7 @@ class Config():
         self.parser.add_argument(
             '--theta_max',
             type=float,
-            default=0.5,
+            default=0.3,
             help='nodes with lower euclidian distance will be connected')
         self.parser.add_argument(
             '--theta',
@@ -161,9 +161,9 @@ class Config():
             default='relu',
             help='Activation function from torch.nn.functional, used for hidden layers, e.g. relu | sigmoid | tanh')
         self.parser.add_argument('--batch_size_train', type=positive_int,
-                                 default=1, help='batch size for training')
+                                 default=8, help='batch size for training')
         self.parser.add_argument('--batch_size_eval', type=positive_int,
-                                 default=1, help='batch size for evaluation')
+                                 default=8, help='batch size for evaluation')
 
         self.parser.add_argument(
             '--hidden_layers',
