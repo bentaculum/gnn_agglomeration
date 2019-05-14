@@ -24,10 +24,10 @@ class RegressionProblem(ModelType):
         return F.mse_loss(inputs, targets.float(), reduction='mean')
 
     def out_to_predictions(self, out):
-        return out.round()
+        return out.round().long()
 
     def metric(self, predictions, targets):
-        correct = torch.squeeze(predictions).eq(targets.float()).sum().item()
+        correct = torch.squeeze(predictions).eq(targets).sum().item()
         acc = correct / targets.size(0)
         return acc
 
