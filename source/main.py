@@ -130,8 +130,9 @@ def main(_config, _run, _log):
 
             _log.info('Loading checkpoint {} ...'.format(
                 os.path.join(load_model_dir, checkpoint_to_load)))
+            map_device = 'cuda' if torch.cuda.is_available() else 'cpu'
             checkpoint = torch.load(os.path.join(
-                load_model_dir, checkpoint_to_load), map_location=device)
+                load_model_dir, checkpoint_to_load), map_location=map_device)
 
             # restore the checkpoint
             model = globals()[config.model](
