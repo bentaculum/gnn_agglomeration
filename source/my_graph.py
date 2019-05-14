@@ -14,8 +14,10 @@ class MyGraph():
         self.data = data
 
     def create_random_graph(self):
-        pos = torch.rand(self.config.nodes,
-                         self.config.euclidian_dimensionality)
+        m = torch.distributions.beta.Beta(2, 3.5)
+        pos = m.sample(torch.Size([self.config.nodes, self.config.euclidian_dimensionality]))
+        # pos = torch.rand(self.config.nodes,
+        #                  self.config.euclidian_dimensionality)
 
         # connect all edges within distance theta_max O(n^2)
         edges = []
@@ -31,15 +33,15 @@ class MyGraph():
                 # print(torch.dist(node1, node2))
                 if torch.dist(node1, node2) < self.config.theta_max:
                     # add bi-directed edges to use directed pseudo-coordinates
-                    # in MoNet
                     edges.append([i, j])
                     edges.append([j, i])
                     # if distance < theta, count the nodes as a neighbor in
                     # euclidian space
                     if torch.dist(node1, node2) < self.config.theta:
                         # Only if the two nodes belong to the same node class,
+                        # and if it's not the same node,
                         # increase the target
-                        if x[i] == x[j]:
+                        if (x[i] == x[j]) and i != j:
                             y[i] += 1
                             y[j] += 1
 
@@ -81,6 +83,9 @@ class MyGraph():
         # prepare the targets to be displayed
         labels_dict = {}
 
+        # TODO this is a quick fix for two node classes. Generalize!
+        node_color = ['r' if features[0] == 0 else 'y' for features in self.data.x]
+
         for i in range(self.data.pos.size(0)):
             pos_dict[i] = self.data.pos[i].tolist()
             if self.config.euclidian_dimensionality == 1:
@@ -90,14 +95,14 @@ class MyGraph():
                 int(pred[i]), int(self.data.y[i].item()))
 
         self.set_plotting_style()
-        nx.draw_networkx(g, pos_dict, labels=labels_dict, font_size=10)
+        nx.draw_networkx(g, pos_dict, labels=labels_dict, node_color=node_color, font_size=10)
         plt.title(
             "Number of neighbors within euclidian distance {}.\nEach node displays 'pred:target'".format(
                 self.config.theta))
 
         self.add_to_plotting_style()
         img_path = os.path.join(self.config.run_abs_path,
-                                'graph_with_predictions.png')
+                                'graph_with_predictions_{}.png'.format(graph_nr))
         if os.path.isfile(img_path):
             os.remove(img_path)
         plt.savefig(img_path)
@@ -108,8 +113,8 @@ class MyGraph():
         plt.figure(figsize=(8, 8))
         plt.xlabel('x (euclidian)')
         plt.ylabel('y (euclidian)')
-        plt.xlim(-0.2, 1.2)
-        plt.ylim(-0.2, 1.2)
+        plt.xlim(-0.1, 1.1)
+        plt.ylim(-0.1, 1.1)
 
     def add_to_plotting_style(self):
         plt.tick_params(axis='x', which='both', bottom=True, labelbottom=True)

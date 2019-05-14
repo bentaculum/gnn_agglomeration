@@ -315,8 +315,9 @@ def main(_config, _run, _log):
     if config.plot_graphs_testset:
         for i, g in enumerate(test_dataset):
             graph = MyGraph(config, g)
-            graph.plot_predictions(model.predictions_to_list(
-                model.out_to_predictions(model(g))), i)
+            graph.plot_predictions(
+                pred=model.predictions_to_list(model.out_to_predictions(model(g))),
+                graph_nr=i)
 
     return '\ntrain acc: {0:.3f}\ntest acc: {1:.3f}'.format(
         final_metric_train, test_metric)
