@@ -15,14 +15,18 @@ class AttentionMLP(torch.nn.Module):
             layer_dims=[1],
             bias=True,
             non_linearity='relu',
-            batch_norm=True):
+            batch_norm=True,
+            dropout_probs=[0.0]):
         super(AttentionMLP, self).__init__()
         assert len(layer_dims) == layers
+        # Dropout should be there for input layer + all hidden layers
+        assert len(dropout_probs) == layers
 
         self.layers = layers
         self.bias = bias
         self.non_linearity = non_linearity
         self.batch_norm = batch_norm
+        self.dropout_probs = dropout_probs
 
         self.weight_list = torch.nn.ParameterList()
         self.bias_list = torch.nn.ParameterList()
@@ -67,6 +71,7 @@ class AttentionMLP(torch.nn.Module):
             x = getattr(F, self.non_linearity)(x)
             if self.batch_norm:
                 x = self.batch_norm_list[i](x)
+            x = F.dropout(x, p=self.dropout_probs[i], training=self.training)
 
         # after last layer, squeeze the last dimension, if it's of size 1
         x = x.squeeze(dim=-1)

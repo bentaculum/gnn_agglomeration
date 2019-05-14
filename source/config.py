@@ -217,7 +217,7 @@ class Config():
             help='whether to concat or average the outputs of the different attention heads'
         )
         self.parser.add_argument(
-            '--att_dropout',
+            '--att_final_dropout',
             type=unit_float,
             default=0.0,
             help='Dropout probability for the final attention vector')
@@ -246,6 +246,12 @@ class Config():
             default=True,
             help='Attention NN: whether to use batch normalization'
         )
+        self.parser.add_argument(
+            '--att_dropout_probs',
+            type=unit_float,
+            nargs='+',
+            default=[0.0],
+            help='dropout probabilites during training for the input layer and all the hidden layers')
 
         self.parser.add_argument(
             '--load_model',

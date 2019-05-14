@@ -40,6 +40,7 @@ class OurConvModel(GnnModel):
             'layer_dims': self.config.att_layer_dims,
             'non_linearity': self.config.att_non_linearity,
             'batch_norm': self.config.att_batch_norm,
+            'dropout_probs': self.config.att_dropout_probs,
         }
 
         out_channels_in = self.config.hidden_units[0]
@@ -50,7 +51,7 @@ class OurConvModel(GnnModel):
             heads=self.config.kernel_size,
             concat=self.config.att_heads_concat,
             negative_slope=0.2,
-            dropout=self.config.att_dropout,
+            dropout=self.config.att_final_dropout,
             bias=self.config.use_bias,
             attention_nn_params=attention_nn_params
         )
@@ -82,7 +83,7 @@ class OurConvModel(GnnModel):
                 heads=self.config.kernel_size,
                 concat=self.config.att_heads_concat,
                 negative_slope=0.2,
-                dropout=self.config.att_dropout,
+                dropout=self.config.att_final_dropout,
                 bias=self.config.use_bias,
                 attention_nn_params=attention_nn_params
             )

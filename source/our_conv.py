@@ -78,7 +78,8 @@ class OurConv(MessagePassing):
             layer_dims=attention_nn_params['layer_dims'],
             bias=bias,
             non_linearity=attention_nn_params['non_linearity'],
-            batch_norm=attention_nn_params['batch_norm']
+            batch_norm=attention_nn_params['batch_norm'],
+            dropout_probs=attention_nn_params['dropout_probs']
         )
 
         if bias and concat:
