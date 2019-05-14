@@ -114,6 +114,7 @@ def main(_config, _run, _log):
                 val_writer=val_writer,
                 model_type=config.model_type
             )
+            model = model.to(device)
         else:
             # TODO allow to load previous models
             # find latest state of model
@@ -130,8 +131,6 @@ def main(_config, _run, _log):
 
             _log.info('Loading checkpoint {} ...'.format(
                 os.path.join(load_model_dir, checkpoint_to_load)))
-            map_device = 'cuda' if torch.cuda.is_available() else 'cpu'
-            print(map_device)
             checkpoint = torch.load(os.path.join(
                 load_model_dir, checkpoint_to_load))
 
@@ -145,23 +144,15 @@ def main(_config, _run, _log):
                 val_batch_iteration=checkpoint['val_batch_iteration'],
                 model_type=config.model_type
             )
-            print(device)
+            # model.to(device) has to be executed before loading the state dicts
             model.to(device)
             model.load_state_dict(checkpoint['model_state_dict'])
-            model.to(device)
             model.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-            model.to(device)
-            for state in model.optimizer.state.values():
-                for k, v in state.items():
-                    if isinstance(v, torch.Tensor):
-                        state[k] = v.to(device)
 
     except KeyError as e:
         print(e)
         raise NotImplementedError(
             'The model you have specified is not implemented')
-
-    model = model.to(device)
 
     for epoch in range(model.epoch, config.training_epochs):
         # put model in training mode (e.g. use dropout)
