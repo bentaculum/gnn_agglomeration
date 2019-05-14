@@ -162,7 +162,7 @@ class GnnModel(torch.nn.Module, ABC):
             name.endswith('.tar') and name.startswith('epoch'))]
         if len(checkpoint_versions) >= 3:
             checkpoint_versions.sort()
-            os.remove(checkpoint_versions[0])
+            os.remove(os.path.join(load_model_dir, checkpoint_versions[0]))
 
         # save the new one
         torch.save({
