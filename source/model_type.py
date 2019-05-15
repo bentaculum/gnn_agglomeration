@@ -38,6 +38,8 @@ class ModelType(torch.nn.Module, ABC):
         pass
 
     def plot_targets_vs_predictions(self, targets, predictions):
+        # TODO improve: clip predictions to 0 as a quick fix
+        predictions = [x if x > 0 else 0 for x in predictions]
         np.set_printoptions(suppress=True)
         size = max(max(targets), max(predictions))
         cm = np.zeros([size + 1, size + 1], dtype=int)
