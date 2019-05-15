@@ -266,6 +266,11 @@ def main(_config, _run, _log):
     test_loss /= test_dataset.__len__()
     test_metric /= test_dataset.__len__()
 
+    _run.log_scalar('loss_test', test_metric, config.training_epochs)
+    _run.log_scalar('accuracy_test', test_metric, config.training_epochs)
+    total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    _run.log_scalar('nr_params', total_params, config.training_epochs)
+
     # final print routine
     print('')
     print('Maximum # of neighbors within distance {} in dataset: {}'.format(
@@ -275,6 +280,7 @@ def main(_config, _run, _log):
     for key, value in sorted(dic.items(), key=lambda x: x[0]):
         print("{} : {}".format(key, value))
     print('')
+    print('Total number of parameters: {}'.format(total_params))
     print('Mean train loss ({0} samples): {1:.3f}'.format(
         train_dataset.__len__(),
         final_loss_train))
