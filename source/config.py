@@ -191,7 +191,7 @@ class Config():
             '--dropout_probs',
             type=unit_float,
             nargs='+',
-            default=[0.5],
+            default=[0.0],
             help='dropout probabilites during training for the input layer and all the hidden layers')
         self.parser.add_argument(
             '--adam_lr',
