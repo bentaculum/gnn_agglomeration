@@ -76,7 +76,7 @@ class OurConv(MessagePassing):
             in_features=2 * out_channels + dim,
             layers=attention_nn_params['layers'],
             layer_dims=attention_nn_params['layer_dims'],
-            bias=bias,
+            bias=attention_nn_params['bias'],
             non_linearity=attention_nn_params['non_linearity'],
             batch_norm=attention_nn_params['batch_norm'],
             dropout_probs=attention_nn_params['dropout_probs']

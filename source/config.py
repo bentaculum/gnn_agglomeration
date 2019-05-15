@@ -182,6 +182,12 @@ class Config():
             default=False,
             help='whether to use an additive bias')
         self.parser.add_argument(
+            '--fc_bias',
+            type=str2bool,
+            default=False,
+            help='whether to use a bias term for the final fully connected layer'
+        )
+        self.parser.add_argument(
             '--dropout_type',
             type=str,
             default='dropout',
@@ -263,7 +269,13 @@ class Config():
             type=unit_float,
             nargs='+',
             default=[0.0],
-            help='dropout probabilites during training for the input layer and all the hidden layers')
+            help='Attention NN: dropout probabilites during training for the input layer and all the hidden layers')
+        self.parser.add_argument(
+            '--att_bias',
+            type=str2bool,
+            default=False,
+            help='Attention NN: option to use bias'
+        )
 
         self.parser.add_argument(
             '--load_model',

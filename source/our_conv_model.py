@@ -41,6 +41,7 @@ class OurConvModel(GnnModel):
             'non_linearity': self.config.att_non_linearity,
             'batch_norm': self.config.att_batch_norm,
             'dropout_probs': self.config.att_dropout_probs,
+            'bias': self.config.att_bias,
         }
 
         out_channels_in = self.config.hidden_units[0]
@@ -106,7 +107,7 @@ class OurConvModel(GnnModel):
         self.fc = torch.nn.Linear(
             in_features=fc_in_features,
             out_features=self.model_type.out_channels,
-            bias=self.config.use_bias)
+            bias=self.config.fc_bias)
 
     def forward(self, data):
         x, edge_index, edge_attr = data.x, data.edge_index, data.edge_attr
@@ -124,7 +125,7 @@ class OurConvModel(GnnModel):
                         l.att.weight_list[j],
                         'layer_{}'.format(i),
                         'att_mlp/weight_layer_{}'.format(j))
-                    if self.config.use_bias:
+                    if self.config.att_bias:
                         self.write_to_variable_summary(
                             l.att.bias_list[j], 'layer_{}'.format(i), 'att_mlp/bias_layer_{}'.format(j))
 
@@ -147,7 +148,7 @@ class OurConvModel(GnnModel):
         if self.training:
             self.write_to_variable_summary(
                 self.fc.weight, 'out_layer', 'weights')
-            if self.config.use_bias:
+            if self.config.fc_bias:
                 self.write_to_variable_summary(
                     self.fc.bias, 'out_layer', 'bias')
         x = self.fc(x)
