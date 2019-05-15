@@ -37,19 +37,9 @@ def main(_config, _run, _log):
     config = argparse.Namespace(**_config)
     _log.info('Logging to {}'.format(config.run_abs_path))
 
-    @atexit.register
-    def atexit_tasks():
-        # save the tensorboardx summary files
-        summary_dir_exit = os.path.join(
-            config.run_abs_path, config.summary_dir)
-        summary_compressed = summary_dir_exit + '.tar.gz'
-        # remove old tar file
-        if os.path.isfile(summary_compressed):
-            os.remove(summary_compressed)
-
-        with tarfile.open(summary_compressed, mode='w:gz') as archive:
-            archive.add(summary_dir_exit, arcname='summary', recursive=True)
-        _run.add_artifact(filename=summary_compressed, name='summary.tar.gz')
+    # -----------------------------------------------
+    # ---------------- CREATE SETUP -----------------
+    # -----------------------------------------------
 
     # make necessary directory structure
     if not os.path.isdir(config.run_abs_path):
@@ -155,6 +145,126 @@ def main(_config, _run, _log):
         raise NotImplementedError(
             'The model you have specified is not implemented')
 
+    total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    _run.log_scalar('nr_params', total_params, config.training_epochs)
+
+    @atexit.register
+    def atexit_tasks():
+
+        # -----------------------------------------------
+        # ---------------- EVALUATION ROUTINE -----------
+        # -----------------------------------------------
+
+        # save the tensorboardx summary files
+        summary_dir_exit = os.path.join(
+            config.run_abs_path, config.summary_dir)
+        summary_compressed = summary_dir_exit + '.tar.gz'
+        # remove old tar file
+        if os.path.isfile(summary_compressed):
+            os.remove(summary_compressed)
+
+        with tarfile.open(summary_compressed, mode='w:gz') as archive:
+            archive.add(summary_dir_exit, arcname='summary', recursive=True)
+        _run.add_artifact(filename=summary_compressed, name='summary.tar.gz')
+
+        model.eval()
+        model.current_writer = None
+
+        # train loss
+        final_loss_train = 0.0
+        final_metric_train = 0.0
+        for data in data_loader_train:
+            data = data.to(device)
+            out = model(data)
+            final_loss_train += model.loss(out, data.y).item() * data.num_graphs
+            final_metric_train += model.out_to_metric(
+                out, data.y) * data.num_graphs
+        final_loss_train /= train_dataset.__len__()
+        final_metric_train /= train_dataset.__len__()
+
+        # test loss
+        data_loader_test = DataLoader(
+            test_dataset, batch_size=config.batch_size_eval, shuffle=False)
+        test_loss = 0.0
+        test_metric = 0.0
+        test_predictions = []
+        test_targets = []
+
+        for data in data_loader_test:
+            data = data.to(device)
+            out = model(data)
+            test_loss += model.loss(out, data.y).item() * data.num_graphs
+            test_metric += model.out_to_metric(out, data.y) * data.num_graphs
+            pred = model.out_to_predictions(out)
+            test_predictions.extend(model.predictions_to_list(pred))
+            test_targets.extend(data.y.tolist())
+        test_loss /= test_dataset.__len__()
+        test_metric /= test_dataset.__len__()
+
+        _run.log_scalar('loss_test', test_loss, config.training_epochs)
+        _run.log_scalar('accuracy_test', test_metric, config.training_epochs)
+
+        # final print routine
+        print('')
+        print('Maximum # of neighbors within distance {} in dataset: {}'.format(
+            config.theta, config.max_neighbors))
+        print('# of neighbors, distribution:')
+        dic = dataset.neighbors_distribution()
+        for key, value in sorted(dic.items(), key=lambda x: x[0]):
+            print("{} : {}".format(key, value))
+        print('')
+        print('Total number of parameters: {}'.format(total_params))
+        print('Mean train loss ({0} samples): {1:.3f}'.format(
+            train_dataset.__len__(),
+            final_loss_train))
+        print('Mean accuracy on train set: {0:.3f}'.format(
+            final_metric_train))
+        print('Mean test loss ({0} samples): {1:.3f}'.format(
+            test_dataset.__len__(),
+            test_loss))
+        print('Mean accuracy on test set: {0:.3f}'.format(
+            test_metric))
+        print('')
+
+        # plot targets vs predictions. default is a confusion matrix
+        model.plot_targets_vs_predictions(
+            targets=test_targets, predictions=test_predictions)
+        _run.add_artifact(
+            filename=os.path.join(
+                config.run_abs_path,
+                config.confusion_matrix_path),
+            name=config.confusion_matrix_path)
+
+        # if Regression, plot targets vs. continuous outputs
+        # if isinstance(model.model_type, RegressionProblem):
+        #     test_outputs = []
+        #     for data in data_loader_test:
+        #         data = data.to(device)
+        #         out = torch.squeeze(model(data)).tolist()
+        #         test_outputs.extend(out)
+        #     model.model_type.plot_targets_vs_outputs(
+        #         targets=test_targets, outputs=test_outputs)
+
+        # plot errors by location
+        # plotter = ResultPlotting(config=config)
+        # plotter.plot_errors_by_location(
+        # data=test_dataset, predictions=test_predictions, targets=test_targets)
+
+        # plot the graphs in the test dataset for visual inspection
+        if config.plot_graphs_testset:
+            for i, g in enumerate(test_dataset):
+                graph = MyGraph(config, g)
+                graph.plot_predictions(
+                    pred=model.predictions_to_list(model.out_to_predictions(model(g))),
+                    graph_nr=i)
+
+        return '\ntrain acc: {0:.3f}\ntest acc: {1:.3f}'.format(
+            final_metric_train, test_metric)
+
+    # -----------------------------------------------
+    # ---------------- TRAINING LOOP ----------------
+    # -----------------------------------------------
+
     for epoch in range(model.epoch, config.training_epochs):
         # put model in training mode (e.g. use dropout)
         model.train()
@@ -238,101 +348,7 @@ def main(_config, _run, _log):
 
     ###########################
 
-    model.eval()
-    model.current_writer = None
-
-    # train loss
-    final_loss_train = 0.0
-    final_metric_train = 0.0
-    for data in data_loader_train:
-        data = data.to(device)
-        out = model(data)
-        final_loss_train += model.loss(out, data.y).item() * data.num_graphs
-        final_metric_train += model.out_to_metric(
-            out, data.y) * data.num_graphs
-    final_loss_train /= train_dataset.__len__()
-    final_metric_train /= train_dataset.__len__()
-
-    # test loss
-    data_loader_test = DataLoader(
-        test_dataset, batch_size=config.batch_size_eval, shuffle=False)
-    test_loss = 0.0
-    test_metric = 0.0
-    test_predictions = []
-    test_targets = []
-
-    for data in data_loader_test:
-        data = data.to(device)
-        out = model(data)
-        test_loss += model.loss(out, data.y).item() * data.num_graphs
-        test_metric += model.out_to_metric(out, data.y) * data.num_graphs
-        pred = model.out_to_predictions(out)
-        test_predictions.extend(model.predictions_to_list(pred))
-        test_targets.extend(data.y.tolist())
-    test_loss /= test_dataset.__len__()
-    test_metric /= test_dataset.__len__()
-
-    _run.log_scalar('loss_test', test_metric, config.training_epochs)
-    _run.log_scalar('accuracy_test', test_metric, config.training_epochs)
-    total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    _run.log_scalar('nr_params', total_params, config.training_epochs)
-
-    # final print routine
-    print('')
-    print('Maximum # of neighbors within distance {} in dataset: {}'.format(
-        config.theta, config.max_neighbors))
-    print('# of neighbors, distribution:')
-    dic = dataset.neighbors_distribution()
-    for key, value in sorted(dic.items(), key=lambda x: x[0]):
-        print("{} : {}".format(key, value))
-    print('')
-    print('Total number of parameters: {}'.format(total_params))
-    print('Mean train loss ({0} samples): {1:.3f}'.format(
-        train_dataset.__len__(),
-        final_loss_train))
-    print('Mean accuracy on train set: {0:.3f}'.format(
-        final_metric_train))
-    print('Mean test loss ({0} samples): {1:.3f}'.format(
-        test_dataset.__len__(),
-        test_loss))
-    print('Mean accuracy on test set: {0:.3f}'.format(
-        test_metric))
-    print('')
-
-    # plot targets vs predictions. default is a confusion matrix
-    model.plot_targets_vs_predictions(
-        targets=test_targets, predictions=test_predictions)
-    _run.add_artifact(
-        filename=os.path.join(
-            config.run_abs_path,
-            config.confusion_matrix_path),
-        name=config.confusion_matrix_path)
-
-    # if Regression, plot targets vs. continuous outputs
-    # if isinstance(model.model_type, RegressionProblem):
-    #     test_outputs = []
-    #     for data in data_loader_test:
-    #         data = data.to(device)
-    #         out = torch.squeeze(model(data)).tolist()
-    #         test_outputs.extend(out)
-    #     model.model_type.plot_targets_vs_outputs(
-    #         targets=test_targets, outputs=test_outputs)
-
-    # plot errors by location
-    # plotter = ResultPlotting(config=config)
-    # plotter.plot_errors_by_location(
-    # data=test_dataset, predictions=test_predictions, targets=test_targets)
-
-    # plot the graphs in the test dataset for visual inspection
-    if config.plot_graphs_testset:
-        for i, g in enumerate(test_dataset):
-            graph = MyGraph(config, g)
-            graph.plot_predictions(
-                pred=model.predictions_to_list(model.out_to_predictions(model(g))),
-                graph_nr=i)
-
-    return '\ntrain acc: {0:.3f}\ntest acc: {1:.3f}'.format(
-        final_metric_train, test_metric)
+    return atexit_tasks()
 
 
 if __name__ == '__main__':
@@ -359,3 +375,4 @@ if __name__ == '__main__':
     ex.captured_out_filter = sacred.utils.apply_backspaces_and_linefeeds
 
     r = ex.run_commandline(argv)
+    os._exit(0)
