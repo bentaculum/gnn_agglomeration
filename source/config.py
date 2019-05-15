@@ -209,6 +209,18 @@ class Config():
             default=True,
             help='whether to use Batch Normalization'
         )
+        self.parser.add_argument(
+            '--clip_grad',
+            type=str2bool,
+            default=True,
+            help='whether to use gradient clipping'
+        )
+        self.parser.add_argument(
+            '--clip_value',
+            type=float,
+            default=1.0,
+            help='gradients are clipped at this value'
+        )
 
         self.parser.add_argument(
             '--att_heads_concat',

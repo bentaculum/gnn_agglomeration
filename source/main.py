@@ -175,6 +175,11 @@ def main(_config, _run, _log):
             model.optimizer.zero_grad()
 
             loss.backward()
+
+            # Gradient clipping
+            if config.clip_grad:
+                torch.nn.utils.clip_grad_value_(parameters=model.parameters(), clip_value=config.clip_value)
+
             model.optimizer.step()
             model.train_batch_iteration += 1
 
