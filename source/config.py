@@ -158,7 +158,7 @@ class Config():
         self.parser.add_argument(
             '--non_linearity',
             type=str,
-            default='relu',
+            default='leaky_relu',
             help='Activation function from torch.nn.functional, used for hidden layers, e.g. relu | sigmoid | tanh')
         self.parser.add_argument('--batch_size_train', type=positive_int,
                                  default=8, help='batch size for training')
@@ -238,7 +238,7 @@ class Config():
         self.parser.add_argument(
             '--att_non_linearity',
             type=str,
-            default='relu',
+            default='leaky_relu',
             help='Attention NN: torch.nn.functional non linearity to use e.g. relu')
         self.parser.add_argument(
             '--att_batch_norm',
