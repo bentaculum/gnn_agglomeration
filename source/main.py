@@ -12,6 +12,7 @@ from sacred.stflow import LogFileWriter
 import atexit
 import tarfile
 import argparse
+import json
 
 from config import Config
 from gcn_model import GcnModel
@@ -148,6 +149,12 @@ def main(_config, _run, _log):
 
     total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     _run.log_scalar('nr_params', total_params, config.training_epochs)
+
+    # save config to file and store in DB
+    config_filepath = os.path.join(config.run_abs_path, 'config.json')
+    with open(config_filepath, 'w') as f:
+        json.dump(vars(config), f)
+    _run.add_artifact(filename=config_filepath)
 
     @atexit.register
     def atexit_tasks():
