@@ -233,6 +233,13 @@ class Config():
             default=1.0,
             help='gradients are clipped at this value'
         )
+        self.parser.add_argument(
+            '--clip_method',
+            type=str,
+            choices=['value', 'inf', '1', '2'],
+            default='value',
+            help='gradient clipping per value or L_-norm'
+        )
 
         self.parser.add_argument(
             '--att_heads_concat',

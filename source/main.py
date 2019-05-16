@@ -293,7 +293,17 @@ def main(_config, _run, _log):
 
             # Gradient clipping
             if config.clip_grad:
-                torch.nn.utils.clip_grad_value_(parameters=model.parameters(), clip_value=config.clip_value)
+                if config.clip_method == 'value':
+                    torch.nn.utils.clip_grad_value_(
+                        parameters=model.parameters(),
+                        clip_value=config.clip_value
+                    )
+                else:
+                    torch.nn.utils.clip_grad_norm_(
+                        parameters=model.parameters(),
+                        max_norm=config.clip_value,
+                        norm_type=float(config.clip_method)
+                    )
 
             model.optimizer.step()
             model.train_batch_iteration += 1
