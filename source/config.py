@@ -158,7 +158,7 @@ class Config():
         self.parser.add_argument(
             '--standardize_targets',
             type=str2bool,
-            default=False,
+            default=True,
             help='targets to mean 0, std 1'
         )
         self.parser.add_argument(
