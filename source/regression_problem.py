@@ -23,12 +23,16 @@ class RegressionProblem(ModelType):
     def loss(self, inputs, targets):
         # TODO standardizing on the fly might be costly
         inputs = inputs.squeeze()
-        std_targets = (targets.float() - self.config.targets_mean) / self.config.targets_std
-        return F.mse_loss(inputs, std_targets, reduction='mean')
+        targets = targets.float()
+        if self.config.standardize_targets:
+            targets = (targets - self.config.targets_mean) / self.config.targets_std
+        return F.mse_loss(inputs, targets, reduction='mean')
 
     def out_to_predictions(self, out):
-        std_out = out.squeeze() * self.config.targets_std + self.config.targets_mean
-        return std_out.round().long()
+        out = out.squeeze()
+        if self.config.standardize_targets:
+            out = out * self.config.targets_std + self.config.targets_mean
+        return out.round().long()
 
     def metric(self, predictions, targets):
         correct = torch.squeeze(predictions).eq(targets).sum().item()

@@ -78,10 +78,10 @@ class Config():
             help='relative directory to save temporary summary')
 
         self.parser.add_argument(
-            '--no_summary',
-            action='store_true',
-            default=False,
-            help='if passed, tensorboardx will not be used to monitor the training')
+            '--write_summary',
+            type=str2bool,
+            default=True,
+            help='option to use tensorboardx to monitor the training')
         self.parser.add_argument(
             '--log_only_gradients',
             type=str2bool,
@@ -155,6 +155,12 @@ class Config():
             type=positive_int,
             default=100,
             help='Number of random graphs to create, if a new dataset is created')
+        self.parser.add_argument(
+            '--standardize_targets',
+            type=str2bool,
+            default=False,
+            help='targets to mean 0, std 1'
+        )
         self.parser.add_argument(
             '--non_linearity',
             type=str,
