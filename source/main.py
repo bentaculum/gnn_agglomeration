@@ -182,6 +182,9 @@ def main(_config, _run, _log):
         final_loss_train /= train_dataset.__len__()
         final_metric_train /= train_dataset.__len__()
 
+        _run.log_scalar('loss_train_final', final_loss_train, config.training_epochs)
+        _run.log_scalar('accuracy_train_final', final_metric_train, config.training_epochs)
+
         # test loss
         data_loader_test = DataLoader(
             test_dataset, batch_size=config.batch_size_eval, shuffle=False)
