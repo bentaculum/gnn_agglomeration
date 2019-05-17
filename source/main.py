@@ -220,13 +220,13 @@ def main(_config, _run, _log):
 
         # final print routine
         print('')
-        print('Maximum # of neighbors within distance {} in dataset: {}'.format(
-            config.theta, config.max_neighbors))
-        print('# of neighbors, distribution:')
-        dic = dataset.neighbors_distribution()
-        for key, value in sorted(dic.items(), key=lambda x: x[0]):
-            print("{} : {}".format(key, value))
-        print('')
+        # print('Maximum # of neighbors within distance {} in dataset: {}'.format(
+        #     config.theta, config.max_neighbors))
+        # print('# of neighbors, distribution:')
+        # dic = dataset.neighbors_distribution()
+        # for key, value in sorted(dic.items(), key=lambda x: x[0]):
+        #     print("{} : {}".format(key, value))
+        # print('')
         print('Total number of parameters: {}'.format(total_params))
         print('Mean train loss ({0} samples): {1:.3f}'.format(
             train_dataset.__len__(),

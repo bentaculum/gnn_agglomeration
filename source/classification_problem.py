@@ -14,7 +14,8 @@ class ClassificationProblem(ModelType):
         super(ClassificationProblem, self).__init__(config)
 
         self.loss_name = 'NLL_loss'
-        self.out_channels = self.config.max_neighbors + 1
+        # self.out_channels = self.config.max_neighbors + 1
+        self.out_channels = self.config.msts
 
     def out_nonlinearity(self, x):
         return F.log_softmax(x, dim=1)

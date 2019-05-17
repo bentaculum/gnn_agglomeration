@@ -4,6 +4,7 @@ import torch_geometric.transforms as T
 import numpy as np
 
 from my_graph import MyGraph
+from diameter_graph import DiameterGraph
 
 
 class RandomGraphDataset(InMemoryDataset):
@@ -30,9 +31,11 @@ class RandomGraphDataset(InMemoryDataset):
         data_list = []
         print('Creating {} new random graphs ... '.format(self.config.samples))
         for i in range(self.config.samples):
-            graph = MyGraph(self.config)
-            graph.create_random_graph()
-            data_list.append(graph.data)
+            # TODO parametrize
+            graph = DiameterGraph(self.config)
+            # graph.create_random_graph()
+            # data_list.append(graph.data)
+            data_list.append(graph)
 
         if self.pre_filter is not None:
             data_list = [data for data in data_list if self.pre_filter(data)]

@@ -366,6 +366,18 @@ class Config:
             help='machine-dependent parameters to be imported, e.g. for connecting to the MongoDB')
         self.default['machine'] = 'localhost'
 
+        self.parser.add_argument(
+            '--msts',
+            type=positive_int,
+            help='How many different classes in an instance of DiameterGraph')
+        self.default['msts'] = 2
+
+        self.parser.add_argument(
+            '--class_noise',
+            type=unit_float,
+            help='how much probability mass is spread between the wrong target classes')
+        self.default['class_noise'] = 0.2
+
     def localhost(self):
         return {
             'mongo_url': 'localhost:27017',
