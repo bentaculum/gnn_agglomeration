@@ -407,12 +407,12 @@ class Config:
                 # find latest model in the runs path
                 all_runs_dir = os.path.join(self.default['root_dir'], self.default['run_path'])
 
-                # TODO filter for correct format of directory name, instead of
-                # '2019'
+                # TODO filter for correct format of directory name, instead of '2019'
                 runs = sorted([name for name in os.listdir(
                     all_runs_dir) if name.startswith('2019')])
 
                 rel_run_path = runs[-1]
+                config_cmd['load_model'] = runs[-1]
             else:
                 rel_run_path = config_cmd['load_model']
 
@@ -428,8 +428,22 @@ class Config:
         else:
             # allow for loading a config from file, set values as default
             if config_cmd['config_from_file']:
-                # overwrite self.default
-                self.overwrite_defaults(config_cmd['config_from_file'])
+
+                # find latest model in the runs path
+                if config_cmd['config_from_file'] == 'latest':
+                    all_runs_dir = os.path.join(self.default['root_dir'], self.default['run_path'])
+                    # TODO filter for correct format of directory name, instead of '2019'
+                    runs = sorted([name for name in os.listdir(
+                        all_runs_dir) if name.startswith('2019')])
+                    config_filepath = os.path.join(
+                        self.default['root_dir'],
+                        self.default['run_path'],
+                        runs[-1], 'config.json')
+                    config_cmd['config_from_file'] = config_filepath
+                    self.overwrite_defaults(config_filepath)
+                else:
+                    self.overwrite_defaults(config_cmd['config_from_file'])
+
             config = self.update_defaults_with_cmd_args(config_cmd)
 
             if config['temp']:
