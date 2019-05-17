@@ -32,10 +32,10 @@ class RandomGraphDataset(InMemoryDataset):
         print('Creating {} new random graphs ... '.format(self.config.samples))
         for i in range(self.config.samples):
             # TODO parametrize
-            graph = DiameterGraph(self.config)
-            # graph.create_random_graph()
-            # data_list.append(graph.data)
-            data_list.append(graph)
+            print('Create graph {} ...'.format(i))
+            graph = DiameterGraph(config=self.config)
+            graph.create_random_graph()
+            data_list.append(graph.data)
 
         if self.pre_filter is not None:
             data_list = [data for data in data_list if self.pre_filter(data)]

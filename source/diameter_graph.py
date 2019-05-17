@@ -7,13 +7,10 @@ import matplotlib.pyplot as plt
 import os
 
 
-class DiameterGraph(Data):
-
-    def __init__(self, config):
-        super(DiameterGraph, self).__init__()
+class DiameterGraph():
+    def __init__(self, config, data=None):
         self.config = config
-
-        self.create_random_graph()
+        self.data = data
 
     def create_random_graph(self):
         pos_list = torch.rand(self.config.nodes, self.config.euclidian_dimensionality, dtype=torch.float)
@@ -117,11 +114,13 @@ class DiameterGraph(Data):
             li.append(diameter_list[i])
             x_list.append(li)
 
-        self.x = torch.tensor(x_list, dtype=torch.float)
-        self.edge_index = torch.tensor(edges_list, dtype=torch.long).transpose(0, 1)
-        self.edge_attr = torch.tensor(affinities_list, dtype=torch.float)
-        self.y = torch.tensor(class_list, dtype=torch.long)
-        self.pos = pos_list
+        d_x = torch.tensor(x_list, dtype=torch.float)
+        d_edge_index = torch.tensor(edges_list, dtype=torch.long).transpose(0, 1)
+        d_edge_attr = torch.tensor(affinities_list, dtype=torch.float)
+        d_y = torch.tensor(class_list, dtype=torch.long)
+        d_pos = pos_list
+
+        self.data = Data(x=d_x, edge_index=d_edge_index, edge_attr=d_edge_attr, y=d_y, pos=d_pos)
 
     # TODO adapt these functions
 

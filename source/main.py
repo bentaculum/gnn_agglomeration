@@ -77,6 +77,7 @@ def main(_config, _run, _log):
 
     # create and load dataset
     dataset = RandomGraphDataset(root=config.dataset_abs_path, config=config)
+
     config.max_neighbors = dataset.max_neighbors()
     if config.standardize_targets:
         config.targets_mean, config.targets_std = dataset.targets_mean_std()
