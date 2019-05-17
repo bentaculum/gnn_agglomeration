@@ -76,8 +76,10 @@ class OurConv(MessagePassing):
             in_features=2 * out_channels + dim,
             layers=attention_nn_params['layers'],
             layer_dims=attention_nn_params['layer_dims'],
-            bias=bias,
-            non_linearity=attention_nn_params['non_linearity']
+            bias=attention_nn_params['bias'],
+            non_linearity=attention_nn_params['non_linearity'],
+            batch_norm=attention_nn_params['batch_norm'],
+            dropout_probs=attention_nn_params['dropout_probs']
         )
 
         if bias and concat:
@@ -98,7 +100,8 @@ class OurConv(MessagePassing):
         """"""
         # add second dimensionality in case pseudo is 1D
         pseudo = pseudo.unsqueeze(-1) if pseudo.dim() == 1 else pseudo
-        # add third dimensionality for attention head dimension, at penultimate position
+        # add third dimensionality for attention head dimension, at penultimate
+        # position
         pseudo = pseudo.unsqueeze(-2)
 
         # TODO: debatable whether the last dimension should be replicated as

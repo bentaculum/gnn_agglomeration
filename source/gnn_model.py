@@ -2,6 +2,7 @@ import torch
 from abc import ABC, abstractmethod
 import os
 import tensorboardX
+import json
 
 from classification_problem import ClassificationProblem
 from regression_problem import RegressionProblem
@@ -104,11 +105,11 @@ class GnnModel(torch.nn.Module, ABC):
     def write_to_variable_summary(self, var, namespace, var_name):
         """Write summary statistics for a Tensor (for tensorboardX visualization)"""
 
-        if self.config.no_summary or self.config.log_per_epoch_only:
+        if self.config.write_summary or self.config.log_per_epoch_only:
             return
 
         # optional filter on namespaces
-        if self.config.log_namespaces:
+        if len(self.config.log_namespaces) > 0:
             if namespace not in self.config.log_namespaces:
                 return
 
@@ -128,8 +129,13 @@ class GnnModel(torch.nn.Module, ABC):
             self.current_writer.add_scalar(os.path.join(
                 namespace, var_name, 'gradients_mean'), grad_mean, iteration)
             grad_stddev = torch.std(grad)
-            self.current_writer.add_scalar(os.path.join(
-                namespace, var_name, 'gradients_stddev'), grad_stddev, iteration)
+            self.current_writer.add_scalar(
+                os.path.join(
+                    namespace,
+                    var_name,
+                    'gradients_stddev'),
+                grad_stddev,
+                iteration)
 
             if self.config.log_histograms:
                 self.current_writer.add_histogram(os.path.join(
@@ -150,17 +156,29 @@ class GnnModel(torch.nn.Module, ABC):
             self.current_writer.add_histogram(os.path.join(
                 namespace, var_name), var.data, iteration)
 
-
     def save(self, name):
         """
         Should only be called after the end of a training+validation epoch
         """
+        # delete older models
+        load_model_dir = os.path.join(
+            self.config.root_dir,
+            self.config.run_abs_path,
+            self.config.model_dir)
+        checkpoint_versions = [name for name in os.listdir(load_model_dir) if (
+            name.endswith('.tar') and name.startswith('epoch'))]
+        if len(checkpoint_versions) >= 3:
+            checkpoint_versions.sort()
+            os.remove(os.path.join(load_model_dir, checkpoint_versions[0]))
 
+        # save the new one
         torch.save({
             'epoch': self.epoch,
             'train_batch_iteration': self.train_batch_iteration,
             'val_batch_iteration': self.val_batch_iteration,
-            'config': self.config,
             'model_state_dict': self.state_dict(),
             'optimizer_state_dict': self.optimizer.state_dict(),
-        }, os.path.join(self.config.temp_dir, self.config.model_dir, name))
+        }, os.path.join(self.config.run_abs_path, self.config.model_dir, name + '.tar'))
+
+        with open(os.path.join(self.config.run_abs_path, 'config.json'), 'w') as f:
+            json.dump(vars(self.config), f)

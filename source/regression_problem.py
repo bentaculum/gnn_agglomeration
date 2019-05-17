@@ -14,20 +14,28 @@ class RegressionProblem(ModelType):
     def __init__(self, config):
         super(RegressionProblem, self).__init__(config)
 
-        self.loss_name = 'MSE Loss'
+        self.loss_name = 'MSE_Loss'
         self.out_channels = 1
 
     def out_nonlinearity(self, x):
         return x
 
     def loss(self, inputs, targets):
-        return F.mse_loss(inputs, targets.float(), reduction='mean')
+        # TODO standardizing on the fly might be costly
+        inputs = inputs.squeeze()
+        targets = targets.float()
+        if self.config.standardize_targets:
+            targets = (targets - self.config.targets_mean) / self.config.targets_std
+        return F.mse_loss(inputs, targets, reduction='mean')
 
     def out_to_predictions(self, out):
-        return out.round()
+        out = out.squeeze()
+        if self.config.standardize_targets:
+            out = out * self.config.targets_std + self.config.targets_mean
+        return out.round().long()
 
     def metric(self, predictions, targets):
-        correct = torch.squeeze(predictions).eq(targets.float()).sum().item()
+        correct = torch.squeeze(predictions).eq(targets).sum().item()
         acc = correct / targets.size(0)
         return acc
 
@@ -54,6 +62,6 @@ class RegressionProblem(ModelType):
 
         ch.save(
             filename=os.path.join(
-                self.config.temp_dir,
+                self.config.run_abs_path,
                 'targets_vs_outputs_test.png'),
             format='png')

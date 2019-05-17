@@ -26,7 +26,8 @@ class OurConvModel(GnnModel):
 
     def layers(self):
         # Assert some layer configs
-        # By default, we need to specify the size of the representation between input and output layer
+        # By default, we need to specify the size of the representation between
+        # input and output layer
         assert len(self.config.hidden_units) == self.config.hidden_layers + 1
         # Dropout should be there for input layer + all hidden layers
         assert len(self.config.dropout_probs) == self.config.hidden_layers + 1
@@ -38,6 +39,9 @@ class OurConvModel(GnnModel):
             'layers': self.config.att_layers,
             'layer_dims': self.config.att_layer_dims,
             'non_linearity': self.config.att_non_linearity,
+            'batch_norm': self.config.att_batch_norm,
+            'dropout_probs': self.config.att_dropout_probs,
+            'bias': self.config.att_bias,
         }
 
         out_channels_in = self.config.hidden_units[0]
@@ -48,7 +52,7 @@ class OurConvModel(GnnModel):
             heads=self.config.kernel_size,
             concat=self.config.att_heads_concat,
             negative_slope=0.2,
-            dropout=self.config.att_dropout,
+            dropout=self.config.att_final_dropout,
             bias=self.config.use_bias,
             attention_nn_params=attention_nn_params
         )
@@ -67,11 +71,11 @@ class OurConvModel(GnnModel):
             if self.config.att_heads_concat:
                 in_channels = self.config.hidden_units[i] * \
                     (self.config.kernel_size**(i + 1))
-                out_channels = self.config.hidden_units[i+1] * \
+                out_channels = self.config.hidden_units[i + 1] * \
                     (self.config.kernel_size**(i + 1))
             else:
                 in_channels = self.config.hidden_units[i]
-                out_channels = self.config.hidden_units[i+1]
+                out_channels = self.config.hidden_units[i + 1]
 
             l = OurConv(
                 in_channels=in_channels,
@@ -80,7 +84,7 @@ class OurConvModel(GnnModel):
                 heads=self.config.kernel_size,
                 concat=self.config.att_heads_concat,
                 negative_slope=0.2,
-                dropout=self.config.att_dropout,
+                dropout=self.config.att_final_dropout,
                 bias=self.config.use_bias,
                 attention_nn_params=attention_nn_params
             )
@@ -103,7 +107,7 @@ class OurConvModel(GnnModel):
         self.fc = torch.nn.Linear(
             in_features=fc_in_features,
             out_features=self.model_type.out_channels,
-            bias=self.config.use_bias)
+            bias=self.config.fc_bias)
 
     def forward(self, data):
         x, edge_index, edge_attr = data.x, data.edge_index, data.edge_attr
@@ -121,7 +125,7 @@ class OurConvModel(GnnModel):
                         l.att.weight_list[j],
                         'layer_{}'.format(i),
                         'att_mlp/weight_layer_{}'.format(j))
-                    if self.config.use_bias:
+                    if self.config.att_bias:
                         self.write_to_variable_summary(
                             l.att.bias_list[j], 'layer_{}'.format(i), 'att_mlp/bias_layer_{}'.format(j))
 
@@ -144,7 +148,7 @@ class OurConvModel(GnnModel):
         if self.training:
             self.write_to_variable_summary(
                 self.fc.weight, 'out_layer', 'weights')
-            if self.config.use_bias:
+            if self.config.fc_bias:
                 self.write_to_variable_summary(
                     self.fc.bias, 'out_layer', 'bias')
         x = self.fc(x)

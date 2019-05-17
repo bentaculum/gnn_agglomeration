@@ -125,7 +125,7 @@ class MinimalSplineConvModel(GnnModel):
     #             # plt.plot(x, scipy.stats.norm.pdf(x, mu, sigma))
     #             plt.plot(x,y)
     #
-    #         plt.savefig(os.path.join(self.config.temp_dir, 'layer0_kernel{}'.format(i)))
+    #         plt.savefig(os.path.join(self.config.run_abs_path, 'layer0_kernel{}'.format(i)))
     #
     # def gaussian_kernel(x, mu, sigma):
     #     gaussian = -0.5 * (x - mu) ** 2
