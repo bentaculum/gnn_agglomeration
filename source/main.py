@@ -160,8 +160,7 @@ def main(_config, _run, _log):
         json.dump(vars(config), f)
     _run.add_artifact(filename=config_filepath)
 
-    @atexit.register
-    def atexit_tasks():
+    def atexit_tasks(model):
 
         # -----------------------------------------------
         # ---------------- EVALUATION ROUTINE -----------
@@ -185,12 +184,12 @@ def main(_config, _run, _log):
         # train loss
         final_loss_train = 0.0
         final_metric_train = 0.0
-        for data in data_loader_train:
-            data = data.to(device)
-            out = model(data)
-            final_loss_train += model.loss(out, data.y).item() * data.num_graphs
+        for data_ft in data_loader_train:
+            data_ft = data_ft.to(device)
+            out_ft = model(data_ft)
+            final_loss_train += model.loss(out_ft, data_ft.y).item() * data_ft.num_graphs
             final_metric_train += model.out_to_metric(
-                out, data.y) * data.num_graphs
+                out_ft, data_ft.y) * data_ft.num_graphs
         final_loss_train /= train_dataset.__len__()
         final_metric_train /= train_dataset.__len__()
 
@@ -205,14 +204,14 @@ def main(_config, _run, _log):
         test_predictions = []
         test_targets = []
 
-        for data in data_loader_test:
-            data = data.to(device)
-            out = model(data)
-            test_loss += model.loss(out, data.y).item() * data.num_graphs
-            test_metric += model.out_to_metric(out, data.y) * data.num_graphs
-            pred = model.out_to_predictions(out)
+        for data_fe in data_loader_test:
+            data_fe = data_fe.to(device)
+            out_fe = model(data_fe)
+            test_loss += model.loss(out_fe, data_fe.y).item() * data_fe.num_graphs
+            test_metric += model.out_to_metric(out_fe, data_fe.y) * data_fe.num_graphs
+            pred = model.out_to_predictions(out_fe)
             test_predictions.extend(model.predictions_to_list(pred))
-            test_targets.extend(data.y.tolist())
+            test_targets.extend(data_fe.y.tolist())
         test_loss /= test_dataset.__len__()
         test_metric /= test_dataset.__len__()
 
@@ -275,6 +274,8 @@ def main(_config, _run, _log):
 
         return '\n{0}\ntrain acc: {1:.3f}\ntest acc: {2:.3f}'.format(
             _run.meta_info['options']['--comment'], final_metric_train, test_metric)
+
+    atexit.register(atexit_tasks, model=model)
 
     # -----------------------------------------------
     # ---------------- TRAINING LOOP ----------------
