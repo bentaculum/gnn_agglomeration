@@ -35,6 +35,10 @@ ex = Experiment()
 @ex.capture
 @LogFileWriter(ex)
 def main(_config, _run, _log):
+    # Check for a comment, if none is given raise error
+    if _run.meta_info['options']['--comment'] is None:
+        raise ValueError('You need to specify a comment with -c, --comment')
+
     config = argparse.Namespace(**_config)
     _log.info('Logging to {}'.format(config.run_abs_path))
 
@@ -269,8 +273,8 @@ def main(_config, _run, _log):
                     pred=model.predictions_to_list(model.out_to_predictions(model(g))),
                     graph_nr=i)
 
-        return '\ntrain acc: {0:.3f}\ntest acc: {1:.3f}'.format(
-            final_metric_train, test_metric)
+        return '\n{0}\ntrain acc: {1:.3f}\ntest acc: {2:.3f}'.format(
+            _run.meta_info['options']['--comment'], final_metric_train, test_metric)
 
     # -----------------------------------------------
     # ---------------- TRAINING LOOP ----------------

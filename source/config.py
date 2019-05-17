@@ -252,7 +252,7 @@ class Config:
             '--adam_weight_decay',
             type=unit_float,
             help='Weight decay for ADAM optimizer')
-        self.default['adam_weight_decay'] = 0.0005
+        self.default['adam_weight_decay'] = 0.002
 
         self.parser.add_argument(
             '--batch_norm',
