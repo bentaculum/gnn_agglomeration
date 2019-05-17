@@ -15,7 +15,8 @@ class MyGraph():
 
     def create_random_graph(self):
         m = torch.distributions.beta.Beta(2, 3.5)
-        pos = m.sample(torch.Size([self.config.nodes, self.config.euclidian_dimensionality]))
+        pos = m.sample(torch.Size(
+            [self.config.nodes, self.config.euclidian_dimensionality]))
         # pos = torch.rand(self.config.nodes,
         #                  self.config.euclidian_dimensionality)
 
@@ -84,7 +85,8 @@ class MyGraph():
         labels_dict = {}
 
         # TODO this is a quick fix for two node classes. Generalize!
-        node_color = ['r' if features[0] == 0 else 'y' for features in self.data.x]
+        node_color = ['r' if features[0] ==
+                      0 else 'y' for features in self.data.x]
 
         for i in range(self.data.pos.size(0)):
             pos_dict[i] = self.data.pos[i].tolist()
@@ -95,14 +97,20 @@ class MyGraph():
                 int(pred[i]), int(self.data.y[i].item()))
 
         self.set_plotting_style()
-        nx.draw_networkx(g, pos_dict, labels=labels_dict, node_color=node_color, font_size=10)
+        nx.draw_networkx(
+            g,
+            pos_dict,
+            labels=labels_dict,
+            node_color=node_color,
+            font_size=10)
         plt.title(
             "Number of neighbors within euclidian distance {}.\nEach node displays 'pred:target'".format(
                 self.config.theta))
 
         self.add_to_plotting_style()
-        img_path = os.path.join(self.config.run_abs_path,
-                                'graph_with_predictions_{}.png'.format(graph_nr))
+        img_path = os.path.join(
+            self.config.run_abs_path,
+            'graph_with_predictions_{}.png'.format(graph_nr))
         if os.path.isfile(img_path):
             os.remove(img_path)
         plt.savefig(img_path)

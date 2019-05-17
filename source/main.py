@@ -141,7 +141,8 @@ def main(_config, _run, _log):
                 val_batch_iteration=checkpoint['val_batch_iteration'],
                 model_type=config.model_type
             )
-            # model.to(device) has to be executed before loading the state dicts
+            # model.to(device) has to be executed before loading the state
+            # dicts
             model.to(device)
             model.load_state_dict(checkpoint['model_state_dict'])
             model.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
@@ -151,7 +152,8 @@ def main(_config, _run, _log):
         raise NotImplementedError(
             'The model you have specified is not implemented')
 
-    total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    total_params = sum(p.numel()
+                       for p in model.parameters() if p.requires_grad)
     _run.log_scalar('nr_params', total_params, config.training_epochs)
 
     # save config to file and store in DB
@@ -187,14 +189,17 @@ def main(_config, _run, _log):
         for data_ft in data_loader_train:
             data_ft = data_ft.to(device)
             out_ft = model(data_ft)
-            final_loss_train += model.loss(out_ft, data_ft.y).item() * data_ft.num_graphs
+            final_loss_train += model.loss(out_ft,
+                                           data_ft.y).item() * data_ft.num_graphs
             final_metric_train += model.out_to_metric(
                 out_ft, data_ft.y) * data_ft.num_graphs
         final_loss_train /= train_dataset.__len__()
         final_metric_train /= train_dataset.__len__()
 
-        _run.log_scalar('loss_train_final', final_loss_train, config.training_epochs)
-        _run.log_scalar('accuracy_train_final', final_metric_train, config.training_epochs)
+        _run.log_scalar('loss_train_final', final_loss_train,
+                        config.training_epochs)
+        _run.log_scalar('accuracy_train_final',
+                        final_metric_train, config.training_epochs)
 
         # test loss
         data_loader_test = DataLoader(
@@ -207,8 +212,10 @@ def main(_config, _run, _log):
         for data_fe in data_loader_test:
             data_fe = data_fe.to(device)
             out_fe = model(data_fe)
-            test_loss += model.loss(out_fe, data_fe.y).item() * data_fe.num_graphs
-            test_metric += model.out_to_metric(out_fe, data_fe.y) * data_fe.num_graphs
+            test_loss += model.loss(out_fe,
+                                    data_fe.y).item() * data_fe.num_graphs
+            test_metric += model.out_to_metric(out_fe,
+                                               data_fe.y) * data_fe.num_graphs
             pred = model.out_to_predictions(out_fe)
             test_predictions.extend(model.predictions_to_list(pred))
             test_targets.extend(data_fe.y.tolist())
@@ -220,8 +227,10 @@ def main(_config, _run, _log):
 
         # final print routine
         print('')
-        print('Maximum # of neighbors within distance {} in dataset: {}'.format(
-            config.theta, config.max_neighbors))
+        print(
+            'Maximum # of neighbors within distance {} in dataset: {}'.format(
+                config.theta,
+                config.max_neighbors))
         print('# of neighbors, distribution:')
         dic = dataset.neighbors_distribution()
         for key, value in sorted(dic.items(), key=lambda x: x[0]):
@@ -262,14 +271,16 @@ def main(_config, _run, _log):
         # plot errors by location
         # plotter = ResultPlotting(config=config)
         # plotter.plot_errors_by_location(
-        # data=test_dataset, predictions=test_predictions, targets=test_targets)
+        # data=test_dataset, predictions=test_predictions,
+        # targets=test_targets)
 
         # plot the graphs in the test dataset for visual inspection
         if config.plot_graphs_testset:
             for i, g in enumerate(test_dataset):
                 graph = MyGraph(config, g)
                 graph.plot_predictions(
-                    pred=model.predictions_to_list(model.out_to_predictions(model(g))),
+                    pred=model.predictions_to_list(
+                        model.out_to_predictions(model(g))),
                     graph_nr=i)
 
         return '\n{0}\ntrain acc: {1:.3f}\ntest acc: {2:.3f}'.format(
@@ -374,7 +385,7 @@ def main(_config, _run, _log):
 
     ###########################
 
-    return atexit_tasks()
+    return atexit_tasks(model=model)
 
 
 if __name__ == '__main__':
