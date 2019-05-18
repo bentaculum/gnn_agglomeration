@@ -41,13 +41,13 @@ class Config:
             '--feature_dimensionality',
             type=positive_int,
             help='Dimension of the feature space, used in data.x')
-        self.default['feature_dimensionality'] = 2
+        self.default['feature_dimensionality'] = 3
 
         self.parser.add_argument(
             '--pseudo_dimensionality',
             type=positive_int,
             help='Dimension of the pseudo coordinates, according to their type')
-        self.default['pseudo_dimensionality'] = 2
+        self.default['pseudo_dimensionality'] = 3
 
         self.parser.add_argument(
             '--kernel_size',
