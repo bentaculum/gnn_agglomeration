@@ -158,16 +158,20 @@ def plot_predictions(config, data, pred, graph_nr):
         if config.euclidian_dimensionality == 1:
             pos_dict[i].append(0)
 
-        # labels_dict[i] = '{};{}'.format(
-        #     int(pred[i]), int(data.y[i].item()))
-        labels_dict[i] = int(pred[i])
+        # pred vs input noisy label
+        labels_dict[i] = '{}:{}'.format(
+            int(pred[i]), int(data.x[i][:config.msts].max(0)[1]))
 
     set_plotting_style()
     g = nx.empty_graph(n=config.nodes, create_using=nx.Graph())
     g.add_edges_from(data.ground_truth.tolist())
     nx.draw_networkx(g, pos_dict, labels=labels_dict, node_color=node_color, font_size=10)
     plt.title(
-        "Segmentation of trees, based on diameter and affinities.\nColor is the original class, node label is the prediction")
+        """Recovery of class label, based on 'descending diameter' and noisy affinities.
+        Input class labels are correct with prob {}. Red is 0, Yellow is 1.
+        All nodes within distance {} are connected in input graph.
+        Color and the MSTs represent ground truth, node label is of format 'pred:noisy_input'""".format(
+            1 - config.class_noise, config.theta_max))
 
     add_to_plotting_style()
     img_path = os.path.join(config.run_abs_path,
