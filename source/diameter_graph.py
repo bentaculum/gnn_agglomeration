@@ -1,6 +1,8 @@
 import numpy as np
 import torch
 import networkx as nx
+import matplotlib.pyplot as plt
+import os
 
 
 # TODO write things into the torch_geometric.data.Data object, then call a function on it
@@ -14,6 +16,7 @@ def create_random_graph(config, data):
     # one hot encoded class labels + diameter are the nodes features
     assert config.feature_dimensionality == config.msts + 1
 
+    ground_truth = []
     # create multiple graphs
     for i in range(config.msts):
 
@@ -34,8 +37,10 @@ def create_random_graph(config, data):
 
         # build an mst
         # TODO save it
-        mst = nx.minimum_spanning_edges(g)
-        edges = list(mst)
+        # mst = nx.minimum_spanning_edges(g, data=False)
+        mst = nx.minimum_spanning_tree(g)
+        # edges = list(mst)
+        edges = mst.edges(data=False)
         sorted(edges)
 
         # iterate with DFS over the MST, assign descending diameters according to that
@@ -56,6 +61,11 @@ def create_random_graph(config, data):
 
         dfs(0)
 
+        # rename all nodes in MST for global numbering
+        mst_relabeled = nx.relabel.relabel_nodes(mst, numbering_dict)
+        edges_relabeld = sorted(mst_relabeled.edges(data=False))
+        ground_truth.extend(edges_relabeld)
+
         diameter_list.extend(diameters)
         class_list.extend([i] * nodes)
 
@@ -71,6 +81,7 @@ def create_random_graph(config, data):
         noisy_labels = np.random.multinomial(n=1, pvals=pvals, size=nodes-1)
         noisy_class_list.extend(list(noisy_labels))
 
+    data.ground_truth = torch.tensor(ground_truth, dtype=torch.long)
 
     edges_list = []
     affinities_list = []
@@ -112,9 +123,6 @@ def create_random_graph(config, data):
     data.y = torch.tensor(class_list, dtype=torch.long)
     data.pos = pos_list
 
-
-    # TODO adapt these functions
-
     # def plot(self):
     #     g = nx.Graph(
     #         incoming_graph_data=self.data.edge_index.transpose(0, 1).tolist())
@@ -133,50 +141,53 @@ def create_random_graph(config, data):
     #         self.config.theta))
     #     plt.savefig(os.path.join(self.config.run_abs_path, 'graph.png'))
     #     # plt.show()
-    #
-    # def plot_predictions(self, pred, graph_nr):
-    #     # transpose the edge matrix for format requirements
-    #     g = nx.Graph(
-    #         incoming_graph_data=self.data.edge_index.transpose(0, 1).tolist())
-    #     # add the positions in euclidian space to the model
-    #     pos_dict = {}
-    #     # prepare the targets to be displayed
-    #     labels_dict = {}
-    #
-    #     # TODO this is a quick fix for two node classes. Generalize!
-    #     node_color = ['r' if features[0] == 0 else 'y' for features in self.data.x]
-    #
-    #     for i in range(self.data.pos.size(0)):
-    #         pos_dict[i] = self.data.pos[i].tolist()
-    #         if self.config.euclidian_dimensionality == 1:
-    #             pos_dict[i].append(0)
-    #
-    #         labels_dict[i] = '{};{}'.format(
-    #             int(pred[i]), int(self.data.y[i].item()))
-    #
-    #     self.set_plotting_style()
-    #     nx.draw_networkx(g, pos_dict, labels=labels_dict, node_color=node_color, font_size=10)
-    #     plt.title(
-    #         "Number of neighbors within euclidian distance {}.\nEach node displays 'pred:target'".format(
-    #             self.config.theta))
-    #
-    #     self.add_to_plotting_style()
-    #     img_path = os.path.join(self.config.run_abs_path,
-    #                             'graph_with_predictions_{}.png'.format(graph_nr))
-    #     if os.path.isfile(img_path):
-    #         os.remove(img_path)
-    #     plt.savefig(img_path)
-    #     print('plotted the graph with predictions to {}'.format(img_path))
-    #     # plt.show()
-    #
-    # def set_plotting_style(self):
-    #     plt.figure(figsize=(8, 8))
-    #     plt.xlabel('x (euclidian)')
-    #     plt.ylabel('y (euclidian)')
-    #     plt.xlim(-0.1, 1.1)
-    #     plt.ylim(-0.1, 1.1)
-    #
-    # def add_to_plotting_style(self):
-    #     plt.tick_params(axis='x', which='both', bottom=True, labelbottom=True)
-    #     plt.tick_params(axis='y', which='both', left=True, labelleft=True)
-    #     plt.grid(linestyle='--', color='gray')
+
+
+def plot_predictions(config, data, pred, graph_nr):
+    # add the positions in euclidian space to the model
+    pos_dict = {}
+    # prepare the targets to be displayed
+    labels_dict = {}
+
+    # TODO this is a quick fix for two node classes. Generalize!
+    node_color = ['r' if i.item() == 0 else 'y' for i in data.y]
+    # This should be all the same per MST
+
+    for i in range(data.pos.size(0)):
+        pos_dict[i] = data.pos[i].tolist()
+        if config.euclidian_dimensionality == 1:
+            pos_dict[i].append(0)
+
+        # labels_dict[i] = '{};{}'.format(
+        #     int(pred[i]), int(data.y[i].item()))
+        labels_dict[i] = int(pred[i])
+
+    set_plotting_style()
+    g = nx.empty_graph(n=config.nodes, create_using=nx.Graph())
+    g.add_edges_from(data.ground_truth.tolist())
+    nx.draw_networkx(g, pos_dict, labels=labels_dict, node_color=node_color, font_size=10)
+    plt.title(
+        "Segmentation of trees, based on diameter and affinities.\nColor is the original class, node label is the prediction")
+
+    add_to_plotting_style()
+    img_path = os.path.join(config.run_abs_path,
+                            'graph_with_predictions_{}.png'.format(graph_nr))
+    if os.path.isfile(img_path):
+        os.remove(img_path)
+    plt.savefig(img_path)
+    print('plotted the graph with predictions to {}'.format(img_path))
+    # plt.show()
+
+
+def set_plotting_style():
+    plt.figure(figsize=(8, 8))
+    plt.xlabel('x (euclidian)')
+    plt.ylabel('y (euclidian)')
+    plt.xlim(-0.1, 1.1)
+    plt.ylim(-0.1, 1.1)
+
+
+def add_to_plotting_style():
+    plt.tick_params(axis='x', which='both', bottom=True, labelbottom=True)
+    plt.tick_params(axis='y', which='both', left=True, labelleft=True)
+    plt.grid(linestyle='--', color='gray')

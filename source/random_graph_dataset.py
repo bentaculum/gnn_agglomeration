@@ -4,7 +4,6 @@ from torch_geometric.data import Data
 import torch_geometric.transforms as T
 import numpy as np
 
-from my_graph import MyGraph
 from diameter_graph import create_random_graph
 
 

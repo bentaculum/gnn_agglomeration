@@ -26,6 +26,7 @@ from result_plotting import ResultPlotting
 
 from random_graph_dataset import RandomGraphDataset
 from my_graph import MyGraph
+from diameter_graph import plot_predictions
 
 
 ex = Experiment()
@@ -268,8 +269,9 @@ def main(_config, _run, _log):
         # plot the graphs in the test dataset for visual inspection
         if config.plot_graphs_testset:
             for i, g in enumerate(test_dataset):
-                graph = MyGraph(config, g)
-                graph.plot_predictions(
+                plot_predictions(
+                    config=config,
+                    data=g,
                     pred=model.predictions_to_list(model.out_to_predictions(model(g))),
                     graph_nr=i)
 
