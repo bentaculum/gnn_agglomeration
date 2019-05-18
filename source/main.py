@@ -269,6 +269,7 @@ def main(_config, _run, _log):
         # plot the graphs in the test dataset for visual inspection
         if config.plot_graphs_testset:
             for i, g in enumerate(test_dataset):
+                g.to(device)
                 plot_predictions(
                     config=config,
                     data=g,
