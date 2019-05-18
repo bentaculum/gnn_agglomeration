@@ -375,7 +375,7 @@ def main(_config, _run, _log):
 
     ###########################
 
-    return atexit_tasks()
+    return atexit_tasks(model=model)
 
 
 if __name__ == '__main__':
