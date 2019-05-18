@@ -41,11 +41,12 @@ class DiameterGraph():
                         pos_list[i * nodes + i_n], pos_list[i * nodes + j_n]))
 
             # build an mst
+            # TODO save it
             mst = nx.minimum_spanning_edges(g)
             edges = list(mst)
             sorted(edges)
 
-            # iterate with BFS over the MST, assign descending diameters according to that
+            # iterate with DFS over the MST, assign descending diameters according to that
             diameters = [None] * nodes
             diameters[0] = 1.0
 
@@ -83,8 +84,8 @@ class DiameterGraph():
         affinities_list = []
         # Beta distributions to sample affinities
         # TODO parametrize to config
-        beta0 = torch.distributions.beta.Beta(1,4)
-        beta1 = torch.distributions.beta.Beta(4,1)
+        beta0 = torch.distributions.beta.Beta(1, 4)
+        beta1 = torch.distributions.beta.Beta(4, 1)
 
         # connect all nodes, regardless of subgraph, within distance theta_max
         for i in range(self.config.nodes):
@@ -105,7 +106,6 @@ class DiameterGraph():
                         # append twice, as the graph is bi-directed
                         affinities_list.append(aff)
                         affinities_list.append(aff)
-
 
         # Cast all the data to torch tensors
         x_list = []
