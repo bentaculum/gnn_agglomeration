@@ -378,6 +378,18 @@ class Config:
             help='how much probability mass is spread between the wrong target classes')
         self.default['class_noise'] = 0.2
 
+        self.parser.add_argument(
+            '--affinity_dist_alpha',
+            type=float,
+            help='alpha value for the beta dist that generates noisy edge features')
+        self.default['affinity_dist_alpha'] = 1
+
+        self.parser.add_argument(
+            '--affinity_dist_beta',
+            type=float,
+            help='beta value for the beta dist that generates noisy edge features')
+        self.default['affinity_dist_beta'] = 4
+
     def localhost(self):
         return {
             'mongo_url': 'localhost:27017',

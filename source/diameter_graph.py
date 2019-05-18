@@ -86,9 +86,8 @@ def create_random_graph(config, data):
     edges_list = []
     affinities_list = []
     # Beta distributions to sample affinities
-    # TODO parametrize to config
-    beta0 = torch.distributions.beta.Beta(1, 4)
-    beta1 = torch.distributions.beta.Beta(4, 1)
+    beta0 = torch.distributions.beta.Beta(config.affinity_dist_alpha, config.affinity_dist_beta)
+    beta1 = torch.distributions.beta.Beta(config.affinity_dist_beta, config.affinity_dist_alpha)
 
     # connect all nodes, regardless of subgraph, within distance theta_max
     for i in range(config.nodes):
