@@ -149,7 +149,7 @@ def plot_predictions(config, data, pred, graph_nr, run, acc):
     # prepare the targets to be displayed
     labels_dict = {}
 
-    node_color = [int(i) for i in pred]
+    node_color = [int(i.item()) for i in data.y]
     # Special color for all roots
     for i in range(0, config.nodes, int(config.nodes / config.msts)):
         node_color[i] = config.msts
@@ -160,7 +160,7 @@ def plot_predictions(config, data, pred, graph_nr, run, acc):
             pos_dict[i].append(0)
 
         labels_dict[i] = '{}:{}'.format(
-            data.y[i].item(), int(data.x[i][:config.msts].max(0)[1]))
+            int(pred[i]), int(data.x[i][:config.msts].max(0)[1]))
 
     set_plotting_style()
     g = nx.empty_graph(n=config.nodes, create_using=nx.Graph())
@@ -171,8 +171,8 @@ def plot_predictions(config, data, pred, graph_nr, run, acc):
     plt.title(
         """Recovery of class label, based on 'descending diameter' and noisy affinities.
         Input class labels are correct with prob {}. All nodes within distance {} are
-        connected in input graph. The shown MSTS depict ground truth, each root is brown.
-        Color represents the prediction, node label is of format 'ground_truth:noisy_input'""".format(
+        connected in input graph. The shown MSTS and colors depict ground truth, 
+        each root is brown. Node label is of format 'pred:noisy_input'""".format(
             1 - config.class_noise, config.theta_max))
     plt.text(0.7, 1.01, 'Accuracy: {}'.format(acc), fontsize=16)
 
