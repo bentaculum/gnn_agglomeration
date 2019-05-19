@@ -143,13 +143,16 @@ def create_random_graph(config, data):
     #     # plt.show()
 
 
-def plot_predictions(config, data, pred, graph_nr, run):
+def plot_predictions(config, data, pred, graph_nr, run, acc):
     # add the positions in euclidian space to the model
     pos_dict = {}
     # prepare the targets to be displayed
     labels_dict = {}
 
     node_color = [int(i) for i in pred]
+    # Special color for all roots
+    for i in range(0, config.nodes, int(config.nodes / config.msts)):
+        node_color[i] = config.msts
 
     for i in range(data.pos.size(0)):
         pos_dict[i] = data.pos[i].tolist()
@@ -163,14 +166,15 @@ def plot_predictions(config, data, pred, graph_nr, run):
     g = nx.empty_graph(n=config.nodes, create_using=nx.Graph())
     g.add_edges_from(data.ground_truth.tolist())
     nx.draw_networkx(g, pos_dict, labels=labels_dict,
-                     node_color=node_color, cmap=cm.Pastel1, vmin=0.0, vmax=float(config.msts-1),
+                     node_color=node_color, cmap=cm.Paired, vmin=0.0, vmax=float(config.msts),
                      font_size=10)
     plt.title(
         """Recovery of class label, based on 'descending diameter' and noisy affinities.
         Input class labels are correct with prob {}. All nodes within distance {} are
-        connected in input graph. The shown MSTS depict ground truth.
+        connected in input graph. The shown MSTS depict ground truth, each root is brown.
         Color represents the prediction, node label is of format 'ground_truth:noisy_input'""".format(
             1 - config.class_noise, config.theta_max))
+    plt.text(0.7, 1.01, 'Accuracy: {}'.format(acc), fontsize=16)
 
     add_to_plotting_style()
     img_path = os.path.join(config.run_abs_path,

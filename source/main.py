@@ -270,12 +270,14 @@ def main(_config, _run, _log):
         if config.plot_graphs_testset:
             for i, g in enumerate(test_dataset):
                 g.to(device)
+                out_p = model(g)
                 plot_predictions(
                     config=config,
                     data=g,
-                    pred=model.predictions_to_list(model.out_to_predictions(model(g))),
+                    pred=model.predictions_to_list(model.out_to_predictions(out_p)),
                     graph_nr=i,
-                    run=_run)
+                    run=_run,
+                    acc=model.out_to_metric(out_p, g.y))
 
         return '\n{0}\ntrain acc: {1:.3f}\ntest acc: {2:.3f}'.format(
             _run.meta_info['options']['--comment'], final_metric_train, test_metric)
