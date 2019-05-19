@@ -2,6 +2,7 @@ import numpy as np
 import torch
 import networkx as nx
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 import os
 
 
@@ -142,34 +143,33 @@ def create_random_graph(config, data):
     #     # plt.show()
 
 
-def plot_predictions(config, data, pred, graph_nr):
+def plot_predictions(config, data, pred, graph_nr, run):
     # add the positions in euclidian space to the model
     pos_dict = {}
     # prepare the targets to be displayed
     labels_dict = {}
 
-    # TODO this is a quick fix for two node classes. Generalize!
-    node_color = ['r' if i.item() == 0 else 'y' for i in data.y]
-    # This should be all the same per MST
+    node_color = [int(i) for i in pred]
 
     for i in range(data.pos.size(0)):
         pos_dict[i] = data.pos[i].tolist()
         if config.euclidian_dimensionality == 1:
             pos_dict[i].append(0)
 
-        # pred vs input noisy label
         labels_dict[i] = '{}:{}'.format(
-            int(pred[i]), int(data.x[i][:config.msts].max(0)[1]))
+            data.y[i].item(), int(data.x[i][:config.msts].max(0)[1]))
 
     set_plotting_style()
     g = nx.empty_graph(n=config.nodes, create_using=nx.Graph())
     g.add_edges_from(data.ground_truth.tolist())
-    nx.draw_networkx(g, pos_dict, labels=labels_dict, node_color=node_color, font_size=10)
+    nx.draw_networkx(g, pos_dict, labels=labels_dict,
+                     node_color=node_color, cmap=cm.Pastel1, vmin=0.0, vmax=float(config.msts-1),
+                     font_size=10)
     plt.title(
         """Recovery of class label, based on 'descending diameter' and noisy affinities.
-        Input class labels are correct with prob {}. Red is 0, Yellow is 1.
-        All nodes within distance {} are connected in input graph.
-        Color and the MSTs represent ground truth, node label is of format 'pred:noisy_input'""".format(
+        Input class labels are correct with prob {}. All nodes within distance {} are
+        connected in input graph. The shown MSTS depict ground truth.
+        Color represents the prediction, node label is of format 'ground_truth:noisy_input'""".format(
             1 - config.class_noise, config.theta_max))
 
     add_to_plotting_style()
@@ -178,8 +178,8 @@ def plot_predictions(config, data, pred, graph_nr):
     if os.path.isfile(img_path):
         os.remove(img_path)
     plt.savefig(img_path)
+    run.add_artifact(filename=img_path, name='graph_with_predictions_{}.png'.format(graph_nr))
     print('plotted the graph with predictions to {}'.format(img_path))
-    # plt.show()
 
 
 def set_plotting_style():

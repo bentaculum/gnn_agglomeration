@@ -274,7 +274,8 @@ def main(_config, _run, _log):
                     config=config,
                     data=g,
                     pred=model.predictions_to_list(model.out_to_predictions(model(g))),
-                    graph_nr=i)
+                    graph_nr=i,
+                    run=_run)
 
         return '\n{0}\ntrain acc: {1:.3f}\ntest acc: {2:.3f}'.format(
             _run.meta_info['options']['--comment'], final_metric_train, test_metric)
