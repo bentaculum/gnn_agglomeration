@@ -3,6 +3,8 @@ from torch_geometric.data import InMemoryDataset
 from torch_geometric.data import Data
 import torch_geometric.transforms as T
 import numpy as np
+import json
+import os
 
 from diameter_graph import create_random_graph
 
@@ -14,6 +16,7 @@ class RandomGraphDataset(InMemoryDataset):
         super(RandomGraphDataset, self).__init__(
             root=root, transform=transform, pre_transform=pre_transform)
         self.data, self.slices = torch.load(self.processed_paths[0])
+        self.check_dataset_vs_config()
 
     @property
     def raw_file_names(self):
@@ -45,6 +48,31 @@ class RandomGraphDataset(InMemoryDataset):
 
         data, slices = self.collate(data_list)
         torch.save((data, slices), self.processed_paths[0])
+
+        with open(os.path.join(self.config.dataset_abs_path, 'config.json'), 'w') as f:
+            json.dump(vars(self.config), f)
+
+    def check_dataset_vs_config(self):
+        # TODO parametrize which variables to check
+        check_vars = [
+            'samples',
+            'nodes',
+            'self_loops',
+            'feature_dimensionality',
+            'euclidian_dimensionality',
+            'theta_max',
+            'theta',
+            'msts',
+            'affinity_dist_beta',
+            'affinity_dist_alpha',
+            'class_noise',
+        ]
+        with open(os.path.join(self.config.dataset_abs_path, 'config.json'), 'r') as json_file:
+            data_config = json.load(json_file)
+        run_conf_dict = vars(self.config)
+        for key in check_vars:
+            if key in data_config:
+                assert run_conf_dict[key] == data_config[key]
 
     def max_neighbors(self):
         # Detect maximum number of neighbors
