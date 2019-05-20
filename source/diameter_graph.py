@@ -7,9 +7,11 @@ import matplotlib.colors as colors
 import os
 
 
-# TODO write things into the torch_geometric.data.Data object, then call a function on it
+# TODO write things into the torch_geometric.data.Data object, then call a
+# function on it
 def create_random_graph(config, data):
-    pos_list = torch.rand(config.nodes, config.euclidian_dimensionality, dtype=torch.float)
+    pos_list = torch.rand(
+        config.nodes, config.euclidian_dimensionality, dtype=torch.float)
     diameter_list = []
     class_list = []
     noisy_class_list = []
@@ -45,13 +47,15 @@ def create_random_graph(config, data):
         edges = mst.edges(data=False)
         sorted(edges)
 
-        # iterate with DFS over the MST, assign descending diameters according to that
+        # iterate with DFS over the MST, assign descending diameters according
+        # to that
         diameters = [None] * nodes
         diameters[0] = 1.0
 
         def dfs(v):
             nonlocal diameters
-            neighbors = [e[1] for e in edges if e[0] == v] + [e[0] for e in edges if e[1] == v]
+            neighbors = [e[1] for e in edges if e[0] == v] + [e[0]
+                                                              for e in edges if e[1] == v]
             children = [n for n in neighbors if diameters[n] is None]
             if len(children) == 0:
                 return
@@ -79,8 +83,7 @@ def create_random_graph(config, data):
         # for all other nodes, the class label is drawn from a multinomial
         pvals = np.full(config.msts, config.class_noise / (config.msts - 1))
         pvals[i] = 1 - config.class_noise
-        assert np.sum(pvals) == 1.0
-        noisy_labels = np.random.multinomial(n=1, pvals=pvals, size=nodes-1)
+        noisy_labels = np.random.multinomial(n=1, pvals=pvals, size=nodes - 1)
         noisy_class_list.extend(list(noisy_labels))
 
     data.ground_truth = torch.tensor(ground_truth, dtype=torch.long)
@@ -88,8 +91,10 @@ def create_random_graph(config, data):
     edges_list = []
     affinities_list = []
     # Beta distributions to sample affinities
-    beta0 = torch.distributions.beta.Beta(config.affinity_dist_alpha, config.affinity_dist_beta)
-    beta1 = torch.distributions.beta.Beta(config.affinity_dist_beta, config.affinity_dist_alpha)
+    beta0 = torch.distributions.beta.Beta(
+        config.affinity_dist_alpha, config.affinity_dist_beta)
+    beta1 = torch.distributions.beta.Beta(
+        config.affinity_dist_beta, config.affinity_dist_alpha)
 
     # connect all nodes, regardless of subgraph, within distance theta_max
     for i in range(config.nodes):
@@ -119,7 +124,8 @@ def create_random_graph(config, data):
         x_list.append(li)
 
     data.x = torch.tensor(x_list, dtype=torch.float)
-    data.edge_index = torch.tensor(edges_list, dtype=torch.long).transpose(0, 1)
+    data.edge_index = torch.tensor(
+        edges_list, dtype=torch.long).transpose(0, 1)
     data.edge_attr = torch.tensor(affinities_list, dtype=torch.float)
     data.y = torch.tensor(class_list, dtype=torch.long)
     data.pos = pos_list
@@ -166,13 +172,22 @@ def plot_predictions(config, data, pred, graph_nr, run, acc):
     ax = set_plotting_style(config=config)
     g = nx.empty_graph(n=config.nodes, create_using=nx.Graph())
     g.add_edges_from(data.ground_truth.tolist())
-    nx.draw_networkx(g, pos_dict, labels=labels_dict,
-                     node_color=node_color, cmap=cm.Paired, vmin=0.0, vmax=float(config.msts),
-                     font_size=10, ax=ax, with_labels=True)
+    nx.draw_networkx(
+        g,
+        pos_dict,
+        labels=labels_dict,
+        node_color=node_color,
+        cmap=cm.Paired,
+        vmin=0.0,
+        vmax=float(
+            config.msts),
+        font_size=10,
+        ax=ax,
+        with_labels=True)
     plt.title(
         """Recovery of class label, based on 'descending diameter' and noisy affinities.
         Input class labels are correct with prob {}. All nodes within distance {} are
-        connected in input graph. The shown MSTS and colors depict ground truth, 
+        connected in input graph. The shown MSTS and colors depict ground truth,
         each root is brown. Node label is of format 'pred:noisy_input'""".format(
             1 - config.class_noise, config.theta_max))
     plt.text(0.7, 1.1, 'Accuracy: {0:.3f}'.format(acc), fontsize=16)
@@ -184,7 +199,8 @@ def plot_predictions(config, data, pred, graph_nr, run, acc):
     if os.path.isfile(img_path):
         os.remove(img_path)
     plt.savefig(img_path)
-    run.add_artifact(filename=img_path, name='graph_with_predictions_{}.png'.format(graph_nr))
+    run.add_artifact(filename=img_path,
+                     name='graph_with_predictions_{}.png'.format(graph_nr))
     print('plotted the graph with predictions to {}'.format(img_path))
 
 
