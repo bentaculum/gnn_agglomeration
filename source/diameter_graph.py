@@ -3,6 +3,7 @@ import torch
 import networkx as nx
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
+import matplotlib.colors as colors
 import os
 
 
@@ -162,19 +163,20 @@ def plot_predictions(config, data, pred, graph_nr, run, acc):
         labels_dict[i] = '{}:{}'.format(
             int(pred[i]), int(data.x[i][:config.msts].max(0)[1]))
 
-    set_plotting_style()
+    ax = set_plotting_style(config=config)
     g = nx.empty_graph(n=config.nodes, create_using=nx.Graph())
     g.add_edges_from(data.ground_truth.tolist())
     nx.draw_networkx(g, pos_dict, labels=labels_dict,
                      node_color=node_color, cmap=cm.Paired, vmin=0.0, vmax=float(config.msts),
-                     font_size=10)
+                     font_size=10, ax=ax, with_labels=True)
     plt.title(
         """Recovery of class label, based on 'descending diameter' and noisy affinities.
         Input class labels are correct with prob {}. All nodes within distance {} are
         connected in input graph. The shown MSTS and colors depict ground truth, 
         each root is brown. Node label is of format 'pred:noisy_input'""".format(
             1 - config.class_noise, config.theta_max))
-    plt.text(0.7, 1.01, 'Accuracy: {}'.format(acc), fontsize=16)
+    plt.text(0.7, 1.1, 'Accuracy: {0:.3f}'.format(acc), fontsize=16)
+    plt.legend(loc='upper left', fontsize=12)
 
     add_to_plotting_style()
     img_path = os.path.join(config.run_abs_path,
@@ -186,12 +188,20 @@ def plot_predictions(config, data, pred, graph_nr, run, acc):
     print('plotted the graph with predictions to {}'.format(img_path))
 
 
-def set_plotting_style():
-    plt.figure(figsize=(8, 8))
+def set_plotting_style(config):
+    f = plt.figure(figsize=(8, 8))
     plt.xlabel('x (euclidian)')
     plt.ylabel('y (euclidian)')
     plt.xlim(-0.1, 1.1)
-    plt.ylim(-0.1, 1.1)
+    plt.ylim(-0.1, 1.2)
+    ax = f.add_subplot(1, 1, 1)
+    cmap = plt.get_cmap('Paired')
+    cNorm = colors.Normalize(vmin=0, vmax=float(config.msts))
+    scalarMap = cm.ScalarMappable(norm=cNorm, cmap=cmap)
+
+    for i in range(config.msts):
+        ax.plot([0], [0], color=scalarMap.to_rgba(i), label=i)
+    return ax
 
 
 def add_to_plotting_style():
