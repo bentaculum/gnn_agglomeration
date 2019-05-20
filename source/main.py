@@ -52,7 +52,7 @@ def main(_config, _run, _log):
         os.makedirs(config.run_abs_path)
 
     # clear old stuff from the run dir, if it's not a restart
-    if config.load_model is None:
+    if not config.load_model:
         summary_dir = os.path.join(config.run_abs_path, config.summary_dir)
         if os.path.isdir(summary_dir):
             shutil.rmtree(summary_dir)
@@ -106,7 +106,7 @@ def main(_config, _run, _log):
         validation_dataset, batch_size=config.batch_size_eval, shuffle=False)
 
     try:
-        if config.load_model is None:
+        if not config.load_model:
             model = globals()[config.model](
                 config=config,
                 train_writer=train_writer,

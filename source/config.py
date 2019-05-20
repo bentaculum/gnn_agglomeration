@@ -427,7 +427,7 @@ class Config:
             os.path.dirname(os.path.realpath(__file__)))
 
         # load old config and set as default for continuation of training
-        if config_cmd['load_model'] is not None:
+        if config_cmd['load_model']:
             if config_cmd['load_model'] == 'latest':
                 # find latest model in the runs path
                 all_runs_dir = os.path.join(
