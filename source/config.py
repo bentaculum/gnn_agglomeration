@@ -329,6 +329,12 @@ class Config:
         self.default['att_bias'] = True
 
         self.parser.add_argument(
+            '--att_normalize',
+            type=str2bool,
+            help='whether to use a softmax over each neighborhood')
+        self.default['att_normalize'] = True
+
+        self.parser.add_argument(
             '--load_model',
             type=str,
             help="Load model from file. 'latest' | relative/path/to/tarfile")
