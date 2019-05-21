@@ -75,6 +75,13 @@ class Config:
         self.default['theta'] = 0.1
 
         self.parser.add_argument(
+            '--dataset_type',
+            type=str,
+            choices=['DiameterDataset', 'CountNeighborsDataset'],
+            help='choose from different types of local datasets')
+        self.default['dataset_type'] = 'DiameterDataset'
+
+        self.parser.add_argument(
             '--dataset_path',
             type=str,
             help='the directory to read the Dataset from')
@@ -181,7 +188,7 @@ class Config:
         self.parser.add_argument(
             '--standardize_targets',
             type=str2bool,
-            help='targets to mean 0, std 1')
+            help='targets to mean 0, std 1, if Regression is performed')
         self.default['standardize_targets'] = True
 
         self.parser.add_argument(
