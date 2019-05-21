@@ -72,7 +72,8 @@ class RandomGraphDataset(InMemoryDataset):
         run_conf_dict = vars(self.config)
         for key in check_vars:
             if key in data_config:
-                assert run_conf_dict[key] == data_config[key]
+                assert run_conf_dict[key] == data_config[key], 'run_conf_dict[{}]={}, data_config[{}]={}'.format(
+                    key, run_conf_dict[key], key, data_config[key])
 
     def max_neighbors(self):
         # Detect maximum number of neighbors
