@@ -275,8 +275,13 @@ def main(_config, _run, _log):
 
         # plot the graphs in the test dataset for visual inspection
         if config.plot_graphs_testset:
-            # TODO why would this be Data objects now, not some custom Graph?
-            for i, g in enumerate(test_dataset):
+            if config.plot_graphs_testset < 0 or config.plot_graphs_testset > test_dataset.__len__():
+                plot_limit = test_dataset.__len__()
+            else:
+                plot_limit = config.plot_graphs_testset
+
+            for i in range(plot_limit):
+                g = test_dataset[i]
                 g.to(device)
                 out_p = model(g)
                 g.plot_predictions(

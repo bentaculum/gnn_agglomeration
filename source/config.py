@@ -144,9 +144,9 @@ class Config:
 
         self.parser.add_argument(
             '--plot_graphs_testset',
-            type=str2bool,
-            help='Whether to plot the graphs from the test set for visual inspection')
-        self.default['plot_graphs_testset'] = False
+            type=int,
+            help='how many graphs to plot from the test set for visual inspection. -1 means all')
+        self.default['plot_graphs_testset'] = 0
 
         self.parser.add_argument(
             '--validation_split',
