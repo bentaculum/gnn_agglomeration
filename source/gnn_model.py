@@ -105,7 +105,7 @@ class GnnModel(torch.nn.Module, ABC):
     def write_to_variable_summary(self, var, namespace, var_name):
         """Write summary statistics for a Tensor (for tensorboardX visualization)"""
 
-        if self.config.write_summary or self.config.log_per_epoch_only:
+        if not self.config.write_summary or self.config.log_per_epoch_only:
             return
 
         # optional filter on namespaces

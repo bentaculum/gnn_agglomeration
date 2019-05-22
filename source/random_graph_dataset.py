@@ -61,7 +61,7 @@ class RandomGraphDataset(InMemoryDataset, ABC):
         for key in self.check_config_vars:
             if key in data_config:
                 assert run_conf_dict[key] == data_config[key],\
-                    'Run config does not match dataset config.\nrun_conf_dict[{}]={}, data_config[{}]={}'.format(
+                    'Run config does not match dataset config\nrun_conf_dict[{}]={}, data_config[{}]={}'.format(
                     key, run_conf_dict[key], key, data_config[key])
 
     def update_config(self, config):

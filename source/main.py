@@ -67,7 +67,7 @@ def main(_config, _run, _log):
         os.makedirs(model_dir)
 
     # Pass the path of tensorboardX summaries to sacred
-    if not config.write_summary:
+    if config.write_summary:
         _run.info["tensorflow"] = dict()
         _run.info["tensorflow"]["logdirs"] = [os.path.join(
             config.run_abs_path, config.summary_dir)]
@@ -83,7 +83,6 @@ def main(_config, _run, _log):
 
     dataset.update_config(config)
 
-    #TODO check if this updating works
     if config.standardize_targets:
         config.targets_mean, config.targets_std = dataset.targets_mean_std()
 
@@ -344,7 +343,7 @@ def main(_config, _run, _log):
 
         epoch_loss /= train_dataset.__len__()
         epoch_metric_train /= train_dataset.__len__()
-        if not config.write_summary:
+        if config.write_summary:
             train_writer.add_scalar('_per_epoch/loss', epoch_loss, epoch)
             train_writer.add_scalar(
                 '_per_epoch/metric', epoch_metric_train, epoch)
@@ -371,7 +370,7 @@ def main(_config, _run, _log):
 
         validation_loss /= validation_dataset.__len__()
         epoch_metric_val /= validation_dataset.__len__()
-        if not config.write_summary:
+        if config.write_summary:
             val_writer.add_scalar('_per_epoch/loss', validation_loss, epoch)
             val_writer.add_scalar('_per_epoch/metric', epoch_metric_val, epoch)
 
