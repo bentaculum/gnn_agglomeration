@@ -78,7 +78,10 @@ class CountNeighborsGraph(MyGraph):
         # plt.show()
 
     def plot_predictions(self, config, pred, graph_nr, run, acc):
-        # TODO write to sacred
+        # TODO this is a quick fix for two node classes. Generalize!
+        if config.classes > 2:
+            raise NotImplementedError('Plotting not generalized to k classes')
+
         # transpose the edge matrix for format requirements
         g = nx.Graph(
             incoming_graph_data=self.edge_index.transpose(0, 1).tolist())
@@ -87,7 +90,6 @@ class CountNeighborsGraph(MyGraph):
         # prepare the targets to be displayed
         labels_dict = {}
 
-        # TODO this is a quick fix for two node classes. Generalize!
         node_color = ['r' if features[0] ==
                       0 else 'y' for features in self.x]
 
@@ -117,6 +119,8 @@ class CountNeighborsGraph(MyGraph):
         if os.path.isfile(img_path):
             os.remove(img_path)
         plt.savefig(img_path)
+        run.add_artifact(filename=img_path,
+                         name='graph_with_predictions_{}.png'.format(graph_nr))
         print('plotted the graph with predictions to {}'.format(img_path))
 
     def set_plotting_style(self):
