@@ -107,20 +107,20 @@ class Config:
         self.parser.add_argument(
             '--log_histograms',
             type=str2bool,
-            help='whether to perform the costly plotting of histograms')
+            help='whether to perform the costly plotting of histograms' )
         self.default['log_histograms'] = False
 
         self.parser.add_argument(
             '--log_per_epoch_only',
             type=str2bool,
-            help='minimal logging, only the loss and the metric')
+            help='minimal logging, only the loss and the metric' )
         self.default['log_per_epoch_only'] = False
 
         self.parser.add_argument(
             '--log_namespaces',
             type=str,
             nargs='+',
-            help='If you want to log only specific namespaces (e.g. layers), specify them here')
+            help='If you want to log only specific namespaces (e.g. layers), specify them here' )
         self.default['log_namespaces'] = []
 
         self.parser.add_argument(
@@ -224,7 +224,8 @@ class Config:
         self.parser.add_argument(
             '--fc_bias',
             type=str2bool,
-            help='whether to use a bias term for the final fully connected layer')
+            help='whether to use a bias term for the final fully connected layer'
+        )
         self.default['fc_bias'] = False
 
         self.parser.add_argument(
@@ -281,7 +282,7 @@ class Config:
         self.parser.add_argument(
             '--att_heads_concat',
             type=str2bool,
-            help='whether to concat or average the outputs of the different attention heads')
+            help='whether to concat or average the outputs of the different attention heads' )
         self.default['att_heads_concat'] = True
 
         self.parser.add_argument(
@@ -293,14 +294,14 @@ class Config:
         self.parser.add_argument(
             '--att_layers',
             type=positive_int,
-            help='Attention NN: number of layers')
+            help='Attention NN: number of layers' )
         self.default['att_layers'] = 1
 
         self.parser.add_argument(
             '--att_layer_dims',
             type=positive_int,
             nargs='+',
-            help='Attention NN: list of layer dimensions')
+            help='Attention NN: list of layer dimensions' )
         self.default['att_layer_dims'] = [1]
 
         self.parser.add_argument(
@@ -349,21 +350,19 @@ class Config:
         self.parser.add_argument(
             '--temp',
             type=str2bool,
-            help='If true, save results to temp folder. If false, create timestamped directory.')
+            help='If true, save results to temp folder. If false, create timestamped directory.' )
         self.default['temp'] = False
 
         self.parser.add_argument(
             '--checkpoint_interval',
             type=positive_int,
-            help='how often to save a checkpoint of the model that can be used for restarting')
+            help='how often to save a checkpoint of the model that can be used for restarting' )
         self.default['checkpoint_interval'] = 10
 
         self.parser.add_argument(
             '--machine',
             type=str,
-            choices=[
-                'localhost',
-                'slowpoke1'],
+            choices=['localhost', 'slowpoke1'],
             help='machine-dependent parameters to be imported, e.g. for connecting to the MongoDB')
         self.default['machine'] = 'localhost'
 
@@ -406,11 +405,9 @@ class Config:
         if config_cmd['load_model'] is not None:
             if config_cmd['load_model'] == 'latest':
                 # find latest model in the runs path
-                all_runs_dir = os.path.join(
-                    self.default['root_dir'], self.default['run_path'])
+                all_runs_dir = os.path.join(self.default['root_dir'], self.default['run_path'])
 
-                # TODO filter for correct format of directory name, instead of
-                # '2019'
+                # TODO filter for correct format of directory name, instead of '2019'
                 runs = sorted([name for name in os.listdir(
                     all_runs_dir) if name.startswith('2019')])
 
@@ -434,10 +431,8 @@ class Config:
 
                 # find latest model in the runs path
                 if config_cmd['config_from_file'] == 'latest':
-                    all_runs_dir = os.path.join(
-                        self.default['root_dir'], self.default['run_path'])
-                    # TODO filter for correct format of directory name, instead
-                    # of '2019'
+                    all_runs_dir = os.path.join(self.default['root_dir'], self.default['run_path'])
+                    # TODO filter for correct format of directory name, instead of '2019'
                     runs = sorted([name for name in os.listdir(
                         all_runs_dir) if name.startswith('2019')])
                     config_filepath = os.path.join(

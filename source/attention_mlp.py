@@ -54,8 +54,7 @@ class AttentionMLP(torch.nn.Module):
     def reset_parameters(self):
         # from torch.nn.Linear
         # https://pytorch.org/docs/stable/_modules/torch/nn/modules/linear.html#Linear
-        # However, the sqrt(5) that appears there is legacy code and should not
-        # be used
+        # However, the sqrt(5) that appears there is legacy code and should not be used
         for w in self.weight_list:
             init.kaiming_uniform_(w, nonlinearity='leaky_relu')
 

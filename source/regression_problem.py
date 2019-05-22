@@ -25,8 +25,7 @@ class RegressionProblem(ModelType):
         inputs = inputs.squeeze()
         targets = targets.float()
         if self.config.standardize_targets:
-            targets = (targets - self.config.targets_mean) / \
-                self.config.targets_std
+            targets = (targets - self.config.targets_mean) / self.config.targets_std
         return F.mse_loss(inputs, targets, reduction='mean')
 
     def out_to_predictions(self, out):
