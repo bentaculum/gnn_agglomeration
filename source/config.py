@@ -355,6 +355,19 @@ class Config:
         self.default['att_normalize'] = True
 
         self.parser.add_argument(
+            '--att_nodenet_layers',
+            type=positive_int,
+            help='number of fc layers before the attention mechanism')
+        self.default['att_nodenet_layers'] = 1
+
+        self.parser.add_argument(
+            '--att_nodenet_hidden_dims',
+            type=positive_int,
+            nargs='*',
+            help='hidden dimensionality of nodenet')
+        self.default['att_nodenet_hidden_dims'] = []
+
+        self.parser.add_argument(
             '--load_model',
             type=str,
             help="Load model from file. 'latest' | relative/path/to/tarfile")

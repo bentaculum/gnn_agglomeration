@@ -58,6 +58,9 @@ class OurConv(MessagePassing):
                  dropout=0,
                  bias=True,
                  normalize_with_softmax=True,
+                 local_layers=1,
+                 local_hidden_dims=[],
+                 non_linearity='leaky_relu',
                  attention_nn_params=None):
         super(OurConv, self).__init__('add')
 
@@ -70,8 +73,18 @@ class OurConv(MessagePassing):
         self.dropout = dropout
         self.normalize_with_softmax = normalize_with_softmax
 
-        self.weight = Parameter(torch.Tensor(
-            in_channels, heads * out_channels))
+        self.non_linearity = non_linearity
+        self.local_layers = local_layers
+        self.weight_list = []
+
+        weight_dims = local_hidden_dims.copy()
+        weight_dims.insert(0, in_channels)
+        weight_dims.append(heads * out_channels)
+
+        for i in range(local_layers):
+            w = Parameter(torch.Tensor(
+                weight_dims[i], weight_dims[i+1]))
+            self.weight_list.append(w)
 
         self.att = AttentionMLP(
             heads=self.heads,
@@ -84,6 +97,7 @@ class OurConv(MessagePassing):
             dropout_probs=attention_nn_params['dropout_probs'],
         )
 
+        # TODO bias per local matmul
         if bias and concat:
             self.bias = Parameter(torch.Tensor(heads * out_channels))
         elif bias and not concat:
@@ -94,7 +108,9 @@ class OurConv(MessagePassing):
         self.reset_parameters()
 
     def reset_parameters(self):
-        glorot(self.weight)
+        # TODO adapt to Kaiming He init
+        for i in range(self.local_layers):
+            glorot(self.weight_list[i])
         zeros(self.bias)
         self.att.reset_parameters()
 
@@ -110,7 +126,15 @@ class OurConv(MessagePassing):
         # well, e.g. to self.out_channels
         pseudo = pseudo.expand(-1, self.heads, -1)
 
-        x = torch.mm(x, self.weight).view(-1, self.heads, self.out_channels)
+        # TODO can I use torch.nn.Linear here?
+        # TODO separate after the first layer
+        # TODO plot the inner happenings
+        for i in range(self.local_layers):
+            x = torch.mm(x, self.weight_list[i])
+            x = getattr(F, self.non_linearity)(x)
+
+        x = x.view(-1, self.heads, self.out_channels)
+
         return self.propagate(
             edge_index,
             x=x,

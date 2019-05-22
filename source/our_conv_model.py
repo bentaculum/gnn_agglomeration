@@ -56,6 +56,9 @@ class OurConvModel(GnnModel):
             dropout=self.config.att_final_dropout,
             bias=self.config.use_bias,
             normalize_with_softmax=self.config.att_normalize,
+            local_layers=self.config.att_nodenet_layers,
+            local_hidden_dims=self.config.att_nodenet_hidden_dims,
+            non_linearity=self.config.att_non_linearity,
             attention_nn_params=attention_nn_params
         )
         self.layers_list.append(conv_in)
@@ -123,8 +126,9 @@ class OurConvModel(GnnModel):
 
         for i, l in enumerate(self.layers_list):
             if self.training:
-                self.write_to_variable_summary(
-                    l.weight, 'layer_{}'.format(i), 'weights')
+                for j, weight in enumerate(l.weight_list):
+                    self.write_to_variable_summary(
+                        weight, 'layer_{}_nodenet_{}'.format(i, j), 'weights')
                 if self.config.use_bias:
                     self.write_to_variable_summary(
                         l.bias, 'layer_{}'.format(i), 'weights_bias')
