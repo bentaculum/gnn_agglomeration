@@ -235,6 +235,19 @@ class Config:
         self.default['fc_bias'] = False
 
         self.parser.add_argument(
+            '--fc_layers',
+            type=positive_int,
+            help='number of fully connected layers in the end, at least 1')
+        self.default['fc_layers'] = 1
+
+        self.parser.add_argument(
+            '--fc_layer_dims',
+            type=positive_int,
+            nargs='*',
+            help='list of hidden layer dims for fc layers in the end')
+        self.default['fc_layer_dims'] = []
+
+        self.parser.add_argument(
             '--dropout_type',
             type=str,
             choices=['dropout', 'dropout2d'],

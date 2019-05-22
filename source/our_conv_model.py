@@ -31,6 +31,7 @@ class OurConvModel(GnnModel):
         assert len(self.config.hidden_units) == self.config.hidden_layers + 1
         # Dropout should be there for input layer + all hidden layers
         assert len(self.config.dropout_probs) == self.config.hidden_layers + 1
+        assert len(self.config.fc_layer_dims) == self.config.fc_layers - 1
 
         self.layers_list = torch.nn.ModuleList()
         self.batch_norm_list = torch.nn.ModuleList()
@@ -106,10 +107,16 @@ class OurConvModel(GnnModel):
         else:
             fc_in_features = self.config.hidden_units[-1]
 
-        self.fc = torch.nn.Linear(
-            in_features=fc_in_features,
-            out_features=self.model_type.out_channels,
-            bias=self.config.fc_bias)
+        self.fc_layers_list = torch.nn.ModuleList()
+        fc_layer_dims = self.config.fc_layer_dims.copy()
+        fc_layer_dims.insert(0, fc_in_features)
+        fc_layer_dims.append(self.model_type.out_channels)
+        for i in range(self.config.fc_layers):
+            fc = torch.nn.Linear(
+                in_features=fc_layer_dims[i],
+                out_features=fc_layer_dims[i+1],
+                bias=self.config.fc_bias)
+            self.fc_layers_list.append(fc)
 
     def forward(self, data):
         x, edge_index, edge_attr = data.x, data.edge_index, data.edge_attr
@@ -147,16 +154,21 @@ class OurConvModel(GnnModel):
             x = getattr(F, self.config.dropout_type)(
                 x, p=self.config.dropout_probs[i], training=self.training)
 
-        if self.training:
-            self.write_to_variable_summary(
-                self.fc.weight, 'out_layer', 'weights')
-            if self.config.fc_bias:
+        # TODO make dropout optional here
+        for i, l in enumerate(self.fc_layers_list):
+            if self.training:
                 self.write_to_variable_summary(
-                    self.fc.bias, 'out_layer', 'bias')
-        x = self.fc(x)
-        self.write_to_variable_summary(x, 'out_layer', 'pre_activations')
+                    l.weight, 'out_layer_fc_{}'.format(i), 'weights')
+                if self.config.fc_bias:
+                    self.write_to_variable_summary(
+                        l.bias, 'out_layer_fc_{}',format(i), 'bias')
+            x = l(x)
+            self.write_to_variable_summary(x, 'out_layer_fc_{}'.format(i), 'pre_activations')
 
-        x = self.model_type.out_nonlinearity(x)
-        self.write_to_variable_summary(x, 'out_layer', 'outputs')
+            if i == self.config.fc_layers-1:
+                x = self.model_type.out_nonlinearity(x)
+            else:
+                x = getattr(F, self.config.non_linearity)(x)
+            self.write_to_variable_summary(x, 'out_layer_fc_{}'.format(i), 'outputs')
 
         return x
