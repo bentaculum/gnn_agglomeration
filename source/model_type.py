@@ -56,6 +56,7 @@ class ModelType(torch.nn.Module, ABC):
                     range(
                         size + 1))),
             annot=True,
+            annot_kws={"size": 6},
             fmt='g')
         fig = ax.get_figure()
         plt.title('Confusion matrix')
