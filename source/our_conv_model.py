@@ -87,6 +87,7 @@ class OurConvModel(GnnModel):
                 negative_slope=0.2,
                 dropout=self.config.att_final_dropout,
                 bias=self.config.use_bias,
+                normalize_with_softmax=self.config.att_normalize,
                 attention_nn_params=attention_nn_params
             )
             self.layers_list.append(l)
