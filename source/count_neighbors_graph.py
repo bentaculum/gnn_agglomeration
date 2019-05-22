@@ -79,7 +79,7 @@ class CountNeighborsGraph(MyGraph):
 
     def plot_predictions(self, config, pred, graph_nr, run, acc):
         # TODO this is a quick fix for two node classes. Generalize!
-        if config.classes > 2:
+        if config.feature_dimensionality > 2:
             raise NotImplementedError('Plotting not generalized to k classes')
 
         # transpose the edge matrix for format requirements
