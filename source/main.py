@@ -15,6 +15,7 @@ import argparse
 import json
 
 from config import Config
+# TODO parametrize imports to avoid overhead here
 from gcn_model import GcnModel
 from gmm_conv_model import GmmConvModel
 from spline_conv_model import SplineConvModel
@@ -24,8 +25,10 @@ from our_conv_model import OurConvModel
 from regression_problem import RegressionProblem
 from result_plotting import ResultPlotting
 
-from random_graph_dataset import RandomGraphDataset
-from my_graph import MyGraph
+from diameter_dataset import DiameterDataset
+# from diameter_graph import DiameterGraph
+from count_neighbors_dataset import CountNeighborsDataset
+# from count_neighbors_graph import CountNeighborsGraph
 
 
 ex = Experiment()
@@ -51,7 +54,7 @@ def main(_config, _run, _log):
         os.makedirs(config.run_abs_path)
 
     # clear old stuff from the run dir, if it's not a restart
-    if config.load_model is None:
+    if not config.load_model:
         summary_dir = os.path.join(config.run_abs_path, config.summary_dir)
         if os.path.isdir(summary_dir):
             shutil.rmtree(summary_dir)
@@ -76,17 +79,20 @@ def main(_config, _run, _log):
         config.run_abs_path, 'summary', 'validation'))
 
     # create and load dataset
-    dataset = RandomGraphDataset(root=config.dataset_abs_path, config=config)
-    config.max_neighbors = dataset.max_neighbors()
+    dataset = globals()[config.dataset_type](root=config.dataset_abs_path, config=config)
+
+    dataset.update_config(config)
+
+    #TODO check if this updating works
     if config.standardize_targets:
         config.targets_mean, config.targets_std = dataset.targets_mean_std()
+
     # TODO if model is loaded, use the same train val test split.
     # shuffle can return the permutation of the dataset, which can then be used to permute the same way
     # dataset, perm = dataset.shuffle(return_perm=True)
     # when loading a model:
     # dataset = dataset.__indexing__(permutation)
 
-    # TODO if model is loaded, use the same train val test split
     # split into train and test
     split_train_idx = int(
         config.samples * (1 - config.test_split - config.validation_split))
@@ -103,55 +109,54 @@ def main(_config, _run, _log):
     data_loader_validation = DataLoader(
         validation_dataset, batch_size=config.batch_size_eval, shuffle=False)
 
-    try:
-        if config.load_model is None:
-            model = globals()[config.model](
-                config=config,
-                train_writer=train_writer,
-                val_writer=val_writer,
-                model_type=config.model_type
-            )
-            model = model.to(device)
+    if not config.load_model:
+        model = globals()[config.model](
+            config=config,
+            train_writer=train_writer,
+            val_writer=val_writer,
+            model_type=config.model_type
+        )
+        model = model.to(device)
+    else:
+        _log.info('Loading model {} ...'.format(config.load_model))
+        # TODO allow to load previous models
+        # find latest state of model
+        load_model_dir = os.path.join(
+            config.root_dir, config.run_abs_path, config.model_dir)
+        checkpoint_versions = [name for name in os.listdir(
+            load_model_dir) if name.endswith('.tar')]
+        if 'final.tar' in checkpoint_versions:
+            checkpoint_to_load = 'final.tar'
         else:
-            # TODO allow to load previous models
-            # find latest state of model
-            load_model_dir = os.path.join(
-                config.root_dir, config.run_abs_path, config.model_dir)
-            checkpoint_versions = [name for name in os.listdir(
-                load_model_dir) if name.endswith('.tar')]
-            if 'final.tar' in checkpoint_versions:
-                checkpoint_to_load = 'final.tar'
-            else:
-                checkpoint_versions = [
-                    x for x in checkpoint_versions if x.startswith('epoch')].sort()
-                checkpoint_to_load = checkpoint_versions[-1]
+            checkpoint_versions = [
+                x for x in checkpoint_versions if x.startswith('epoch')].sort()
+            checkpoint_to_load = checkpoint_versions[-1]
 
-            _log.info('Loading checkpoint {} ...'.format(
-                os.path.join(load_model_dir, checkpoint_to_load)))
-            checkpoint = torch.load(os.path.join(
-                load_model_dir, checkpoint_to_load))
+        _log.info('Loading checkpoint {} ...'.format(
+            os.path.join(load_model_dir, checkpoint_to_load)))
+        checkpoint = torch.load(os.path.join(
+            load_model_dir, checkpoint_to_load))
 
-            # restore the checkpoint
-            model = globals()[config.model](
-                config=config,
-                train_writer=train_writer,
-                val_writer=val_writer,
-                epoch=checkpoint['epoch'],
-                train_batch_iteration=checkpoint['train_batch_iteration'],
-                val_batch_iteration=checkpoint['val_batch_iteration'],
-                model_type=config.model_type
-            )
-            # model.to(device) has to be executed before loading the state dicts
-            model.to(device)
-            model.load_state_dict(checkpoint['model_state_dict'])
-            model.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        # restore the checkpoint
+        model = globals()[config.model](
+            config=config,
+            train_writer=train_writer,
+            val_writer=val_writer,
+            epoch=checkpoint['epoch'],
+            train_batch_iteration=checkpoint['train_batch_iteration'],
+            val_batch_iteration=checkpoint['val_batch_iteration'],
+            model_type=config.model_type
+        )
+        # model.to(device) has to be executed before loading the state
+        # dicts
+        model.to(device)
+        model.load_state_dict(checkpoint['model_state_dict'])
+        model.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
-    except KeyError as e:
-        print(e)
-        raise NotImplementedError(
-            'The model you have specified is not implemented')
 
-    total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+    total_params = sum(p.numel()
+                       for p in model.parameters() if p.requires_grad)
     _run.log_scalar('nr_params', total_params, config.training_epochs)
 
     # save config to file and store in DB
@@ -187,14 +192,21 @@ def main(_config, _run, _log):
         for data_ft in data_loader_train:
             data_ft = data_ft.to(device)
             out_ft = model(data_ft)
-            final_loss_train += model.loss(out_ft, data_ft.y).item() * data_ft.num_graphs
+            final_loss_train += model.loss(out_ft,
+                                           data_ft.y).item() * data_ft.num_graphs
             final_metric_train += model.out_to_metric(
                 out_ft, data_ft.y) * data_ft.num_graphs
         final_loss_train /= train_dataset.__len__()
         final_metric_train /= train_dataset.__len__()
 
-        _run.log_scalar('loss_train_final', final_loss_train, config.training_epochs)
-        _run.log_scalar('accuracy_train_final', final_metric_train, config.training_epochs)
+        _run.log_scalar(
+            'loss_train_final',
+            final_loss_train,
+            config.training_epochs)
+        _run.log_scalar(
+            'accuracy_train_final',
+            final_metric_train,
+            config.training_epochs)
 
         # test loss
         data_loader_test = DataLoader(
@@ -207,8 +219,10 @@ def main(_config, _run, _log):
         for data_fe in data_loader_test:
             data_fe = data_fe.to(device)
             out_fe = model(data_fe)
-            test_loss += model.loss(out_fe, data_fe.y).item() * data_fe.num_graphs
-            test_metric += model.out_to_metric(out_fe, data_fe.y) * data_fe.num_graphs
+            test_loss += model.loss(out_fe,
+                                    data_fe.y).item() * data_fe.num_graphs
+            test_metric += model.out_to_metric(out_fe,
+                                               data_fe.y) * data_fe.num_graphs
             pred = model.out_to_predictions(out_fe)
             test_predictions.extend(model.predictions_to_list(pred))
             test_targets.extend(data_fe.y.tolist())
@@ -220,13 +234,7 @@ def main(_config, _run, _log):
 
         # final print routine
         print('')
-        print('Maximum # of neighbors within distance {} in dataset: {}'.format(
-            config.theta, config.max_neighbors))
-        print('# of neighbors, distribution:')
-        dic = dataset.neighbors_distribution()
-        for key, value in sorted(dic.items(), key=lambda x: x[0]):
-            print("{} : {}".format(key, value))
-        print('')
+        dataset.print_summary()
         print('Total number of parameters: {}'.format(total_params))
         print('Mean train loss ({0} samples): {1:.3f}'.format(
             train_dataset.__len__(),
@@ -262,15 +270,24 @@ def main(_config, _run, _log):
         # plot errors by location
         # plotter = ResultPlotting(config=config)
         # plotter.plot_errors_by_location(
-        # data=test_dataset, predictions=test_predictions, targets=test_targets)
+        # data=test_dataset, predictions=test_predictions,
+        # targets=test_targets)
 
         # plot the graphs in the test dataset for visual inspection
         if config.plot_graphs_testset:
+            # TODO why would this be Data objects now, not some custom Graph?
             for i, g in enumerate(test_dataset):
-                graph = MyGraph(config, g)
-                graph.plot_predictions(
-                    pred=model.predictions_to_list(model.out_to_predictions(model(g))),
-                    graph_nr=i)
+                g.to(device)
+                out_p = model(g)
+                g.plot_predictions(
+                    config=config,
+                    pred=model.predictions_to_list(
+                        model.out_to_predictions(out_p)),
+                    graph_nr=i,
+                    run=_run,
+                    acc=model.out_to_metric(
+                        out_p,
+                        g.y))
 
         return '\n{0}\ntrain acc: {1:.3f}\ntest acc: {2:.3f}'.format(
             _run.meta_info['options']['--comment'], final_metric_train, test_metric)
@@ -374,7 +391,7 @@ def main(_config, _run, _log):
 
     ###########################
 
-    return atexit_tasks()
+    return atexit_tasks(model=model)
 
 
 if __name__ == '__main__':

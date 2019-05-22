@@ -57,6 +57,7 @@ class OurConv(MessagePassing):
                  negative_slope=0.2,
                  dropout=0,
                  bias=True,
+                 normalize_with_softmax=True,
                  attention_nn_params=None):
         super(OurConv, self).__init__('add')
 
@@ -67,6 +68,7 @@ class OurConv(MessagePassing):
         self.concat = concat
         self.negative_slope = negative_slope
         self.dropout = dropout
+        self.normalize_with_softmax = normalize_with_softmax
 
         self.weight = Parameter(torch.Tensor(
             in_channels, heads * out_channels))
@@ -79,7 +81,7 @@ class OurConv(MessagePassing):
             bias=attention_nn_params['bias'],
             non_linearity=attention_nn_params['non_linearity'],
             batch_norm=attention_nn_params['batch_norm'],
-            dropout_probs=attention_nn_params['dropout_probs']
+            dropout_probs=attention_nn_params['dropout_probs'],
         )
 
         if bias and concat:
@@ -121,7 +123,8 @@ class OurConv(MessagePassing):
         alpha = torch.cat([x_i, x_j, pseudo], dim=-1)
         alpha = self.att(alpha)
         alpha = F.leaky_relu(alpha, self.negative_slope)
-        alpha = softmax(alpha, edge_index_i, num_nodes)
+        if self.normalize_with_softmax:
+            alpha = softmax(alpha, edge_index_i, num_nodes)
 
         # Dropout on attention vector
         if self.training and self.dropout > 0:
