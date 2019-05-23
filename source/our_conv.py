@@ -75,7 +75,7 @@ class OurConv(MessagePassing):
 
         self.non_linearity = non_linearity
         self.local_layers = local_layers
-        self.weight_list = []
+        self.weight_list = torch.nn.ParameterList()
 
         weight_dims = local_hidden_dims.copy()
         weight_dims.insert(0, in_channels)
