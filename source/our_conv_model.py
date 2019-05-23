@@ -92,6 +92,9 @@ class OurConvModel(GnnModel):
                 dropout=self.config.att_final_dropout,
                 bias=self.config.use_bias,
                 normalize_with_softmax=self.config.att_normalize,
+                local_layers=self.config.att_nodenet_layers,
+                local_hidden_dims=self.config.att_nodenet_hidden_dims,
+                non_linearity=self.config.att_non_linearity,
                 attention_nn_params=attention_nn_params
             )
             self.layers_list.append(l)
