@@ -433,7 +433,7 @@ class Config:
         self.parser.add_argument(
             '--affinities',
             type=str,
-            choices=['all_affinities', 'only_gt_affinities'],
+            choices=['all_affinities', 'only_gt_affinities', 'only_gt_dir_affinities'],
             help='what kind of affinities on the edges')
         self.default['affinities'] = 'only_gt_affinities'
 

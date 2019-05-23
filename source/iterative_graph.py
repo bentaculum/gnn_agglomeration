@@ -139,6 +139,14 @@ class IterativeGraph(MyGraph):
                 aff = beta0.sample(torch.Size([1]))
             return [aff, aff]
 
+        # TODO adapt this for trees
+        def only_gt_dir_affinities(n1, n2):
+            if [n1, n2] in ground_truth:
+                aff = beta1.sample(torch.Size([1]))
+            else:
+                aff = beta0.sample(torch.Size([1]))
+            return [aff, 0]
+
         # connect all nodes, regardless of subgraph, within distance theta_max
         total_nodes = len(pos_list)
         for i in range(total_nodes):
