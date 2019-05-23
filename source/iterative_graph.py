@@ -33,9 +33,8 @@ class IterativeGraph(MyGraph):
         return False
 
     def create_single_component(self, config):
-        # This is a chain, for now
-        # TODO extend this to tree
-        config.curvature_degree_limit = 20
+        # TODO This is a chain, for now, extend this to tree
+
         # variable number of nodes in graph now. We need indices of the start nodes
         pos = []
         degs = []
@@ -202,7 +201,7 @@ class IterativeGraph(MyGraph):
             connected in input graph. The shown MSTS and colors depict ground truth,
             each root is brown. Node label is of format 'pred:noisy_input'""".format(
                 1 - config.class_noise, config.theta_max))
-        plt.text(0.7, 1.1, 'Accuracy: {0:.3f}'.format(acc), fontsize=16)
+        plt.text(0.6, 1.0, 'Accuracy: {0:.3f}'.format(acc), fontsize=16)
         plt.legend(loc='upper left', fontsize=12)
 
         self.add_to_plotting_style()
@@ -219,8 +218,8 @@ class IterativeGraph(MyGraph):
         f = plt.figure(figsize=(8, 8))
         plt.xlabel('x (euclidian)')
         plt.ylabel('y (euclidian)')
-        plt.xlim(-0.1, 1.1)
-        plt.ylim(-0.1, 1.2)
+        plt.xlim(0.0, 1.0)
+        plt.ylim(0.0, 1.1)
         ax = f.add_subplot(1, 1, 1)
         cmap = plt.get_cmap('Paired')
         cNorm = colors.Normalize(vmin=0, vmax=float(config.msts))

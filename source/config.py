@@ -430,6 +430,12 @@ class Config:
             help='beta value for the beta dist that generates noisy edge features')
         self.default['affinity_dist_beta'] = 4
 
+        self.parser.add_argument(
+            '--curvature_degree_limit',
+            type=positive_int,
+            help='Restrict the deviation from the continuing line by this amount of degrees, in both dirs')
+        self.default['curvature_degree_limit'] = 45
+
     def localhost(self):
         return {
             'mongo_url': 'localhost:27017',
