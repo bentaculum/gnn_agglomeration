@@ -431,6 +431,13 @@ class Config:
         self.default['affinity_dist_beta'] = 4
 
         self.parser.add_argument(
+            '--affinities',
+            type=str,
+            choices=['all_affinities', 'only_gt_affinities'],
+            help='what kind of affinities on the edges')
+        self.default['affinities'] = 'only_gt_affinities'
+
+        self.parser.add_argument(
             '--curvature_degree_limit',
             type=positive_int,
             help='Restrict the deviation from the continuing line by this amount of degrees, in both dirs')

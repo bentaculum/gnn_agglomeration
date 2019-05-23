@@ -124,6 +124,21 @@ class IterativeGraph(MyGraph):
         beta1 = torch.distributions.beta.Beta(
             config.affinity_dist_beta, config.affinity_dist_alpha)
 
+        def all_affinities(n1,n2):
+            if class_list[n1] == class_list[n2]:
+                aff = beta1.sample(torch.Size([1]))
+            else:
+                aff = beta0.sample(torch.Size([1]))
+            # append twice, as the graph is bi-directed
+            return [aff, aff]
+
+        def only_gt_affinities(n1, n2):
+            if [n1, n2] in ground_truth:
+                aff = beta1.sample(torch.Size([1]))
+            else:
+                aff = beta0.sample(torch.Size([1]))
+            return [aff, aff]
+
         # connect all nodes, regardless of subgraph, within distance theta_max
         total_nodes = len(pos_list)
         for i in range(total_nodes):
@@ -134,16 +149,8 @@ class IterativeGraph(MyGraph):
                     # add bi-directed edges, sample affinity
                     edges_list.append([i, j])
                     edges_list.append([j, i])
-                    if class_list[i] == class_list[j]:
-                        aff = beta1.sample(torch.Size([1]))
-                        # append twice, as the graph is bi-directed
-                        affinities_list.append(aff)
-                        affinities_list.append(aff)
-                    else:
-                        aff = beta0.sample(torch.Size([1]))
-                        # append twice, as the graph is bi-directed
-                        affinities_list.append(aff)
-                        affinities_list.append(aff)
+                    new_aff = locals()[config.affinities](i, j)
+                    affinities_list.extend(new_aff)
 
         ########################################
 
