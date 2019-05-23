@@ -77,7 +77,7 @@ class Config:
         self.parser.add_argument(
             '--dataset_type',
             type=str,
-            choices=['DiameterDataset', 'CountNeighborsDataset'],
+            choices=['DiameterDataset', 'CountNeighborsDataset', 'IterativeDataset'],
             help='choose from different types of local datasets')
         self.default['dataset_type'] = 'DiameterDataset'
 

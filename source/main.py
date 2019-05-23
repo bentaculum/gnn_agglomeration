@@ -26,10 +26,8 @@ from regression_problem import RegressionProblem
 from result_plotting import ResultPlotting
 
 from diameter_dataset import DiameterDataset
-# from diameter_graph import DiameterGraph
 from count_neighbors_dataset import CountNeighborsDataset
-# from count_neighbors_graph import CountNeighborsGraph
-
+from iterative_dataset import IterativeDataset
 
 ex = Experiment()
 

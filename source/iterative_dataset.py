@@ -1,13 +1,12 @@
 from random_graph_dataset import RandomGraphDataset
-from diameter_graph import DiameterGraph
+from iterative_graph import IterativeGraph
 
 
-class DiameterDataset(RandomGraphDataset):
+class IterativeDataset(RandomGraphDataset):
     def __init__(self, root, config):
 
         self.check_config_vars = [
             'samples',
-            'nodes',
             'self_loops',
             'feature_dimensionality',
             'euclidian_dimensionality',
@@ -19,11 +18,11 @@ class DiameterDataset(RandomGraphDataset):
             'class_noise',
         ]
 
-        super(DiameterDataset, self).__init__(
+        super(IterativeDataset, self).__init__(
             root=root, config=config)
 
     def create_datapoint(self):
-        graph = DiameterGraph()
+        graph = IterativeGraph()
         graph.create_random_graph(config=self.config)
         return graph
 
