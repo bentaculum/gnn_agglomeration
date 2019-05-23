@@ -29,7 +29,7 @@ class Config:
             '--self_loops',
             type=str2bool,
             help='whether the random graph should have reflexive edges')
-        self.default['self_loops'] = True
+        self.default['self_loops'] = False
 
         self.parser.add_argument(
             '--euclidian_dimensionality',
@@ -41,7 +41,7 @@ class Config:
             '--feature_dimensionality',
             type=positive_int,
             help='Dimension of the feature space, used in data.x')
-        self.default['feature_dimensionality'] = 3
+        self.default['feature_dimensionality'] = 6
 
         self.parser.add_argument(
             '--pseudo_dimensionality',
@@ -66,7 +66,7 @@ class Config:
             '--theta_max',
             type=float,
             help='nodes with lower euclidian distance will be connected')
-        self.default['theta_max'] = 0.3
+        self.default['theta_max'] = 0.2
 
         self.parser.add_argument(
             '--theta',
@@ -79,7 +79,7 @@ class Config:
             type=str,
             choices=['DiameterDataset', 'CountNeighborsDataset', 'IterativeDataset'],
             help='choose from different types of local datasets')
-        self.default['dataset_type'] = 'DiameterDataset'
+        self.default['dataset_type'] = 'IterativeDataset'
 
         self.parser.add_argument(
             '--dataset_path',
@@ -410,7 +410,7 @@ class Config:
             '--msts',
             type=positive_int,
             help='How many different classes in an instance of DiameterGraph')
-        self.default['msts'] = 2
+        self.default['msts'] = 5
 
         self.parser.add_argument(
             '--class_noise',
