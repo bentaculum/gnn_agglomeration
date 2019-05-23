@@ -76,8 +76,12 @@ class IterativeGraph(MyGraph):
         diameter_list = []
         class_list = []
         noisy_class_list = []
-        # one hot encoded class labels + diameter are the nodes features
-        assert config.feature_dimensionality == config.msts + 1
+        if config.class_label_feature:
+            # one hot encoded class labels + diameter are the nodes features
+            assert config.feature_dimensionality == config.msts + 1
+        else:
+            assert config.feature_dimensionality == 1
+            # TODO think about writing the euclidian coordinates to the nodes
 
         ground_truth = []
         roots_list = []
@@ -100,16 +104,18 @@ class IterativeGraph(MyGraph):
 
             class_list.extend([i] * len(pos))
 
-            # the root is fixed, not noisy
-            root = np.zeros(config.msts)
-            root[i] = 1
-            noisy_class_list.append(root)
+            if config.class_label_feature:
+                # the root is fixed, not noisy
+                root = np.zeros(config.msts)
+                root[i] = 1
+                noisy_class_list.append(root)
 
-            # for all other nodes, the class label is drawn from a multinomial
-            pvals = np.full(config.msts, config.class_noise / (config.msts - 1))
-            pvals[i] = 1 - config.class_noise
-            noisy_labels = np.random.multinomial(n=1, pvals=pvals, size=len(pos) - 1)
-            noisy_class_list.extend(list(noisy_labels))
+                # for all other nodes, the class label is drawn from a multinomial
+                pvals = np.full(config.msts, config.class_noise / (config.msts - 1))
+                pvals[i] = 1 - config.class_noise
+                noisy_labels = np.random.multinomial(n=1, pvals=pvals, size=len(pos) - 1)
+                noisy_class_list.extend(list(noisy_labels))
+
 
         ###########################
 
@@ -163,13 +169,19 @@ class IterativeGraph(MyGraph):
         ########################################
 
         # Cast all the data to torch tensors
-        x_list = []
-        for i in range(total_nodes):
-            li = list(noisy_class_list[i])
-            li.append(diameter_list[i])
-            x_list.append(li)
+        if config.class_label_feature:
+            x_list = []
+            for i in range(total_nodes):
+                li = list(noisy_class_list[i])
+                li.append(diameter_list[i])
+                x_list.append(li)
+        else:
+            x_list = diameter_list
 
         self.x = torch.tensor(x_list, dtype=torch.float)
+        if self.x.dim() == 1:
+            self.x = self.x.unsqueeze(-1)
+
         self.edge_index = torch.tensor(
             edges_list, dtype=torch.long).transpose(0, 1)
         self.edge_attr = torch.tensor(affinities_list, dtype=torch.float)

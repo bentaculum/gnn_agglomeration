@@ -419,6 +419,12 @@ class Config:
         self.default['class_noise'] = 0.2
 
         self.parser.add_argument(
+            '--class_label_feature',
+            type=str2bool,
+            help='whether to use the noisy class labels as a feature')
+        self.default['class_label_feature'] = True
+
+        self.parser.add_argument(
             '--affinity_dist_alpha',
             type=float,
             help='alpha value for the beta dist that generates noisy edge features')
