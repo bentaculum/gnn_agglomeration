@@ -36,6 +36,7 @@ class RandomGraphDataset(InMemoryDataset, ABC):
     def process(self):
         # Read data into huge `Data` list.
         data_list = []
+        #TODO use sacred logger
         print('Creating {} new random graphs ... '.format(self.config.samples))
         for i in range(self.config.samples):
             print('Create graph {} ...'.format(i))

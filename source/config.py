@@ -147,7 +147,7 @@ class Config:
             '--plot_graphs_testset',
             type=int,
             help='how many graphs to plot from the test set for visual inspection. -1 means all')
-        self.default['plot_graphs_testset'] = 0
+        self.default['plot_graphs_testset'] = 50
 
         self.parser.add_argument(
             '--validation_split',
