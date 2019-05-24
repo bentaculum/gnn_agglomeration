@@ -17,5 +17,5 @@ class MyGraph(Data, ABC):
     #     pass
 
     @abstractmethod
-    def plot_predictions(self, config, pred, graph_nr, run, acc):
+    def plot_predictions(self, config, pred, graph_nr, run, acc, logger):
         pass

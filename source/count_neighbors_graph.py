@@ -77,7 +77,7 @@ class CountNeighborsGraph(MyGraph):
         plt.savefig(os.path.join(self.config.run_abs_path, 'graph.png'))
         # plt.show()
 
-    def plot_predictions(self, config, pred, graph_nr, run, acc):
+    def plot_predictions(self, config, pred, graph_nr, run, acc, logger):
         # TODO this is a quick fix for two node classes. Generalize!
         if config.feature_dimensionality > 2:
             raise NotImplementedError('Plotting not generalized to k classes')
@@ -121,7 +121,7 @@ class CountNeighborsGraph(MyGraph):
         plt.savefig(img_path)
         run.add_artifact(filename=img_path,
                          name='graph_with_predictions_{}.png'.format(graph_nr))
-        print('plotted the graph with predictions to {}'.format(img_path))
+        logger.debug('plotted the graph with predictions to {}'.format(img_path))
 
     def set_plotting_style(self):
         plt.figure(figsize=(8, 8))

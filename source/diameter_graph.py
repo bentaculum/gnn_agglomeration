@@ -138,7 +138,7 @@ class DiameterGraph(MyGraph):
         self.y = torch.tensor(class_list, dtype=torch.long)
         self.pos = pos_list
 
-    def plot_predictions(self, config, pred, graph_nr, run, acc):
+    def plot_predictions(self, config, pred, graph_nr, run, acc, logger):
         # add the positions in euclidian space to the model
         pos_dict = {}
         # prepare the targets to be displayed
@@ -189,7 +189,7 @@ class DiameterGraph(MyGraph):
         plt.savefig(img_path)
         run.add_artifact(filename=img_path,
                          name='graph_with_predictions_{}.png'.format(graph_nr))
-        print('plotted the graph with predictions to {}'.format(img_path))
+        logger.debug('plotted the graph with predictions to {}'.format(img_path))
 
     def set_plotting_style(self, config):
         f = plt.figure(figsize=(8, 8))

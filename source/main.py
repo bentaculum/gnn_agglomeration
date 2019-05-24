@@ -293,7 +293,8 @@ def main(_config, _run, _log):
                     run=_run,
                     acc=model.out_to_metric(
                         out_p,
-                        g.y))
+                        g.y),
+                    logger=_log)
 
         return '\n{0}\ntrain acc: {1:.3f}\ntest acc: {2:.3f}'.format(
             _run.meta_info['options']['--comment'], final_metric_train, test_metric)
@@ -316,7 +317,7 @@ def main(_config, _run, _log):
             out = model(data)
 
             loss = model.loss(out, data.y)
-            model.print_current_loss(epoch, batch_i)
+            model.print_current_loss(epoch, batch_i, _log)
             epoch_loss += loss.item() * data.num_nodes
             epoch_metric_train += model.out_to_metric(
                 out, data.y) * data.num_nodes
@@ -363,7 +364,7 @@ def main(_config, _run, _log):
             data = data.to(device)
             out = model(data)
             loss = model.loss(out, data.y)
-            model.print_current_loss(epoch, 'validation {}'.format(batch_i))
+            model.print_current_loss(epoch, 'validation {}'.format(batch_i), _log)
             validation_loss += loss.item() * data.num_nodes
             epoch_metric_val += model.out_to_metric(
                 out, data.y) * data.num_nodes
@@ -409,7 +410,7 @@ if __name__ == '__main__':
     config_dict, remaining_args = Config().parse_args()
     ex.add_config(config_dict)
 
-    # sacred_default_flags = ['--enforce_clean', '-l', 'NOTSET']
+    # sacred_default_flags = ['--enforce_clean', '-l', 'INFO']
     sacred_default_flags = []
     # remove all argparse arguments from sys.argv
     argv = [sys.argv[0], *sacred_default_flags, *remaining_args]
