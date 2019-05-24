@@ -186,15 +186,17 @@ def main(_config, _run, _log):
         # train loss
         final_loss_train = 0.0
         final_metric_train = 0.0
+        final_nr_nodes_train = 0
         for data_ft in data_loader_train:
             data_ft = data_ft.to(device)
             out_ft = model(data_ft)
             final_loss_train += model.loss(out_ft,
-                                           data_ft.y).item() * data_ft.num_graphs
+                                           data_ft.y).item() * data_ft.num_nodes
             final_metric_train += model.out_to_metric(
-                out_ft, data_ft.y) * data_ft.num_graphs
-        final_loss_train /= train_dataset.__len__()
-        final_metric_train /= train_dataset.__len__()
+                out_ft, data_ft.y) * data_ft.num_nodes
+            final_nr_nodes_train += data_ft.num_nodes
+        final_loss_train /= final_nr_nodes_train
+        final_metric_train /= final_nr_nodes_train
 
         _run.log_scalar(
             'loss_train_final',
@@ -210,6 +212,7 @@ def main(_config, _run, _log):
             test_dataset, batch_size=config.batch_size_eval, shuffle=False)
         test_loss = 0.0
         test_metric = 0.0
+        nr_nodes_test = 0
         test_predictions = []
         test_targets = []
 
@@ -217,14 +220,15 @@ def main(_config, _run, _log):
             data_fe = data_fe.to(device)
             out_fe = model(data_fe)
             test_loss += model.loss(out_fe,
-                                    data_fe.y).item() * data_fe.num_graphs
+                                    data_fe.y).item() * data_fe.num_nodes
             test_metric += model.out_to_metric(out_fe,
-                                               data_fe.y) * data_fe.num_graphs
+                                               data_fe.y) * data_fe.num_nodes
+            nr_nodes_test += data_fe.num_nodes
             pred = model.out_to_predictions(out_fe)
             test_predictions.extend(model.predictions_to_list(pred))
             test_targets.extend(data_fe.y.tolist())
-        test_loss /= test_dataset.__len__()
-        test_metric /= test_dataset.__len__()
+        test_loss /= nr_nodes_test
+        test_metric /= nr_nodes_test
 
         _run.log_scalar('loss_test', test_loss, config.training_epochs)
         _run.log_scalar('accuracy_test', test_metric, config.training_epochs)
@@ -305,6 +309,7 @@ def main(_config, _run, _log):
         model.train()
         epoch_loss = 0.0
         epoch_metric_train = 0.0
+        nr_nodes_train = 0
         for batch_i, data in enumerate(data_loader_train):
             data = data.to(device)
             # call the forward method
@@ -312,10 +317,10 @@ def main(_config, _run, _log):
 
             loss = model.loss(out, data.y)
             model.print_current_loss(epoch, batch_i)
-            epoch_loss += loss.item() * data.num_graphs
-            # TODO introduce weighting per node
+            epoch_loss += loss.item() * data.num_nodes
             epoch_metric_train += model.out_to_metric(
-                out, data.y) * data.num_graphs
+                out, data.y) * data.num_nodes
+            nr_nodes_train += data.num_nodes
 
             # clear the gradient variables of the model
             model.optimizer.zero_grad()
@@ -339,8 +344,9 @@ def main(_config, _run, _log):
             model.optimizer.step()
             model.train_batch_iteration += 1
 
-        epoch_loss /= train_dataset.__len__()
-        epoch_metric_train /= train_dataset.__len__()
+        epoch_loss /= nr_nodes_train
+        epoch_metric_train /= nr_nodes_train
+
         if config.write_summary:
             train_writer.add_scalar('_per_epoch/loss', epoch_loss, epoch)
             train_writer.add_scalar(
@@ -352,22 +358,25 @@ def main(_config, _run, _log):
         model.eval()
         validation_loss = 0.0
         epoch_metric_val = 0.0
+        nr_nodes_val = 0
         for batch_i, data in enumerate(data_loader_validation):
             data = data.to(device)
             out = model(data)
             loss = model.loss(out, data.y)
             model.print_current_loss(epoch, 'validation {}'.format(batch_i))
-            validation_loss += loss.item() * data.num_graphs
+            validation_loss += loss.item() * data.num_nodes
             epoch_metric_val += model.out_to_metric(
-                out, data.y) * data.num_graphs
+                out, data.y) * data.num_nodes
+            nr_nodes_val += data.num_nodes
             model.val_batch_iteration += 1
 
         # The numbering of train and val does not correspond 1-to-1!
         # Here we skip some numbers for maintaining loose correspondence
         model.val_batch_iteration = model.train_batch_iteration
 
-        validation_loss /= validation_dataset.__len__()
-        epoch_metric_val /= validation_dataset.__len__()
+        validation_loss /= nr_nodes_val
+        epoch_metric_val /= nr_nodes_val
+
         if config.write_summary:
             val_writer.add_scalar('_per_epoch/loss', validation_loss, epoch)
             val_writer.add_scalar('_per_epoch/metric', epoch_metric_val, epoch)
