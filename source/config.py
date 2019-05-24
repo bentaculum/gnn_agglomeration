@@ -77,7 +77,8 @@ class Config:
         self.parser.add_argument(
             '--dataset_type',
             type=str,
-            choices=['DiameterDataset', 'CountNeighborsDataset', 'IterativeDataset'],
+            choices=['DiameterDataset',
+                     'CountNeighborsDataset', 'IterativeDataset'],
             help='choose from different types of local datasets')
         self.default['dataset_type'] = 'IterativeDataset'
 
@@ -177,7 +178,7 @@ class Config:
             '--training_epochs',
             type=positive_int,
             help='number of training epochs')
-        self.default['training_epochs'] = 100
+        self.default['training_epochs'] = 200
 
         self.parser.add_argument(
             '--samples',
@@ -265,13 +266,13 @@ class Config:
             '--adam_lr',
             type=unit_float,
             help='Learning rate for ADAM optimizer')
-        self.default['adam_lr'] = 0.005
+        self.default['adam_lr'] = 0.0001
 
         self.parser.add_argument(
             '--adam_weight_decay',
             type=unit_float,
             help='Weight decay for ADAM optimizer')
-        self.default['adam_weight_decay'] = 0.002
+        self.default['adam_weight_decay'] = 0.0001
 
         self.parser.add_argument(
             '--batch_norm',
@@ -439,7 +440,8 @@ class Config:
         self.parser.add_argument(
             '--affinities',
             type=str,
-            choices=['all_affinities', 'only_gt_affinities', 'only_gt_dir_affinities'],
+            choices=['all_affinities', 'only_gt_affinities',
+                     'only_gt_dir_affinities'],
             help='what kind of affinities on the edges')
         self.default['affinities'] = 'only_gt_affinities'
 
