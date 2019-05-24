@@ -159,6 +159,7 @@ class IterativeGraph(MyGraph):
                 aff = beta0.sample(torch.Size([1]))
             return [aff, 0]
 
+        ground_truth_affinities = np.zeros(len(ground_truth))
         # connect all nodes, regardless of subgraph, within distance theta_max
         total_nodes = len(pos_list)
         for i in range(total_nodes):
@@ -172,6 +173,12 @@ class IterativeGraph(MyGraph):
                     new_aff = locals()[config.affinities](i, j)
                     affinities_list.extend(new_aff)
 
+                    # Save ground truth affinities for plotting
+                    if [i, j] in ground_truth:
+                        index = ground_truth.index([i, j])
+                        ground_truth_affinities[index] = new_aff[0]
+
+        self.ground_truth_affinities = torch.tensor(ground_truth_affinities, dtype=torch.float)
         ########################################
 
         # Cast all the data to torch tensors
@@ -216,6 +223,9 @@ class IterativeGraph(MyGraph):
         ax = self.set_plotting_style(config=config)
         g = nx.empty_graph(n=len(self.pos), create_using=nx.Graph())
         g.add_edges_from(self.ground_truth.tolist())
+
+        widths = (self.ground_truth_affinities * 2).tolist()
+
         nx.draw_networkx(
             g,
             pos_dict,
@@ -227,9 +237,10 @@ class IterativeGraph(MyGraph):
                 config.msts),
             font_size=10,
             ax=ax,
-            with_labels=True)
+            with_labels=True,
+            width=widths)
         plt.title(
-            """Recovery of class label, based on 'descending diameter' and noisy affinities.
+            """Recovery of class label, based on 'descending diameter' and noisy affinities(edge widths).
             Input class labels are correct with prob {}. All nodes within distance {} are
             connected in input graph. The shown MSTS and colors depict ground truth,
             each root is brown. Node label is of format 'pred:noisy_input'""".format(
