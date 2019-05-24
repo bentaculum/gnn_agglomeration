@@ -312,6 +312,7 @@ def main(_config, _run, _log):
         epoch_metric_train = 0.0
         nr_nodes_train = 0
         for batch_i, data in enumerate(data_loader_train):
+            _log.info('epoch {} ...'.format(epoch))
             data = data.to(device)
             # call the forward method
             out = model(data)
