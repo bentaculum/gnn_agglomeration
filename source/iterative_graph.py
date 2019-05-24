@@ -83,6 +83,12 @@ class IterativeGraph(MyGraph):
             assert config.feature_dimensionality == 1
             # TODO think about writing the euclidian coordinates to the nodes
 
+        # TODO update for n-D edge features
+        if config.data_transform == 'Distance':
+            assert config.pseudo_dimensionality == 2
+        else:
+            assert config.pseudo_dimensionality == 3
+
         ground_truth = []
         roots_list = []
 

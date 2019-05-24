@@ -78,8 +78,8 @@ def main(_config, _run, _log):
 
     # create and load dataset
     dataset = globals()[config.dataset_type](root=config.dataset_abs_path, config=config)
-
     dataset.update_config(config)
+    assert dataset[0].edge_attr.size(1) == config.pseudo_dimensionality
 
     if config.standardize_targets:
         config.targets_mean, config.targets_std = dataset.targets_mean_std()
