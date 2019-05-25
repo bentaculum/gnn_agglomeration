@@ -28,6 +28,10 @@ class IterativeDataset(RandomGraphDataset):
 
     def update_config(self, config):
         # TODO check if local update necessary
-        config.classes = config.msts
-        self.config.classes = config.classes
+        if config.edge_labels:
+            config.classes = 2
+            self.config.classes = 2
+        else:
+            config.classes = config.msts
+            self.config.classes = config.classes
 

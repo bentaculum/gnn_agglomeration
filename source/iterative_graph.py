@@ -136,30 +136,38 @@ class IterativeGraph(MyGraph):
         beta1 = torch.distributions.beta.Beta(
             config.affinity_dist_beta, config.affinity_dist_alpha)
 
-        def all_affinities(n1,n2):
+        def all_affinities(n1, n2):
             if class_list[n1] == class_list[n2]:
                 aff = beta1.sample(torch.Size([1]))
+                gt = 1
             else:
                 aff = beta0.sample(torch.Size([1]))
+                gt = 0
             # append twice, as the graph is bi-directed
-            return [aff, aff]
+            return [aff, aff], gt
 
         def only_gt_affinities(n1, n2):
             if [n1, n2] in ground_truth:
                 aff = beta1.sample(torch.Size([1]))
+                gt = 1
             else:
                 aff = beta0.sample(torch.Size([1]))
-            return [aff, aff]
+                gt = 0
+            return [aff, aff], gt
 
         # TODO adapt this for trees
         def only_gt_dir_affinities(n1, n2):
             if [n1, n2] in ground_truth:
                 aff = beta1.sample(torch.Size([1]))
+                gt = 1
             else:
                 aff = beta0.sample(torch.Size([1]))
-            return [aff, 0]
+                gt = 0
+            return [aff, 0], gt
 
         ground_truth_affinities = np.zeros(len(ground_truth))
+        ground_truth_edge_labels = []
+
         # connect all nodes, regardless of subgraph, within distance theta_max
         total_nodes = len(pos_list)
         for i in range(total_nodes):
@@ -170,8 +178,9 @@ class IterativeGraph(MyGraph):
                     # add bi-directed edges, sample affinity
                     edges_list.append([i, j])
                     edges_list.append([j, i])
-                    new_aff = locals()[config.affinities](i, j)
+                    new_aff, edge_label = locals()[config.affinities](i, j)
                     affinities_list.extend(new_aff)
+                    ground_truth_edge_labels.append(edge_label)
 
                     # Save ground truth affinities for plotting
                     if [i, j] in ground_truth:
@@ -198,7 +207,12 @@ class IterativeGraph(MyGraph):
         self.edge_index = torch.tensor(
             edges_list, dtype=torch.long).transpose(0, 1)
         self.edge_attr = torch.tensor(affinities_list, dtype=torch.float)
-        self.y = torch.tensor(class_list, dtype=torch.long)
+
+        if config.edge_labels:
+            self.y = torch.tensor(ground_truth_edge_labels, dtype=torch.long)
+        else:
+            self.y = torch.tensor(class_list, dtype=torch.long)
+
         self.pos = torch.tensor(pos_list, dtype=torch.float)
 
     def plot_predictions(self, config, pred, graph_nr, run, acc, logger):

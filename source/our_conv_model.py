@@ -113,6 +113,9 @@ class OurConvModel(GnnModel):
         else:
             fc_in_features = self.config.hidden_units[-1]
 
+        if self.config.edge_labels:
+            fc_in_features = 2 * (fc_in_features + self.config.pseudo_dimensionality)
+
         self.fc_layers_list = torch.nn.ModuleList()
         fc_layer_dims = self.config.fc_layer_dims.copy()
         fc_layer_dims.insert(0, fc_in_features)
@@ -160,6 +163,15 @@ class OurConvModel(GnnModel):
 
             x = getattr(F, self.config.dropout_type)(
                 x, p=self.config.dropout_probs[i], training=self.training)
+
+        # TODO this is a quick fix implementation, with the assumption that
+        # a pair of edges is next to each other in the edge index
+        if self.config.edge_labels:
+            x = x[edge_index[0]]
+            # might be computationally expensive
+            x = torch.cat([x, edge_attr], dim=-1)
+            # One entry per edge, not per directed edge
+            x = x.view(int(edge_index.size(1)/2), -1)
 
         # TODO make dropout optional here
         for i, l in enumerate(self.fc_layers_list):

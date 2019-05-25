@@ -451,6 +451,12 @@ class Config:
             help='Restrict the deviation from the continuing line by this amount of degrees, in both dirs')
         self.default['curvature_degree_limit'] = 45
 
+        self.parser.add_argument(
+            '--edge_labels',
+            type=str2bool,
+            help='whether to use edge labels')
+        self.default['edge_labels'] = False
+
     def localhost(self):
         return {
             'mongo_url': 'localhost:27017',
