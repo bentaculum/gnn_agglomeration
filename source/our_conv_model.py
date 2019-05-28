@@ -188,11 +188,11 @@ class OurConvModel(GnnModel):
 
             if i == self.config.fc_layers - 1:
                 x = self.model_type.out_nonlinearity(x)
-                x = getattr(F, self.config.dropout_type)(
-                    x, p=self.config.fc_dropout_probs[i], training=self.training)
             else:
                 x = getattr(F, self.config.non_linearity)(x)
-            self.write_to_variable_summary(
-                x, 'out_layer_fc_{}'.format(i), 'outputs')
+                self.write_to_variable_summary(
+                    x, 'out_layer_fc_{}'.format(i), 'outputs')
+                x = getattr(F, self.config.dropout_type)(
+                    x, p=self.config.fc_dropout_probs[i], training=self.training)
 
         return x
