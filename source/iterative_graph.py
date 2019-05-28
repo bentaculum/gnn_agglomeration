@@ -256,10 +256,15 @@ class IterativeGraph(MyGraph):
         # prepare the targets to be displayed
         labels_dict = {}
 
-        if self.x.dim() == 1:
-            node_size = (self.x * 500).tolist()
+        if config.class_label_feature:
+            size_scaling = 500
         else:
-            node_size = (self.x[:, -1].squeeze() * 500).tolist()
+            size_scaling = 50
+
+        if self.x.dim() == 1:
+            node_size = (self.x * size_scaling).tolist()
+        else:
+            node_size = (self.x[:, -1].squeeze() * size_scaling).tolist()
 
         node_color = np.zeros(self.pos.size(0), dtype=np.int_)
         # node_size = [200] * self.pos.size(0)
