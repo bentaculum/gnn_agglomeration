@@ -28,20 +28,22 @@ class IterativeGraph(MyGraph):
 
     def close_to_borders(self, node, theta):
         for i in node:
-            if i < theta or 1-i < theta:
+            if i < theta or 1 - i < theta:
                 return True
         return False
 
     def create_single_component(self, config):
         # TODO This is a chain, for now, extend this to tree
 
-        # variable number of nodes in graph now. We need indices of the start nodes
+        # variable number of nodes in graph now. We need indices of the start
+        # nodes
         pos = []
         degs = []
         diams = []
 
         # first position at least theta_max away from all unit square borders
-        pos.append(np.random.rand(2) * (1-2*config.theta_max) + config.theta_max)
+        pos.append(np.random.rand(2) *
+                   (1 - 2 * config.theta_max) + config.theta_max)
         degs.append(0)
         diams.append(1)
 
@@ -57,7 +59,8 @@ class IterativeGraph(MyGraph):
         more_nodes = not self.close_to_borders(pos[-1], config.theta)
         while more_nodes:
             next_rho = np.random.rand() * config.theta
-            next_deg = (degs[-1] + (np.random.rand()-0.5) * 2 * config.curvature_degree_limit) % 360
+            next_deg = (degs[-1] + (np.random.rand() - 0.5) *
+                        2 * config.curvature_degree_limit) % 360
             next_node = pos[-1] + np.array(self.pol2cart(next_rho, next_deg))
             pos.append(next_node)
             degs.append(next_deg)
@@ -70,7 +73,8 @@ class IterativeGraph(MyGraph):
     def create_random_graph(self, config):
 
         if config.euclidian_dimensionality is not 2:
-            raise NotImplementedError("IterativeGraph is only implemented for 2D euclidian")
+            raise NotImplementedError(
+                "IterativeGraph is only implemented for 2D euclidian")
 
         pos_list = []
         diameter_list = []
@@ -99,7 +103,7 @@ class IterativeGraph(MyGraph):
             # create edges, globally numbered
             offset = len(pos_list)
             roots_list.append(offset)
-            edges = [[x+offset, x+1+offset] for x in range(len(pos)-1)]
+            edges = [[x + offset, x + 1 + offset] for x in range(len(pos) - 1)]
 
             # add positions and diameters
             pos_list.extend(pos)
@@ -116,12 +120,14 @@ class IterativeGraph(MyGraph):
                 root[i] = 1
                 noisy_class_list.append(root)
 
-                # for all other nodes, the class label is drawn from a multinomial
-                pvals = np.full(config.msts, config.class_noise / (config.msts - 1))
+                # for all other nodes, the class label is drawn from a
+                # multinomial
+                pvals = np.full(
+                    config.msts, config.class_noise / (config.msts - 1))
                 pvals[i] = 1 - config.class_noise
-                noisy_labels = np.random.multinomial(n=1, pvals=pvals, size=len(pos) - 1)
+                noisy_labels = np.random.multinomial(
+                    n=1, pvals=pvals, size=len(pos) - 1)
                 noisy_class_list.extend(list(noisy_labels))
-
 
         ###########################
 
@@ -187,7 +193,8 @@ class IterativeGraph(MyGraph):
                         index = ground_truth.index([i, j])
                         ground_truth_affinities[index] = new_aff[0]
 
-        self.ground_truth_affinities = torch.tensor(ground_truth_affinities, dtype=torch.float)
+        self.ground_truth_affinities = torch.tensor(
+            ground_truth_affinities, dtype=torch.float)
         ########################################
 
         # Cast all the data to torch tensors
@@ -237,7 +244,14 @@ class IterativeGraph(MyGraph):
             )
         # TODO move duplicate code here
 
-    def plot_predictions_on_edges(self, config, pred, graph_nr, run, acc, logger):
+    def plot_predictions_on_edges(
+            self,
+            config,
+            pred,
+            graph_nr,
+            run,
+            acc,
+            logger):
         pos_dict = {}
         # prepare the targets to be displayed
         labels_dict = {}
@@ -273,13 +287,18 @@ class IterativeGraph(MyGraph):
 
         slicing_list = np.array(pred).astype(np.bool_).tolist()
         # TODO quick fix: edges are assumed to be ordered
-        every_other = [True, False] * int(self.edge_index.size(1)/2)
+        every_other = [True, False] * int(self.edge_index.size(1) / 2)
         unique_edges = self.edge_index.transpose(0, 1)[every_other]
-        unique_edges = np.array(unique_edges, dtype=np.int_)
+        unique_edges = unique_edges.cpu().numpy().astype(np.int_)
         pred_edges = unique_edges[slicing_list]
         g.add_edges_from(pred_edges.tolist())
 
-        nx.draw_networkx_edges(g, pos=pos_dict, edgelist=self.ground_truth.tolist(), edge_color='r', width=5)
+        nx.draw_networkx_edges(
+            g,
+            pos=pos_dict,
+            edgelist=self.ground_truth.tolist(),
+            edge_color='r',
+            width=5)
         nx.draw_networkx(
             g,
             pos_dict,
@@ -304,16 +323,25 @@ class IterativeGraph(MyGraph):
         plt.legend(loc='upper left', fontsize=12)
 
         self.add_to_plotting_style()
-        img_path = os.path.join(config.run_abs_path,
-                                'graph_with_predictions_{}.png'.format(graph_nr))
+        img_path = os.path.join(
+            config.run_abs_path,
+            'graph_with_predictions_{}.png'.format(graph_nr))
         if os.path.isfile(img_path):
             os.remove(img_path)
         plt.savefig(img_path)
         run.add_artifact(filename=img_path,
                          name='graph_with_predictions_{}.png'.format(graph_nr))
-        logger.debug('plotted the graph with predictions to {}'.format(img_path))
+        logger.debug(
+            'plotted the graph with predictions to {}'.format(img_path))
 
-    def plot_predictions_on_nodes(self, config, pred, graph_nr, run, acc, logger):
+    def plot_predictions_on_nodes(
+            self,
+            config,
+            pred,
+            graph_nr,
+            run,
+            acc,
+            logger):
         pos_dict = {}
         # prepare the targets to be displayed
         labels_dict = {}
@@ -360,14 +388,16 @@ class IterativeGraph(MyGraph):
         plt.legend(loc='upper left', fontsize=12)
 
         self.add_to_plotting_style()
-        img_path = os.path.join(config.run_abs_path,
-                                'graph_with_predictions_{}.png'.format(graph_nr))
+        img_path = os.path.join(
+            config.run_abs_path,
+            'graph_with_predictions_{}.png'.format(graph_nr))
         if os.path.isfile(img_path):
             os.remove(img_path)
         plt.savefig(img_path)
         run.add_artifact(filename=img_path,
                          name='graph_with_predictions_{}.png'.format(graph_nr))
-        logger.debug('plotted the graph with predictions to {}'.format(img_path))
+        logger.debug(
+            'plotted the graph with predictions to {}'.format(img_path))
 
     def set_plotting_style(self, config):
         f = plt.figure(figsize=(8, 8))

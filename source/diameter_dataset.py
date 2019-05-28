@@ -31,4 +31,3 @@ class DiameterDataset(RandomGraphDataset):
         # TODO check if local update necessary
         config.classes = config.msts
         self.config.classes = config.classes
-

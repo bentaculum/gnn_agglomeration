@@ -83,7 +83,7 @@ class OurConv(MessagePassing):
 
         for i in range(local_layers):
             w = Parameter(torch.Tensor(
-                weight_dims[i], weight_dims[i+1]))
+                weight_dims[i], weight_dims[i + 1]))
             self.weight_list.append(w)
 
         self.att = AttentionMLP(

@@ -77,7 +77,8 @@ def main(_config, _run, _log):
         config.run_abs_path, 'summary', 'validation'))
 
     # create and load dataset
-    dataset = globals()[config.dataset_type](root=config.dataset_abs_path, config=config)
+    dataset = globals()[config.dataset_type](
+        root=config.dataset_abs_path, config=config)
     dataset.update_config(config)
     assert dataset[0].edge_attr.size(1) == config.pseudo_dimensionality
 
@@ -149,8 +150,6 @@ def main(_config, _run, _log):
         model.to(device)
         model.load_state_dict(checkpoint['model_state_dict'])
         model.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-
-
 
     total_params = sum(p.numel()
                        for p in model.parameters() if p.requires_grad)
@@ -365,7 +364,8 @@ def main(_config, _run, _log):
             data = data.to(device)
             out = model(data)
             loss = model.loss(out, data.y)
-            model.print_current_loss(epoch, 'validation {}'.format(batch_i), _log)
+            model.print_current_loss(
+                epoch, 'validation {}'.format(batch_i), _log)
             validation_loss += loss.item() * data.num_nodes
             epoch_metric_val += model.out_to_metric(
                 out, data.y) * data.num_nodes

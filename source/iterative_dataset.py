@@ -34,4 +34,3 @@ class IterativeDataset(RandomGraphDataset):
         else:
             config.classes = config.msts
             self.config.classes = config.classes
-

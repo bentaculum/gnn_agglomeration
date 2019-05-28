@@ -114,7 +114,8 @@ class OurConvModel(GnnModel):
             fc_in_features = self.config.hidden_units[-1]
 
         if self.config.edge_labels:
-            fc_in_features = 2 * (fc_in_features + self.config.pseudo_dimensionality)
+            fc_in_features = 2 * \
+                (fc_in_features + self.config.pseudo_dimensionality)
 
         self.fc_layers_list = torch.nn.ModuleList()
         fc_layer_dims = self.config.fc_layer_dims.copy()
@@ -123,7 +124,7 @@ class OurConvModel(GnnModel):
         for i in range(self.config.fc_layers):
             fc = torch.nn.Linear(
                 in_features=fc_layer_dims[i],
-                out_features=fc_layer_dims[i+1],
+                out_features=fc_layer_dims[i + 1],
                 bias=self.config.fc_bias)
             self.fc_layers_list.append(fc)
 
@@ -171,7 +172,7 @@ class OurConvModel(GnnModel):
             # might be computationally expensive
             x = torch.cat([x, edge_attr], dim=-1)
             # One entry per edge, not per directed edge
-            x = x.view(int(edge_index.size(1)/2), -1)
+            x = x.view(int(edge_index.size(1) / 2), -1)
 
         # TODO make dropout optional here
         for i, l in enumerate(self.fc_layers_list):
@@ -180,14 +181,16 @@ class OurConvModel(GnnModel):
                     l.weight, 'out_layer_fc_{}'.format(i), 'weights')
                 if self.config.fc_bias:
                     self.write_to_variable_summary(
-                        l.bias, 'out_layer_fc_{}',format(i), 'bias')
+                        l.bias, 'out_layer_fc_{}'.format(i), 'bias')
             x = l(x)
-            self.write_to_variable_summary(x, 'out_layer_fc_{}'.format(i), 'pre_activations')
+            self.write_to_variable_summary(
+                x, 'out_layer_fc_{}'.format(i), 'pre_activations')
 
-            if i == self.config.fc_layers-1:
+            if i == self.config.fc_layers - 1:
                 x = self.model_type.out_nonlinearity(x)
             else:
                 x = getattr(F, self.config.non_linearity)(x)
-            self.write_to_variable_summary(x, 'out_layer_fc_{}'.format(i), 'outputs')
+            self.write_to_variable_summary(
+                x, 'out_layer_fc_{}'.format(i), 'outputs')
 
         return x

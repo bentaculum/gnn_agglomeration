@@ -121,7 +121,8 @@ class CountNeighborsGraph(MyGraph):
         plt.savefig(img_path)
         run.add_artifact(filename=img_path,
                          name='graph_with_predictions_{}.png'.format(graph_nr))
-        logger.debug('plotted the graph with predictions to {}'.format(img_path))
+        logger.debug(
+            'plotted the graph with predictions to {}'.format(img_path))
 
     def set_plotting_style(self):
         plt.figure(figsize=(8, 8))

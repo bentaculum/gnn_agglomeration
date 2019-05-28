@@ -65,7 +65,8 @@ class DiameterGraph(MyGraph):
                     return
                 for c in children:
                     # random multiplicator in [0.8,1.0)
-                    diameters[c] = diameters[v] * (np.random.rand(1)[0] / 5 + 0.8)
+                    diameters[c] = diameters[v] * \
+                        (np.random.rand(1)[0] / 5 + 0.8)
                     # diameters
                     dfs(c)
 
@@ -85,9 +86,11 @@ class DiameterGraph(MyGraph):
             noisy_class_list.append(root)
 
             # for all other nodes, the class label is drawn from a multinomial
-            pvals = np.full(config.msts, config.class_noise / (config.msts - 1))
+            pvals = np.full(config.msts,
+                            config.class_noise / (config.msts - 1))
             pvals[i] = 1 - config.class_noise
-            noisy_labels = np.random.multinomial(n=1, pvals=pvals, size=nodes - 1)
+            noisy_labels = np.random.multinomial(
+                n=1, pvals=pvals, size=nodes - 1)
             noisy_class_list.extend(list(noisy_labels))
 
         ###########################
@@ -182,14 +185,16 @@ class DiameterGraph(MyGraph):
         plt.legend(loc='upper left', fontsize=12)
 
         self.add_to_plotting_style()
-        img_path = os.path.join(config.run_abs_path,
-                                'graph_with_predictions_{}.png'.format(graph_nr))
+        img_path = os.path.join(
+            config.run_abs_path,
+            'graph_with_predictions_{}.png'.format(graph_nr))
         if os.path.isfile(img_path):
             os.remove(img_path)
         plt.savefig(img_path)
         run.add_artifact(filename=img_path,
                          name='graph_with_predictions_{}.png'.format(graph_nr))
-        logger.debug('plotted the graph with predictions to {}'.format(img_path))
+        logger.debug(
+            'plotted the graph with predictions to {}'.format(img_path))
 
     def set_plotting_style(self, config):
         f = plt.figure(figsize=(8, 8))
