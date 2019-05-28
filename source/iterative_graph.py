@@ -279,8 +279,9 @@ class IterativeGraph(MyGraph):
             if config.euclidian_dimensionality == 1:
                 pos_dict[i].append(0)
 
-            labels_dict[i] = '{}'.format(
-                int(self.x[i][:config.msts].max(0)[1]))
+            if config.class_label_feature:
+                labels_dict[i] = '{}'.format(
+                    int(self.x[i][:config.msts].max(0)[1]))
 
         ax = self.set_plotting_style(config=config)
         g = nx.empty_graph(n=len(self.pos), create_using=nx.Graph())
@@ -317,7 +318,7 @@ class IterativeGraph(MyGraph):
             """Recovery of ground truth edges, based on 'descending diameter' and noisy affinities(edge widths).
             Input class labels are correct with prob {}. All nodes within distance {} are
             connected in input graph. The shown colors depict ground truth,
-            each root is brown. Node label shows the noisy_input'""".format(
+            each root is brown. Node label shows the noisy_input""".format(
                 1 - config.class_noise, config.theta_max))
         plt.text(0.6, 1.0, 'Accuracy: {0:.3f}'.format(acc), fontsize=16)
         plt.legend(loc='upper left', fontsize=12)
