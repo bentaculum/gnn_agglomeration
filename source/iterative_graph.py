@@ -217,6 +217,97 @@ class IterativeGraph(MyGraph):
 
     def plot_predictions(self, config, pred, graph_nr, run, acc, logger):
         # add the positions in euclidian space to the model
+        if config.edge_labels:
+            self.plot_predictions_on_edges(
+                config=config,
+                pred=pred,
+                graph_nr=graph_nr,
+                run=run,
+                acc=acc,
+                logger=logger
+            )
+        else:
+            self.plot_predictions_on_nodes(
+                config=config,
+                pred=pred,
+                graph_nr=graph_nr,
+                run=run,
+                acc=acc,
+                logger=logger
+            )
+        # TODO move duplicate code here
+
+    def plot_predictions_on_edges(self, config, pred, graph_nr, run, acc, logger):
+        pos_dict = {}
+        # prepare the targets to be displayed
+        labels_dict = {}
+
+        if self.x.dim() == 1:
+            node_size = (self.x * 800).tolist()
+        else:
+            node_size = (self.x[:, -1].squeeze() * 800).tolist()
+
+        node_color = np.zeros(self.pos.size(0), dtype=np.int_)
+        # node_size = [200] * self.pos.size(0)
+        prev_root = 0
+        for i, r in enumerate(self.roots[1:]):
+            node_color[prev_root:r.item()] = i
+            # node_size[prev_root:r.item()] = list(np.linspace(500, 200, r.item() - prev_root))
+            prev_root = r.item()
+        node_color = node_color.tolist()
+
+        for i in range(self.pos.size(0)):
+            pos_dict[i] = self.pos[i].tolist()
+            if config.euclidian_dimensionality == 1:
+                pos_dict[i].append(0)
+
+            labels_dict[i] = '{}'.format(
+                int(self.x[i][:config.msts].max(0)[1]))
+
+        ax = self.set_plotting_style(config=config)
+        g = nx.empty_graph(n=len(self.pos), create_using=nx.Graph())
+
+        slicing_list = np.array(pred).astype(np.bool_).tolist()
+        # TODO quick fix: edges are assumed to be ordered
+        every_other = [True, False] * int(self.edge_index.size(1)/2)
+        unique_edges = self.edge_index.transpose(0, 1)[every_other]
+        unique_edges = np.array(unique_edges, dtype=np.int_)
+        pred_edges = unique_edges[slicing_list]
+        g.add_edges_from(pred_edges.tolist())
+
+        nx.draw_networkx(
+            g,
+            pos_dict,
+            labels=labels_dict,
+            node_color=node_color,
+            cmap=cm.Paired,
+            vmin=0.0,
+            vmax=float(
+                config.msts),
+            font_size=10,
+            ax=ax,
+            with_labels=True,
+            node_size=node_size)
+        plt.title(
+            """Recovery of ground truth edges, based on 'descending diameter' and noisy affinities(edge widths).
+            Input class labels are correct with prob {}. All nodes within distance {} are
+            connected in input graph. The shown colors depict ground truth,
+            each root is brown. Node label shows the noisy_input'""".format(
+                1 - config.class_noise, config.theta_max))
+        plt.text(0.6, 1.0, 'Accuracy: {0:.3f}'.format(acc), fontsize=16)
+        plt.legend(loc='upper left', fontsize=12)
+
+        self.add_to_plotting_style()
+        img_path = os.path.join(config.run_abs_path,
+                                'graph_with_predictions_{}.png'.format(graph_nr))
+        if os.path.isfile(img_path):
+            os.remove(img_path)
+        plt.savefig(img_path)
+        run.add_artifact(filename=img_path,
+                         name='graph_with_predictions_{}.png'.format(graph_nr))
+        logger.debug('plotted the graph with predictions to {}'.format(img_path))
+
+    def plot_predictions_on_nodes(self, config, pred, graph_nr, run, acc, logger):
         pos_dict = {}
         # prepare the targets to be displayed
         labels_dict = {}
