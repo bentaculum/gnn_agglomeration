@@ -470,6 +470,12 @@ class Config:
             help='whether to use edge labels')
         self.default['edge_labels'] = False
 
+        self.parser.add_argument(
+            '--fc_use_edge',
+            type=str2bool,
+            help='whether to use the edge information for the final fc layer')
+        self.default['fc_use_edge'] = True
+
     def localhost(self):
         return {
             'mongo_url': 'localhost:27017',

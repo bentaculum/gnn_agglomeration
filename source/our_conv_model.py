@@ -115,8 +115,11 @@ class OurConvModel(GnnModel):
             fc_in_features = self.config.hidden_units[-1]
 
         if self.config.edge_labels:
-            fc_in_features = 2 * \
-                (fc_in_features + self.config.pseudo_dimensionality)
+            if self.config.fc_use_edge:
+                fc_in_features = 2 * \
+                    (fc_in_features + self.config.pseudo_dimensionality)
+            else:
+                fc_in_features = 2 * fc_in_features
 
         self.fc_layers_list = torch.nn.ModuleList()
         fc_layer_dims = self.config.fc_layer_dims.copy()
@@ -171,7 +174,8 @@ class OurConvModel(GnnModel):
         if self.config.edge_labels:
             x = x[edge_index[0]]
             # might be computationally expensive
-            x = torch.cat([x, edge_attr], dim=-1)
+            if self.config.fc_use_edge:
+                x = torch.cat([x, edge_attr], dim=-1)
             # One entry per edge, not per directed edge
             x = x.view(int(edge_index.size(1) / 2), -1)
 
