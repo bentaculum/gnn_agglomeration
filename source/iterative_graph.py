@@ -243,17 +243,21 @@ class IterativeGraph(MyGraph):
         labels_dict = {}
 
         if self.x.dim() == 1:
-            node_size = (self.x * 800).tolist()
+            node_size = (self.x * 500).tolist()
         else:
-            node_size = (self.x[:, -1].squeeze() * 800).tolist()
+            node_size = (self.x[:, -1].squeeze() * 500).tolist()
 
         node_color = np.zeros(self.pos.size(0), dtype=np.int_)
         # node_size = [200] * self.pos.size(0)
-        prev_root = 0
-        for i, r in enumerate(self.roots[1:]):
-            node_color[prev_root:r.item()] = i
+
+        prev_root = self.roots[0].item()
+        roots_list = self.roots[1:].tolist()
+        roots_list.append(self.pos.size(0))
+        for i, r in enumerate(roots_list):
+            node_color[prev_root:r] = i
             # node_size[prev_root:r.item()] = list(np.linspace(500, 200, r.item() - prev_root))
-            prev_root = r.item()
+
+            prev_root = r
         node_color = node_color.tolist()
 
         for i in range(self.pos.size(0)):
@@ -275,6 +279,7 @@ class IterativeGraph(MyGraph):
         pred_edges = unique_edges[slicing_list]
         g.add_edges_from(pred_edges.tolist())
 
+        nx.draw_networkx_edges(g, pos=pos_dict, edgelist=self.ground_truth.tolist(), edge_color='r', width=5)
         nx.draw_networkx(
             g,
             pos_dict,
@@ -288,6 +293,7 @@ class IterativeGraph(MyGraph):
             ax=ax,
             with_labels=True,
             node_size=node_size)
+
         plt.title(
             """Recovery of ground truth edges, based on 'descending diameter' and noisy affinities(edge widths).
             Input class labels are correct with prob {}. All nodes within distance {} are
