@@ -249,6 +249,19 @@ class Config:
         self.default['fc_layer_dims'] = []
 
         self.parser.add_argument(
+            '--fc_dropout_probs',
+            type=unit_float,
+            nargs='*',
+            help='fc network: dropout probs')
+        self.default['fc_dropout_probs'] = []
+
+        self.parser.add_argument(
+            '--fc_batch_norm',
+            type=str2bool,
+            help='whether to use Batch Normalization in the final fully connected layer')
+        self.default['batch_norm'] = True
+
+        self.parser.add_argument(
             '--dropout_type',
             type=str,
             choices=['dropout', 'dropout2d'],

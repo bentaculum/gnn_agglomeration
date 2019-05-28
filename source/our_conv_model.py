@@ -32,6 +32,7 @@ class OurConvModel(GnnModel):
         # Dropout should be there for input layer + all hidden layers
         assert len(self.config.dropout_probs) == self.config.hidden_layers + 1
         assert len(self.config.fc_layer_dims) == self.config.fc_layers - 1
+        assert len(self.config.fc_dropout_probs) == self.config.fc_layers - 1
 
         self.layers_list = torch.nn.ModuleList()
         self.batch_norm_list = torch.nn.ModuleList()
@@ -174,7 +175,6 @@ class OurConvModel(GnnModel):
             # One entry per edge, not per directed edge
             x = x.view(int(edge_index.size(1) / 2), -1)
 
-        # TODO make dropout optional here
         for i, l in enumerate(self.fc_layers_list):
             if self.training:
                 self.write_to_variable_summary(
@@ -188,6 +188,8 @@ class OurConvModel(GnnModel):
 
             if i == self.config.fc_layers - 1:
                 x = self.model_type.out_nonlinearity(x)
+                x = getattr(F, self.config.dropout_type)(
+                    x, p=self.config.fc_dropout_probs[i], training=self.training)
             else:
                 x = getattr(F, self.config.non_linearity)(x)
             self.write_to_variable_summary(
