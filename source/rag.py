@@ -11,7 +11,7 @@ import daisy
 
 # client = MongoClient(client_address)
 
-# db = client.hemi_mtlsd_400k
+# db = client.hemi_mtlsd_400k_roi_1
 # db_nodes = db.nodes
 # db_edges = db.edges_hist_quant_50
 
@@ -21,13 +21,16 @@ import daisy
 
 # print('Loading RAG edges from DB ...')
 # cursor = db_edges.find()
+# edges = pd.DataFrame(list(cursor))
+
+# sys.exit(0)
+
 
 config_file = sys.argv[1]
 
 with open(config_file, 'r') as f:
     config = json.load(f)
 
-# edges = pd.DataFrame(list(cursor))
 
 db_host = config['db_host']
 db_name = config['db_name']
@@ -51,12 +54,41 @@ graph_provider = daisy.persistence.MongoDbGraphProvider(
         'center_x'])
 
 
-# None values for unboundedness
 roi_offset = config['roi_offset']
 roi_shape = config['roi_shape']
-roi = daisy.Roi(
-    roi_offset,
-    roi_shape)
+
+dim = 3
+if dim != 3:
+    raise NotImplementedError('Works only in 3D')
+
+blocks_per_dim = [3, 3, 3]
+overlap_pct = 0.1
+# TODO check whether the overlap contains the longest edge for sure
+
+block_offsets = []
+block_shapes = []
+# Create Rois for all blocks
+for i in range(blocks_per_dim[0]):
+    for j in range(blocks_per_dim[1]):
+        for k in range(blocks_per_dim[2]):
+            # TODO overlapping
+            block_offsets.append(
+                np.array(roi_offset) +
+                np.array([i, j, k]) * (np.array(roi_shape) / np.array(blocks_per_dim)).astype(int))
+            block_shapes.append((
+                np.array(roi_shape) / np.array(blocks_per_dim)).astype(int))
+
+node_blocks = []
+edge_blocks = []
+for i in range(int(np.prod(blocks_per_dim))):
+    roi = daisy.Roi(list(block_offsets[i]), list(block_shapes[i]))
+    node_attrs = graph_provider.read_nodes(roi=roi)
+    node_blocks.append(node_attrs)
+    edge_attrs = graph_provider.read_edges(roi=roi)
+    edge_blocks.append(edge_attrs)
+
+sys.exit(0)
+
 
 block_size = 5900
 num_workers = 4
