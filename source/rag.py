@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import time
 import json
+import os
 
 import daisy
 
@@ -89,34 +90,25 @@ def parse_rois(block_offsets, block_shapes):
     edge_index_list = []
     edge_attr_list = []
     pos_list = []
+    node_ids_list = []
 
     for i in range(len(block_offsets)):
         print('read block {} ...'.format(i))
-        print('block_offset {} block_shape {}'.format(
-            block_offsets[i], block_shapes[i]))
+        # print('block_offset {} block_shape {}'.format(
+        # block_offsets[i], block_shapes[i]))
         roi = daisy.Roi(list(block_offsets[i]), list(block_shapes[i]))
         # node_attrs, edge_attrs = graph_provider.read_blockwise(
         # roi=roi, block_size=daisy.Coordinate((block_shape_default / sub_blocks_per_block).astype(int)), num_workers=config['num_workers'])
         node_attrs = graph_provider.read_nodes(roi=roi)
-        # node_blocks.append(node_attrs)
-        edge_attrs = graph_provider.read_edges(roi=roi)
-        # edge_blocks.append(edge_attrs)
+        edge_attrs = graph_provider.read_edges(roi=roi, nodes=node_attrs)
 
-        print('prepare block {} ...'.format(i))
+        # print('prepare block {} ...'.format(i))
         if len(node_attrs) == 0:
             print('No nodes found in roi %s' % roi)
             sys.exit(0)
         if len(edge_attrs) == 0:
             print('No edges found in roi %s' % roi)
             sys.exit(0)
-
-        # TODO remap local indices per block to [0, num_nodes]
-        # to transform the edges, you need to do lookup of the node ids. Use a dict. Store in pyg graph as torch tensor
-
-        # node_attrs, edge_attrs = graph_provider.read_blockwise(
-        # roi,
-        # block_size=daisy.Coordinate((block_size, block_size, block_size)),
-        # num_workers=num_workers)
 
         df_nodes = pd.DataFrame(node_attrs)
         # columns in desired order
@@ -125,19 +117,23 @@ def parse_rois(block_offsets, block_shapes):
 
         df_edges = pd.DataFrame(edge_attrs)
         # columns in desired order
+        # TODO account for directed edges
         df_edges = df_edges[['u', 'v', 'merge_score']]
-        df_edges['u'] = df_edges['u'].astype(np.uint64)
-        df_edges['v'] = df_edges['v'].astype(np.uint64)
         df_edges['merge_score'] = df_edges['merge_score'].astype(np.float32)
 
         nodes_remap = dict(zip(df_nodes['id'], range(len(df_nodes))))
-        # TODO save this as torch tensor
         node_ids = df_nodes['id'].values
-        edges_remapped = []
+        node_ids_list.append(node_ids)
+
         df_edges['u'] = df_edges['u'].map(nodes_remap)
         df_edges['v'] = df_edges['v'].map(nodes_remap)
+        # Drop edges for which one of the incident nodes is not in the extracted node set
+        # Drop edges with NaN merge_score
+        df_edges = df_edges.dropna(axis=0)
+        df_edges['u'] = df_edges['u'].astype(np.uint64)
+        df_edges['v'] = df_edges['v'].astype(np.uint64)
+        # df_edges = df_edges[pd.notnull(df_edges[['u', 'v']])]
 
-        # TODO convert to torch tensors
         edge_index = df_edges[['u', 'v']].values
         edge_attr = df_edges['merge_score'].values
         pos = df_nodes[['center_z', 'center_y', 'center_x']].values
@@ -147,6 +143,7 @@ def parse_rois(block_offsets, block_shapes):
         pos_list.append(pos)
 
     print("Parse graph in %.3fs" % (time.time() - start))
+    return edge_index_list, edge_attr_list, pos_list, node_ids_list
 
 
 def create_graphs_blockwise(roi_offset, roi_shape, block_size):
@@ -179,7 +176,7 @@ def create_graphs_blockwise(roi_offset, roi_shape, block_size):
                     block_shape_new[2] += overlap_abs
                 block_shapes.append(block_shape_new)
 
-    parse_rois(block_offsets=block_offsets, block_shapes=block_shapes)
+    return parse_rois(block_offsets=block_offsets, block_shapes=block_shapes)
 
 
 def create_graphs_random(roi_offset, roi_shape, block_size, num_graphs):
@@ -201,16 +198,38 @@ def create_graphs_random(roi_offset, roi_shape, block_size, num_graphs):
         block_offsets.append(total_offset)
         block_shapes.append(block_size)
 
-    parse_rois(block_offsets=block_offsets, block_shapes=block_shapes)
+    return parse_rois(block_offsets=block_offsets, block_shapes=block_shapes)
 
 
-# TODO finalize graph
-create_graphs_random(roi_offset=roi_offset_train,
-                     roi_shape=roi_shape_train, block_size=block_size_euclidian, num_graphs=5)
-create_graphs_blockwise(roi_offset=roi_offset_val,
-                        roi_shape=roi_shape_val, block_size=block_size_euclidian)
-create_graphs_blockwise(roi_offset=roi_offset_test,
-                        roi_shape=roi_shape_test, block_size=block_size_euclidian)
+def save_graphs_to_npz(edge_index, edge_attr, pos, node_ids, path, split_name, graph_nr):
+    p = os.path.join(path, split_name)
+    if not os.path.isdir(p):
+        os.makedirs(p)
+    np.savez_compressed(os.path.join(p, 'graph{}'.format(graph_nr)), edge_index=edge_index,
+                        edge_attr=edge_attr, pos=pos, node_ids=node_ids)
+
+
+def load_graphs_from_npz(path, split_name):
+    np.load(os.path.join(path, split_name), allow_pickle=True)
+
+
+edge_index, edge_attr, pos, node_ids = create_graphs_random(roi_offset=roi_offset_train,
+                                                            roi_shape=roi_shape_train, block_size=block_size_euclidian, num_graphs=5)
+for i, (ei, ea, po, ni) in enumerate(zip(edge_index, edge_attr, pos, node_ids)):
+    save_graphs_to_npz(edge_index=ei, edge_attr=ea, pos=po,
+                       node_ids=ni, path='../data/hemi/12_micron_cube', split_name='train', graph_nr=i)
+
+edge_index, edge_attr, pos, node_ids = create_graphs_blockwise(roi_offset=roi_offset_val,
+                                                               roi_shape=roi_shape_val, block_size=block_size_euclidian)
+for i, (ei, ea, po, ni) in enumerate(zip(edge_index, edge_attr, pos, node_ids)):
+    save_graphs_to_npz(edge_index=ei, edge_attr=ea, pos=po,
+                       node_ids=ni, path='../data/hemi/12_micron_cube', split_name='val', graph_nr=i)
+
+edge_index, edge_attr, pos, node_ids = create_graphs_blockwise(roi_offset=roi_offset_test,
+                                                               roi_shape=roi_shape_test, block_size=block_size_euclidian)
+for i, (ei, ea, po, ni) in enumerate(zip(edge_index, edge_attr, pos, node_ids)):
+    save_graphs_to_npz(edge_index=ei, edge_attr=ea, pos=po,
+                       node_ids=ni, path='../data/hemi/12_micron_cube', split_name='test', graph_nr=i)
 
 # TODO sanity check: Does the union of all blocks contain all edges and nodes for blockwise loading?
 # print("Complete RAG contains %d nodes, %d edges" % (len(nodes), len(edges)))
