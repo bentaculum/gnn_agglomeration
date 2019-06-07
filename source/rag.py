@@ -214,7 +214,7 @@ def load_graphs_from_npz(path, split_name):
 
 
 edge_index, edge_attr, pos, node_ids = create_graphs_random(roi_offset=roi_offset_train,
-                                                            roi_shape=roi_shape_train, block_size=block_size_euclidian, num_graphs=5)
+                                                            roi_shape=roi_shape_train, block_size=block_size_euclidian, num_graphs=800)
 for i, (ei, ea, po, ni) in enumerate(zip(edge_index, edge_attr, pos, node_ids)):
     save_graphs_to_npz(edge_index=ei, edge_attr=ea, pos=po,
                        node_ids=ni, path='../data/hemi/12_micron_cube', split_name='train', graph_nr=i)
