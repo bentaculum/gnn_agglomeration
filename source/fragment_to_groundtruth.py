@@ -7,9 +7,11 @@ from collections import Counter
 import pickle
 import sys
 import json
+import shutil
+import os
 
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
 # TODO adjust logging levels
 # logging.getLogger('daisy').setLevel(logging.WARNING)
@@ -32,69 +34,75 @@ with open(config_file, 'r') as f:
     config = json.load(f)
 
 
-def overlap_in_block(block, fragments, groundtruth, output):
+def overlap_in_block(block, fragments, groundtruth, tmp_path):
     # logger.debug("Copying fragments to memory...")
     start = time.time()
-    fragments = fragments.to_ndarray(block.write_roi)
+    fragments = fragments.to_ndarray(block.read_roi)
     # logger.debug("Copying took {0:.3f}".format(time.time() - start))
 
     # get all fragment ids in this block
     frag_ids = np.unique(fragments)
-    # logger.debug('num of fragment IDs: {}'.format(len(frag_ids)))
+    logger.debug('num of fragment IDs: {}'.format(len(frag_ids)))
 
     frag_dict = dict()
     # for each of them, create a boolean mask and count the remaining elems
     for i in frag_ids:
-        start = time.time()
+        # start = time.time()
         # TODO is numpy.ma faster?
         masked_gt = groundtruth[fragments == i]
         unique, counts = np.unique(masked_gt, return_counts=True)
+        logger.debug('counts {}'.format(counts))
 
         # write counter into dict frag:Counter
-        frag_dict[i] = Counter(dict(zip(unique, counts)))
+        counter = Counter(dict(zip(unique, counts)))
         # logger.debug("Count fragment {0} took {1:.3f}".format(
         # i, time.time() - start))
 
-    # TODO make this thread safe
-    output.append(frag_dict)
-    logger.debug('num of dicts in output list: {}'.format(len(output)))
+        # TODO set thresholds here
+        # TODO check if 0 is background
+        # most common elem
+        frag_dict[i] = counter.most_common(1)[0][0]
+        logger.debug('most common gt id: {}'.format(frag_dict[i]))
 
-    # Successful exit
-    return 1
+    logger.debug(
+        'write Counter dict for block {} to file'.format(block.block_id))
+    pickle.dump(frag_dict, open(os.path.join(
+        tmp_path, '{}.pickle'.format(block.block_id)), 'wb'))
 
 
-def overlap_reduce(block_dicts):
-    keys = []
+def overlap_reduce(tmp_path):
+    block_dicts = []
+    for f in os.listdir(tmp_path):
+        if f.endswith(".pickle"):
+            block_dicts.append(pickle.load(
+                open(os.path.join(tmp_path, f), 'rb')))
+    logger.info('Found {} block results in {}'.format(
+        len(block_dicts), tmp_path))
+
+    # keys = []
+    # for b in block_dicts:
+    # keys.extend(b.keys())
+    # keys = set(keys)
+
+    merged_dicts = dict()
     for b in block_dicts:
-        keys.extend(b.keys())
-    keys = set(keys)
+        merged_dicts.update(b)
 
-    totals = dict()
-    for k in keys:
-        totals[k] = Counter()
-
-    for b in block_dicts:
-        for k, v in b:
-            totals[k] += b
-
-    # TODO set thresholds here
-    # TODO check if 0 is background
-    # most common elem
-    frag_to_gt = dict()
-    for k, v in totals:
-        frag_to_gt[k] = v.most_common(1)[0][0] if v else 0
-
-    return frag_to_gt
+    return merged_dicts
 
 
-# TODO how to avoid race conditions here
-output = []
+# TODO parametrize
+output_path = '../temp/overlap_counts'
+if os.path.isdir(output_path):
+    shutil.rmtree(output_path)
+os.makedirs(output_path)
 
 
 # TODO parametrize block size
-block_size = 2048
-# total_roi = daisy.Roi(offset=config['roi_offset'], shape=(2048, 2048, 2048))
-total_roi = daisy.Roi(offset=config['roi_offset'], shape=config['roi_shape'])
+block_size = 1024
+# block_size = 3000
+total_roi = daisy.Roi(offset=config['roi_offset'], shape=(2048, 2048, 2048))
+# total_roi = daisy.Roi(offset=config['roi_offset'], shape=config['roi_shape'])
 
 logger.info('Start blockwise processing')
 start = time.time()
@@ -108,17 +116,16 @@ daisy.run_blockwise(
         block=block,
         fragments=fragments,
         groundtruth=groundtruth,
-        output=output),
+        tmp_path=output_path),
     fit='shrink',
-    num_workers=config['num_workers'],
-    # processes=True,
-    # TODO check if that solves the race condition
-    read_write_conflict=True,
+    num_workers=2,
+    # num_workers=config['num_workers'],
+    read_write_conflict=False,
     max_retries=0)
 
-logger.debug('num output dicts: {}'.format(len(output)))
+# TODO parametrize
 logger.debug('num blocks: {}'.format(
     np.prod(np.ceil(np.array(config['roi_shape']) / np.array([block_size, block_size, block_size])))))
 
-frag_to_gt = overlap_reduce(output)
+frag_to_gt = overlap_reduce(output_path)
 pickle.dump(frag_to_gt, open('frag_to_gt.pickle', 'wb'))
