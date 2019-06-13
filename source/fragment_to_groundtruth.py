@@ -7,9 +7,10 @@ from collections import Counter
 import pickle
 import sys
 import json
+import multiprocessing as mp
 
 
-logging.basicConfig(level=logging.INFO)
+# logging.basicConfig(level=logging.DEBUG)
 
 # TODO adjust logging levels
 # logging.getLogger('daisy').setLevel(logging.WARNING)
@@ -55,15 +56,20 @@ def overlap_in_block(block, fragments, groundtruth, output):
         # logger.debug("Count fragment {0} took {1:.3f}".format(
         # i, time.time() - start))
 
-    # TODO make this thread safe
-    output.append(frag_dict)
-    logger.debug('num of dicts in output list: {}'.format(len(output)))
+    output.put(frag_dict)
+    logger.debug('num of dicts in output list: {}'.format(output.qsize()))
 
     # Successful exit
     return 1
 
 
-def overlap_reduce(block_dicts):
+def merge_blocks(blocks_queue):
+    # put all dictionaries from mp.Queue into a list
+    block_dicts = []
+    while not blocks_queue.empty():
+        block_dicts.append(blocks_queue.get())
+
+    # TODO replace this with a simple check for duplicates
     keys = []
     for b in block_dicts:
         keys.extend(b.keys())
@@ -87,14 +93,14 @@ def overlap_reduce(block_dicts):
     return frag_to_gt
 
 
-# TODO how to avoid race conditions here
-output = []
-
+output = mp.Queue()
 
 # TODO parametrize block size
-block_size = 2048
-# total_roi = daisy.Roi(offset=config['roi_offset'], shape=(2048, 2048, 2048))
-total_roi = daisy.Roi(offset=config['roi_offset'], shape=config['roi_shape'])
+# TODO make sure blockwise
+block_size = 1024
+# block_size = 3000
+total_roi = daisy.Roi(offset=config['roi_offset'], shape=(2048, 2048, 2048))
+# total_roi = daisy.Roi(offset=config['roi_offset'], shape=config['roi_shape'])
 
 logger.info('Start blockwise processing')
 start = time.time()
@@ -110,9 +116,9 @@ daisy.run_blockwise(
         groundtruth=groundtruth,
         output=output),
     fit='shrink',
-    num_workers=config['num_workers'],
+    num_workers=2,
+    # num_workers=config['num_workers'],
     # processes=True,
-    # TODO check if that solves the race condition
     read_write_conflict=True,
     max_retries=0)
 
@@ -120,5 +126,6 @@ logger.debug('num output dicts: {}'.format(len(output)))
 logger.debug('num blocks: {}'.format(
     np.prod(np.ceil(np.array(config['roi_shape']) / np.array([block_size, block_size, block_size])))))
 
-frag_to_gt = overlap_reduce(output)
+frag_to_gt = merge_blocks(output)
+
 pickle.dump(frag_to_gt, open('frag_to_gt.pickle', 'wb'))
