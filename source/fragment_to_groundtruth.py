@@ -38,6 +38,7 @@ def overlap_in_block(block, fragments, groundtruth, tmp_path):
     # logger.debug("Copying fragments to memory...")
     start = time.time()
     fragments = fragments.to_ndarray(block.read_roi)
+    groundtruth = groundtruth.to_ndarray(block.read_roi)
     # logger.debug("Copying took {0:.3f}".format(time.time() - start))
 
     # get all fragment ids in this block
