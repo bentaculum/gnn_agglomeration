@@ -11,3 +11,5 @@ runs
 src
 source/rag_1.json
 *[0-9]*.log
+*.log
+*.pickle
