@@ -1,5 +1,4 @@
 import daisy
-import zarr
 import numpy as np
 import time
 import logging
