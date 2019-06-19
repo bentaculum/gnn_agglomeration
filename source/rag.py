@@ -133,7 +133,7 @@ def mask_target_edges(edge_index_padded, node_ids_padded, inner_roi, mask):
     inner_nodes = graph_provider.read_nodes(roi=inner_roi)
     inner_edges = graph_provider.read_edges(roi=inner_roi, nodes=inner_nodes)
 
-    inner_edge_index, _, _, inner_node_ids = parse_rag_excerpt(inner_nodes, inner_edges)
+    inner_edge_index, _, _, inner_node_ids, _, _ = parse_rag_excerpt(inner_nodes, inner_edges)
 
     # remap inner and outer node ids to original ids
     inner_orig_edge_index = list(inner_node_ids[inner_edge_index.flatten()].reshape((-1, 2)))
