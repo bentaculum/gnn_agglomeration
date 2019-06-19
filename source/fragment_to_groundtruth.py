@@ -113,33 +113,28 @@ os.makedirs(output_path)
 
 
 # TODO parametrize block size
-# block_size = 1024
-block_size = 3000
-# total_roi = daisy.Roi(offset=config['roi_offset'], shape=(2048, 2048, 2048))
+block_size = config['block_size']
 total_roi = daisy.Roi(offset=config['roi_offset'], shape=config['roi_shape'])
 
 logger.info('Start blockwise processing')
 start = time.time()
 daisy.run_blockwise(
     total_roi=total_roi,
-    read_roi=daisy.Roi(offset=(0, 0, 0), shape=(
-        block_size, block_size, block_size)),
-    write_roi=daisy.Roi(offset=(0, 0, 0), shape=(
-        block_size, block_size, block_size)),
+    read_roi=daisy.Roi(offset=(0, 0, 0), shape=block_size),
+    write_roi=daisy.Roi(offset=(0, 0, 0), shape=block_size),
     process_function=lambda block: overlap_in_block(
         block=block,
         fragments=fragments,
         groundtruth=groundtruth,
         tmp_path=output_path),
     fit='shrink',
-    # num_workers=2,
     num_workers=config['num_workers'],
     read_write_conflict=False,
     max_retries=0)
 
 # TODO parametrize
 logger.debug('num blocks: {}'.format(
-    np.prod(np.ceil(np.array(config['roi_shape']) / np.array([block_size, block_size, block_size])))))
+    np.prod(np.ceil(np.array(config['roi_shape']) / np.array(block_size)))))
 
 frag_to_gt = overlap_reduce(output_path)
 pickle.dump(frag_to_gt, open('frag_to_gt.pickle', 'wb'))
