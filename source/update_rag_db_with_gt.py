@@ -1,6 +1,5 @@
 import sys
 import json
-import bson
 import logging
 import daisy
 import time
@@ -42,8 +41,7 @@ gt = pickle.load(open(config['frag_to_gt_path'], "rb"))
 
 # Convert all values from np.uint64 to dtype processable by mongodb
 for k, v in gt.items():
-    # TODO make this safe
-    gt[k] = bson.int64.Int64(v)
+    gt[k] = int(v)
 
 new_node_attr = 'segment_id'
 new_edge_attr = 'merge_ground_truth'
@@ -62,7 +60,8 @@ for u, v in graph.edges(data=False):
 
     edge_gt[(u, v)] = edge_label
 
-logger.debug('Computed edge ground truth in {0:.3f} seconds'.format(time.time() - start))
+logger.debug('Computed edge ground truth in {0:.3f} seconds'.format(
+    time.time() - start))
 
 nx.set_edge_attributes(graph, values=edge_gt, name=new_edge_attr)
 
@@ -73,4 +72,3 @@ logger.debug('Updated nodes in {0:.3f} s'.format(time.time() - start))
 start = time.time()
 graph.update_edge_attrs(roi=roi, attributes=[new_edge_attr])
 logger.debug('Updated edges in {0:.3f} s'.format(time.time() - start))
-
