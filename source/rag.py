@@ -346,13 +346,13 @@ def create_graphs_random(roi_offset, roi_shape, block_size, num_graphs):
     return parse_rois(block_offsets=block_offsets, block_shapes=block_shapes)
 
 
-def save_graphs_to_npz(edge_index, edge_attr, pos, node_ids, edge_mask, path, split_name, graph_nr):
+def save_graphs_to_npz(edge_index, edge_attr, pos, node_ids, edge_mask, y, path, split_name, graph_nr):
     p = os.path.join(path, split_name)
     if not os.path.isdir(p):
         os.makedirs(p)
     logger.debug('saving {} ...'.format(os.path.join(p, 'graph{}'.format(graph_nr))))
     np.savez_compressed(os.path.join(p, 'graph{}'.format(graph_nr)), edge_index=edge_index,
-                        edge_attr=edge_attr, pos=pos, node_ids=node_ids, edge_mask=edge_mask)
+                        edge_attr=edge_attr, pos=pos, node_ids=node_ids, edge_mask=edge_mask, y=y)
 
 
 def load_graphs_from_npz(path, split_name):
