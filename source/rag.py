@@ -102,8 +102,10 @@ def parse_rag_excerpt(node_attrs, edge_attrs):
     df_edges = pd.DataFrame(edge_attrs)
     # columns in desired order
     # TODO account for directed edges
-    df_edges = df_edges[['u', 'v', 'merge_score']]
+    df_edges = df_edges[['u', 'v', 'merge_score', 'merge_ground_truth', 'merge_labeled']]
     df_edges['merge_score'] = df_edges['merge_score'].astype(np.float32)
+    df_edges['merge_ground_truth'] = df_edges['merge_ground_truth'].astype(np.int_)
+    df_edges['merge_labeled'] = df_edges['merge_ground_truth'].astype(np.int_)
 
     nodes_remap = dict(zip(df_nodes['id'], range(len(df_nodes))))
     node_ids = df_nodes['id'].values
@@ -120,11 +122,13 @@ def parse_rag_excerpt(node_attrs, edge_attrs):
     edge_index = df_edges[['u', 'v']].values
     edge_attr = df_edges['merge_score'].values
     pos = df_nodes[['center_z', 'center_y', 'center_x']].values
+    mask = df_edges['merge_labeled'].values
+    y = df_edges['merge_ground_truth'].values
 
-    return edge_index, edge_attr, pos, node_ids
+    return edge_index, edge_attr, pos, node_ids, mask, y
 
 
-def mask_target_edges(edge_index_padded, node_ids_padded, inner_roi):
+def mask_target_edges(edge_index_padded, node_ids_padded, inner_roi, mask):
     # parse inner block
     inner_nodes = graph_provider.read_nodes(roi=inner_roi)
     inner_edges = graph_provider.read_edges(roi=inner_roi, nodes=inner_nodes)
@@ -139,12 +143,12 @@ def mask_target_edges(edge_index_padded, node_ids_padded, inner_roi):
     inner_list = [tuple([min(i), max(i)]) for i in inner_orig_edge_index]
     outer_list = [tuple([min(i), max(i)]) for i in outer_orig_edge_index]
 
-    mask = np.zeros(len(outer_list), dtype=np.int_)
     for i, edge in enumerate(outer_list):
-        if edge in inner_list:
-            mask[i] = 1
+        if edge not in inner_list:
+            mask[i] = 0
 
     return mask
+
 
 def parse_rois(block_offsets, block_shapes, padded_offsets=None, padded_shapes=None):
     sub_blocks_per_block = [3, 3, 3]
@@ -154,6 +158,7 @@ def parse_rois(block_offsets, block_shapes, padded_offsets=None, padded_shapes=N
     pos_list = []
     node_ids_list = []
     mask_list = []
+    y_list = []
 
     for i in range(len(block_offsets)):
         logger.info('read block {} ...'.format(i))
@@ -177,25 +182,25 @@ def parse_rois(block_offsets, block_shapes, padded_offsets=None, padded_shapes=N
         if len(edge_attrs) == 0:
             raise ValueError('No edges found in roi %s' % roi)
 
-        edge_index, edge_attr, pos, node_ids = parse_rag_excerpt(node_attrs, edge_attrs)
+        edge_index, edge_attr, pos, node_ids, mask, y = parse_rag_excerpt(node_attrs, edge_attrs)
 
         if padded_offsets and padded_shapes:
             mask = mask_target_edges(
                 edge_index_padded=edge_index,
                 node_ids_padded=node_ids,
-                inner_roi=daisy.Roi(list(block_offsets[i]), list(block_shapes[i]))
+                inner_roi=daisy.Roi(list(block_offsets[i]), list(block_shapes[i])),
+                mask=mask
             )
-            mask_list.append(mask)
-        else:
-            mask_list.append(np.ones(shape=(len(edge_index)), dtype=np.int_))
+        mask_list.append(mask)
 
         edge_index_list.append(edge_index)
         edge_attr_list.append(edge_attr)
         pos_list.append(pos)
         node_ids_list.append(node_ids)
+        y_list.append(y)
 
     logger.info("Parse set of ROIs in %.3fs" % (time.time() - start))
-    return edge_index_list, edge_attr_list, pos_list, node_ids_list, mask_list
+    return edge_index_list, edge_attr_list, pos_list, node_ids_list, mask_list, y_list
 
 
 def pad_total_roi(roi_offset, roi_shape, padding):
@@ -318,6 +323,7 @@ def create_graphs_random_padded(roi_offset, roi_shape, block_size, padding, num_
         padded_shapes=block_shapes_padded
     )
 
+
 def create_graphs_random(roi_offset, roi_shape, block_size, num_graphs):
     print('reading in {} random blocks'.format(num_graphs))
     block_offsets = []
@@ -353,29 +359,30 @@ def load_graphs_from_npz(path, split_name):
     np.load(os.path.join(path, split_name), allow_pickle=True)
 
 
-output_data_path = '../data/debug_output_val'
+output_data_path = '../data/debug_output_masked'
 # output_data_path = '../data/hemi/12_micron_cube'
+
 if not os.path.isdir(output_data_path):
     os.makedirs(output_data_path)
 padding = config['pyg_padding']
 num_graphs = 10
 
-edge_index, edge_attr, pos, node_ids, edge_mask = create_graphs_random(roi_offset=roi_offset_train,
+edge_index, edge_attr, pos, node_ids, edge_mask, targets = create_graphs_random(roi_offset=roi_offset_train,
                                                             roi_shape=roi_shape_train, block_size=block_size_euclidian, num_graphs=num_graphs)
-for i, (ei, ea, po, ni, em) in enumerate(zip(edge_index, edge_attr, pos, node_ids, edge_mask)):
+for i, (ei, ea, po, ni, em, t) in enumerate(zip(edge_index, edge_attr, pos, node_ids, edge_mask, targets)):
     save_graphs_to_npz(edge_index=ei, edge_attr=ea, pos=po,
-                       node_ids=ni, edge_mask=em, path=output_data_path, split_name='train', graph_nr=i)
+                       node_ids=ni, edge_mask=em, y=t, path=output_data_path, split_name='train', graph_nr=i)
 
-edge_index, edge_attr, pos, node_ids, edge_mask = create_graphs_blockwise_padded(roi_offset=roi_offset_val,
+edge_index, edge_attr, pos, node_ids, edge_mask, targets = create_graphs_blockwise_padded(roi_offset=roi_offset_val,
                                                                roi_shape=roi_shape_val, block_size=block_size_euclidian, padding=padding)
-for i, (ei, ea, po, ni, em) in enumerate(zip(edge_index, edge_attr, pos, node_ids, edge_mask)):
+for i, (ei, ea, po, ni, em, t) in enumerate(zip(edge_index, edge_attr, pos, node_ids, edge_mask, targets)):
     save_graphs_to_npz(edge_index=ei, edge_attr=ea, pos=po,
-                       node_ids=ni, edge_mask=em, path=output_data_path, split_name='val', graph_nr=i)
+                       node_ids=ni, edge_mask=em, y=t, path=output_data_path, split_name='val', graph_nr=i)
 
-edge_index, edge_attr, pos, node_ids, edge_mask = create_graphs_blockwise(roi_offset=roi_offset_test,
+edge_index, edge_attr, pos, node_ids, edge_mask, targets = create_graphs_blockwise(roi_offset=roi_offset_test,
                                                                roi_shape=roi_shape_test, block_size=block_size_euclidian)
-for i, (ei, ea, po, ni, em) in enumerate(zip(edge_index, edge_attr, pos, node_ids, edge_mask)):
+for i, (ei, ea, po, ni, em, t) in enumerate(zip(edge_index, edge_attr, pos, node_ids, edge_mask, targets)):
     save_graphs_to_npz(edge_index=ei, edge_attr=ea, pos=po,
-                       node_ids=ni, edge_mask=em, path=output_data_path, split_name='test', graph_nr=i)
+                       node_ids=ni, edge_mask=em, y=t, path=output_data_path, split_name='test', graph_nr=i)
 
 # print("Complete RAG contains %d nodes, %d edges" % (len(nodes), len(edges)))

@@ -45,30 +45,46 @@ for k, v in gt.items():
 
 new_node_attr = 'segment_id'
 new_edge_attr = 'merge_ground_truth'
+new_edge_masking = 'merge_labeled'
+
 nx.set_node_attributes(graph, values=gt, name=new_node_attr)
 
-start = time.time()
+# Two binary values:
+# - merge_ground_truth is 1 if two fragments have the same id, 0 otherwise
+# - merge_labeled is 1 if two fragment ids are non-zero and the same, 0 otherwise
 edge_gt = {}
+edge_labeled = {}
+background_id = 0
+
+start = time.time()
 for u, v in graph.edges(data=False):
     if u not in gt or v not in gt:
         edge_label = 0
-
-    if gt[u] == gt[v]:
-        edge_label = 1
+        labeled = 0
     else:
-        edge_label = 0
+        if gt[u] == gt[v]:
+            edge_label = 1
+        else:
+            edge_label = 0
+
+        if gt[u] == background_id and gt[v] == background_id:
+            labeled = 0
+        else:
+            labeled = 1
 
     edge_gt[(u, v)] = edge_label
+    edge_labeled[(u, v)] = labeled
 
 logger.debug('Computed edge ground truth in {0:.3f} seconds'.format(
     time.time() - start))
 
 nx.set_edge_attributes(graph, values=edge_gt, name=new_edge_attr)
+nx.set_edge_attributes(graph, values=edge_labeled, name=new_edge_masking)
 
 start = time.time()
 graph.update_node_attrs(roi=roi, attributes=[new_node_attr])
 logger.debug('Updated nodes in {0:.3f} s'.format(time.time() - start))
 
 start = time.time()
-graph.update_edge_attrs(roi=roi, attributes=[new_edge_attr])
+graph.update_edge_attrs(roi=roi, attributes=[new_edge_attr, new_edge_masking])
 logger.debug('Updated edges in {0:.3f} s'.format(time.time() - start))
