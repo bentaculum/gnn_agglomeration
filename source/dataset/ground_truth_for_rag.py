@@ -35,7 +35,7 @@ def overlap_in_block(block, fragments, groundtruth, tmp_path):
 
         max_count = counter.most_common(1)[0][1]
         all_counts = sum(counter.values())
-        if max_count/all_counts > config.threshold_overlap:
+        if max_count / all_counts > config.threshold_overlap:
             # most common elem
             frag_dict[i] = int(counter.most_common(1)[0][0])
         else:
@@ -54,7 +54,8 @@ def overlap_reduce():
             block_dicts.append(pickle.load(
                 open(os.path.join(config.temp_path, f), 'rb')))
 
-    logger.info(f"Found {len(block_dicts)} block results in {config.temp_path}")
+    logger.info(
+        f"Found {len(block_dicts)} block results in {config.temp_path}")
 
     merged_dicts = dict()
     for b in block_dicts:
@@ -92,9 +93,10 @@ def overlap():
         read_write_conflict=False,
         max_retries=1)
 
-    logger.info(f"Blockwise overlapping of fragments and ground truth in {time.time() - start:.3f}s")
-    logger.debug('num blocks: {}'.format(
-        np.prod(np.ceil(np.array(config['roi_shape']) / np.array(config.block_size)))))
+    logger.info(
+        f"Blockwise overlapping of fragments and ground truth in {time.time() - start:.3f}s")
+    logger.debug(f"num blocks: {
+        np.prod(np.ceil(np.array(config.roi_shape) / np.array(config.block_size)))}")
 
     frag_to_gt = overlap_reduce()
 
@@ -167,7 +169,8 @@ def update_rag_db_with_gt(gt):
     logger.debug(f"Updated nodes in {time.time() - start:.3f} s")
 
     start = time.time()
-    graph.update_edge_attrs(roi=roi, attributes=[new_edge_attr, new_edge_masking])
+    graph.update_edge_attrs(roi=roi, attributes=[
+                            new_edge_attr, new_edge_masking])
     logger.debug(f"Updated edges in {time.time() - start:.3f} s")
 
 
