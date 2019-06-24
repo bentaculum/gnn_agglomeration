@@ -127,11 +127,7 @@ def update_rag_db_with_gt(gt):
     for k, v in gt.items():
         gt[k] = int(v)
 
-    new_node_attr = 'segment_id'
-    new_edge_attr = 'merge_ground_truth'
-    new_edge_masking = 'merge_labeled'
-
-    nx.set_node_attributes(graph, values=gt, name=new_node_attr)
+    nx.set_node_attributes(graph, values=gt, name=config.new_node_attr)
 
     # Two binary values:
     # - merge_ground_truth is 1 if two fragments have the same id, 0 otherwise
@@ -161,16 +157,16 @@ def update_rag_db_with_gt(gt):
 
     logger.debug(f"Computed edge ground truth in {time.time() - start:.3f} s")
 
-    nx.set_edge_attributes(graph, values=edge_gt, name=new_edge_attr)
-    nx.set_edge_attributes(graph, values=edge_labeled, name=new_edge_masking)
+    nx.set_edge_attributes(graph, values=edge_gt, name=config.new_edge_attr)
+    nx.set_edge_attributes(graph, values=edge_labeled, name=config.new_edge_masking)
 
     start = time.time()
-    graph.update_node_attrs(roi=roi, attributes=[new_node_attr])
+    graph.update_node_attrs(roi=roi, attributes=[config.new_node_attr])
     logger.debug(f"Updated nodes in {time.time() - start:.3f} s")
 
     start = time.time()
     graph.update_edge_attrs(roi=roi, attributes=[
-                            new_edge_attr, new_edge_masking])
+                            config.new_edge_attr, config.new_edge_masking])
     logger.debug(f"Updated edges in {time.time() - start:.3f} s")
 
 
