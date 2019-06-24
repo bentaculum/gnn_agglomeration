@@ -95,8 +95,8 @@ def overlap():
 
     logger.info(
         f"Blockwise overlapping of fragments and ground truth in {time.time() - start:.3f}s")
-    logger.debug(f"num blocks: {
-        np.prod(np.ceil(np.array(config.roi_shape) / np.array(config.block_size)))}")
+    logger.debug(
+        f"num blocks: { np.prod(np.ceil(np.array(config.roi_shape) / np.array(config.block_size)))}")
 
     frag_to_gt = overlap_reduce()
 
