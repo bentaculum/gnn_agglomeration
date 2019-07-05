@@ -6,7 +6,7 @@ from torch_geometric.utils import softmax
 
 from torch_geometric.nn.inits import glorot, zeros
 
-from attention_mlp import AttentionMLP
+from .attention_mlp import AttentionMLP
 
 
 class OurConv(MessagePassing):

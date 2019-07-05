@@ -1,7 +1,7 @@
 import torch
 
-from random_graph_dataset import RandomGraphDataset
-from count_neighbors_graph import CountNeighborsGraph
+from .random_graph_dataset import RandomGraphDataset
+from .count_neighbors_graph import CountNeighborsGraph
 
 
 class CountNeighborsDataset(RandomGraphDataset):

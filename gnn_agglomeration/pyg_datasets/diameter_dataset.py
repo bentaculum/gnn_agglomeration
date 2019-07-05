@@ -1,12 +1,13 @@
-from random_graph_dataset import RandomGraphDataset
-from iterative_graph import IterativeGraph
+from .random_graph_dataset import RandomGraphDataset
+from .diameter_graph import DiameterGraph
 
 
-class IterativeDataset(RandomGraphDataset):
+class DiameterDataset(RandomGraphDataset):
     def __init__(self, root, config):
 
         self.check_config_vars = [
             'samples',
+            'nodes',
             'self_loops',
             'feature_dimensionality',
             'euclidian_dimensionality',
@@ -18,19 +19,15 @@ class IterativeDataset(RandomGraphDataset):
             'class_noise',
         ]
 
-        super(IterativeDataset, self).__init__(
+        super(DiameterDataset, self).__init__(
             root=root, config=config)
 
     def create_datapoint(self):
-        graph = IterativeGraph()
+        graph = DiameterGraph()
         graph.create_random_graph(config=self.config)
         return graph
 
     def update_config(self, config):
         # TODO check if local update necessary
-        if config.edge_labels:
-            config.classes = 2
-            self.config.classes = 2
-        else:
-            config.classes = config.msts
-            self.config.classes = config.classes
+        config.classes = config.msts
+        self.config.classes = config.classes

@@ -4,8 +4,8 @@ import os
 import tensorboardX
 import json
 
-from classification_problem import ClassificationProblem
-from regression_problem import RegressionProblem
+from .classification_problem import ClassificationProblem
+from .regression_problem import RegressionProblem
 
 
 class GnnModel(torch.nn.Module, ABC):

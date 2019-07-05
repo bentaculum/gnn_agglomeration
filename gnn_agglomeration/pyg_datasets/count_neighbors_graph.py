@@ -4,7 +4,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import os
 
-from my_graph import MyGraph
+from .my_graph import MyGraph
 
 
 class CountNeighborsGraph(MyGraph):

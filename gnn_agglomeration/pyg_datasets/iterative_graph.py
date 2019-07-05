@@ -6,7 +6,7 @@ import matplotlib.cm as cm
 import matplotlib.colors as colors
 import os
 
-from my_graph import MyGraph
+from .my_graph import MyGraph
 
 
 class IterativeGraph(MyGraph):

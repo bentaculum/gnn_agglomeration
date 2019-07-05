@@ -1,12 +1,11 @@
 import torch
 import torch.nn.functional as F
 from torch_geometric.nn import SplineConv
-from gnn_model import GnnModel
-
 import numpy as np
 import os
-
 import matplotlib.pyplot as plt
+
+from .gnn_model import GnnModel
 
 
 class MinimalSplineConvModel(GnnModel):

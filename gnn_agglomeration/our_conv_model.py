@@ -1,8 +1,8 @@
 import torch
 import torch.nn.functional as F
-from gnn_model import GnnModel
 
-from our_conv import OurConv
+from .gnn_model import GnnModel
+from .our_conv import OurConv
 
 
 class OurConvModel(GnnModel):

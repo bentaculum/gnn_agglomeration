@@ -5,12 +5,22 @@ import datetime
 import logging
 import json
 import pytz
+from operator import attrgetter
+
+
+class SortingHelpFormatter(argparse.HelpFormatter):
+    """
+    sort arguments when listed on the command line via --help option
+    """
+    def add_arguments(self, actions):
+        actions = sorted(actions, key=attrgetter('option_strings'))
+        super(SortingHelpFormatter, self).add_arguments(actions)
 
 
 class Config:
     def __init__(self):
         self.parser = argparse.ArgumentParser(
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+            formatter_class=SortingHelpFormatter)
         self.default = {}
 
         self.parser.add_argument(
@@ -78,9 +88,9 @@ class Config:
             '--dataset_type',
             type=str,
             choices=['DiameterDataset',
-                     'CountNeighborsDataset', 'IterativeDataset'],
+                     'CountNeighborsDataset', 'IterativeDataset', 'HemibrainDataset'],
             help='choose from different types of local datasets')
-        self.default['dataset_type'] = 'IterativeDataset'
+        self.default['dataset_type'] = 'HemibrainDataset'
 
         self.parser.add_argument(
             '--dataset_path',

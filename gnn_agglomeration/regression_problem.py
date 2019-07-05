@@ -2,12 +2,11 @@ import torch
 import os
 import tensorboardX
 import torch.nn.functional as F
-
-from model_type import ModelType
-
 import chartify
 import pandas as pd
 import numpy as np
+
+from .model_type import ModelType
 
 
 class RegressionProblem(ModelType):

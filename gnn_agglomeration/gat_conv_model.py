@@ -1,7 +1,8 @@
 import torch
 import torch.nn.functional as F
 from torch_geometric.nn import GATConv
-from gnn_model import GnnModel
+
+from .gnn_model import GnnModel
 
 
 class GatConvModel(GnnModel):

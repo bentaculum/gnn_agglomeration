@@ -14,20 +14,23 @@ import tarfile
 import argparse
 import json
 
-from config import Config
-# TODO parametrize imports to avoid overhead here
-from gcn_model import GcnModel
-from gmm_conv_model import GmmConvModel
-from spline_conv_model import SplineConvModel
-from minimal_spline_conv_model import MinimalSplineConvModel
-from gat_conv_model import GatConvModel
-from our_conv_model import OurConvModel
-from regression_problem import RegressionProblem
-from result_plotting import ResultPlotting
+from gnn_agglomeration.config import Config
 
-from diameter_dataset import DiameterDataset
-from count_neighbors_dataset import CountNeighborsDataset
-from iterative_dataset import IterativeDataset
+# TODO parametrize imports to avoid overhead here
+# TODO import the entire gnn_agglomeration package
+from gnn_agglomeration.gcn_model import GcnModel
+from gnn_agglomeration.gmm_conv_model import GmmConvModel
+from gnn_agglomeration.spline_conv_model import SplineConvModel
+from gnn_agglomeration.minimal_spline_conv_model import MinimalSplineConvModel
+from gnn_agglomeration.gat_conv_model import GatConvModel
+from gnn_agglomeration.our_conv_model import OurConvModel
+from gnn_agglomeration.regression_problem import RegressionProblem
+from gnn_agglomeration.result_plotting import ResultPlotting
+
+from gnn_agglomeration.pyg_datasets.diameter_dataset import DiameterDataset
+from gnn_agglomeration.pyg_datasets.count_neighbors_dataset import CountNeighborsDataset
+from gnn_agglomeration.pyg_datasets.iterative_dataset import IterativeDataset
+from gnn_agglomeration.pyg_datasets.hemibrain_dataset import HemibrainDataset
 
 ex = Experiment()
 
@@ -77,8 +80,14 @@ def main(_config, _run, _log):
         config.run_abs_path, 'summary', 'validation'))
 
     # create and load dataset
-    dataset = globals()[config.dataset_type](
-        root=config.dataset_abs_path, config=config)
+    # TODO generalize
+    if config.dataset_type == 'HemibrainDataset':
+        dataset = globals()[config.dataset_type](
+            root=config.dataset_abs_path, config=config, length=config.samples)
+    else:
+        dataset = globals()[config.dataset_type](
+            root=config.dataset_abs_path, config=config)
+
     dataset.update_config(config)
     assert dataset[0].edge_attr.size(1) == config.pseudo_dimensionality
 
@@ -96,9 +105,14 @@ def main(_config, _run, _log):
         config.samples * (1 - config.test_split - config.validation_split))
     split_validation_idx = int(config.samples * (1 - config.test_split))
 
-    train_dataset = dataset[:split_train_idx]
-    validation_dataset = dataset[split_train_idx:split_validation_idx]
-    test_dataset = dataset[split_validation_idx:]
+    # TODO change back
+    # TODO avoid list-like splitting to work out-of-memory
+    train_dataset = dataset
+    validation_dataset = dataset
+    test_dataset = dataset
+    # train_dataset = dataset[:split_train_idx]
+    # validation_dataset = dataset[split_train_idx:split_validation_idx]
+    # test_dataset = dataset[split_validation_idx:]
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -126,8 +140,8 @@ def main(_config, _run, _log):
         if 'final.tar' in checkpoint_versions:
             checkpoint_to_load = 'final.tar'
         else:
-            checkpoint_versions = [
-                x for x in checkpoint_versions if x.startswith('epoch')].sort()
+            checkpoint_versions = sorted([
+                x for x in checkpoint_versions if x.startswith('epoch')])
             checkpoint_to_load = checkpoint_versions[-1]
 
         _log.info('Loading checkpoint {} ...'.format(
