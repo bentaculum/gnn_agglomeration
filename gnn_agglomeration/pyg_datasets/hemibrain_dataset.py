@@ -5,29 +5,41 @@ import torch_geometric.transforms as T
 import numpy as np
 import json
 import os
-# from abc import ABC, abstractmethod
+import daisy
+import configparser
 
-# TODO for testing
-from .iterative_dataset import IterativeDataset
+from .hemibrain_graph import HemibrainGraph
 
 class HemibrainDataset(Dataset):
-    def __init__(self, root, config, length):
+    def __init__(self, root, config, length, roi_offset, roi_shape):
         self.config = config
         self.len = length
+        self.roi_offset = roi_offset
+        self.roi_shape = roi_shape
         transform = getattr(T, config.data_transform)(norm=True, cat=True)
         super(HemibrainDataset, self).__init__(
             root=root, transform=transform, pre_transform=None)
 
-        # TODO necessary?
-        # self.data, self.slices = torch.load(self.processed_paths[0])
+        with open(config.db_host, 'r') as f:
+            pw_parser = configparser.ConfigParser()
+            pw_parser.read_file(f)
+
+        # Graph provider
+        # TODO fully parametrize once necessary
+        self.graph_provider = daisy.persistence.MongoDbGraphProvider(
+            db_name=config.db_name,
+            host=pw_parser['DEFAULT']['db_host'],
+            mode='r',
+            nodes_collection=config.nodes_collection,
+            edges_collection=config.edges_collection,
+            endpoint_names=['u', 'v'],
+            position_attribute=[
+                'center_z',
+                'center_y',
+                'center_x'])
 
         # TODO possible?
         # self.check_dataset_vs_config()
-
-        # TODO for testing
-        self.ds = IterativeDataset(root=config.dataset_abs_path, config=config)
-        with open(os.path.join(self.config.dataset_abs_path, 'config.json'), 'w') as f:
-            json.dump(vars(self.config), f)
 
     def __len__(self):
         return self.len
@@ -47,43 +59,45 @@ class HemibrainDataset(Dataset):
         pass
 
     def get(self, idx):
-        g = self.ds.create_datapoint()
-        return g
+        """
+        block size from global config file, roi_offset and roi_shape
+        are local attributes
+        """
 
-    # def process(self):
-    #     # Read data into huge `Data` list.
-    #     data_list = []
-    #     # TODO use sacred logger
-    #     print('Creating {} new random graphs ... '.format(self.config.samples))
-    #     for i in range(self.config.samples):
-    #         print('Create graph {} ...'.format(i))
-    #         graph = self.create_datapoint()
-    #         data_list.append(graph)
-    #
-    #     if self.pre_filter is not None:
-    #         data_list = [data for data in data_list if self.pre_filter(data)]
-    #
-    #     if self.pre_transform is not None:
-    #         data_list = [self.pre_transform(data) for data in data_list]
-    #
-    #     data, slices = self.collate(data_list)
-    #     torch.save((data, slices), self.processed_paths[0])
-    #
-    #     with open(os.path.join(self.config.dataset_abs_path, 'config.json'), 'w') as f:
-    #         json.dump(vars(self.config), f)
+        random_offset = np.zeros(3, dtype=np.int_)
+        random_offset[0] = np.random.randint(
+            low=0, high=self.roi_shape[0] - self.config.block_size[0])
+        random_offset[1] = np.random.randint(
+            low=0, high=self.roi_shape[1] - self.config.block_size[1])
+        random_offset[2] = np.random.randint(
+            low=0, high=self.roi_shape[2] - self.config.block_size[2])
+        total_offset = self.roi_offset + random_offset
 
-    # TODO do after every get?
+        graph = HemibrainGraph()
+        graph.read_and_process(
+            graph_provider=self.graph_provider,
+            block_offset=total_offset,
+            block_shape=self.config.block_size
+        )
+
+        # TODO dynamic data augmentation
+
+        return graph
+
+    # TODO not necessary unless I save the processed graphs to file again
     def check_dataset_vs_config(self):
-        with open(os.path.join(self.config.dataset_abs_path, 'config.json'), 'r') as json_file:
-            data_config = json.load(json_file)
-        run_conf_dict = vars(self.config)
-        for key in self.check_config_vars:
-            if key in data_config:
-                assert run_conf_dict[key] == data_config[key],\
-                    'Run config does not match dataset config\nrun_conf_dict[{}]={}, data_config[{}]={}'.format(
-                    key, run_conf_dict[key], key, data_config[key])
+        pass
 
-    # TODO for testing
+    # def check_dataset_vs_config(self):
+    #     with open(os.path.join(self.config.dataset_abs_path, 'config.json'), 'r') as json_file:
+    #         data_config = json.load(json_file)
+    #     run_conf_dict = vars(self.config)
+    #     for key in self.check_config_vars:
+    #         if key in data_config:
+    #             assert run_conf_dict[key] == data_config[key],\
+    #                 'Run config does not match dataset config\nrun_conf_dict[{}]={}, data_config[{}]={}'.format(
+    #                 key, run_conf_dict[key], key, data_config[key])
+
     def update_config(self, config):
         # TODO check if local update necessary
         if config.edge_labels:
@@ -93,10 +107,9 @@ class HemibrainDataset(Dataset):
             config.classes = config.msts
             self.config.classes = config.classes
 
-
-    # TODO figure out what to do with these extra methods I have defined for previous datasets
-    # def update_config(self, config):
-    #     pass
+        # TODO do this again once processed dataset is saved to file
+        # with open(os.path.join(self.config.dataset_abs_path, 'config.json'), 'w') as f:
+        #     json.dump(vars(self.config), f)
 
     def print_summary(self):
         pass

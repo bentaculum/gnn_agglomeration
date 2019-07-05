@@ -45,19 +45,19 @@ class Config:
             '--euclidian_dimensionality',
             type=positive_int,
             help='Dimension of the Euclidian space, used in data.pos')
-        self.default['euclidian_dimensionality'] = 2
+        self.default['euclidian_dimensionality'] = 3
 
         self.parser.add_argument(
             '--feature_dimensionality',
             type=positive_int,
             help='Dimension of the feature space, used in data.x')
-        self.default['feature_dimensionality'] = 6
+        self.default['feature_dimensionality'] = 1
 
         self.parser.add_argument(
             '--pseudo_dimensionality',
             type=positive_int,
             help='Dimension of the pseudo coordinates, according to their type')
-        self.default['pseudo_dimensionality'] = 3
+        self.default['pseudo_dimensionality'] = 4
 
         self.parser.add_argument(
             '--kernel_size',
@@ -269,7 +269,7 @@ class Config:
             '--fc_batch_norm',
             type=str2bool,
             help='whether to use Batch Normalization in the final fully connected layer')
-        self.default['batch_norm'] = True
+        self.default['fc_batch_norm'] = True
 
         self.parser.add_argument(
             '--dropout_type',
@@ -478,13 +478,65 @@ class Config:
             '--edge_labels',
             type=str2bool,
             help='whether to use edge labels')
-        self.default['edge_labels'] = False
+        self.default['edge_labels'] = True
 
         self.parser.add_argument(
             '--fc_use_edge',
             type=str2bool,
             help='whether to use the edge information for the final fc layer')
         self.default['fc_use_edge'] = True
+
+        self.parser.add_argument(
+            '--train_roi_offset',
+            type=positive_int,
+            nargs=3,
+            help='ROI absolute position of lower vertex')
+        self.default['train_roi_offset'] = [140800, 205120, 198400]
+
+        self.parser.add_argument(
+            '--train_roi_shape',
+            type=positive_int,
+            nargs=3,
+            help='ROI size, starting at roi_offset')
+        self.default['train_roi_shape'] = [11800, 11800, 11800]
+
+        self.parser.add_argument(
+            '--block_size',
+            type=positive_int,
+            nargs=3,
+            help='fixed block size for creating pyg graphs')
+        self.default['block_size'] = [800, 800, 800]
+
+        self.parser.add_argument(
+            '--block_padding',
+            type=positive_int,
+            nargs=3,
+            help='padding to create an outer mask that guarantees context for all targets the contribute to the loss')
+        self.default['block_padding'] = [160, 160, 160]
+
+        self.parser.add_argument(
+            '--db_host',
+            type=str,
+            help='path to mongoDB connection file')
+        self.default['db_host'] = 'db_host.ini'
+
+        self.parser.add_argument(
+            '--db_name',
+            type=str,
+            help='name of the used mongodb')
+        self.default['db_name'] = 'hemi_mtlsd_400k_roi_1_copy'
+
+        self.parser.add_argument(
+            '--nodes_collection',
+            type=str,
+            help='name of mongodb collection for RAG nodes')
+        self.default['nodes_collection'] = 'nodes'
+
+        self.parser.add_argument(
+            '--edges_collection',
+            type=str,
+            help='name of mongodb collection for RAG edges')
+        self.default['edges_collection'] = 'edges_hist_quant_50'
 
     def localhost(self):
         return {

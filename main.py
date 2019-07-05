@@ -5,15 +5,15 @@ from torch_geometric.data import DataLoader
 from tensorboardX import SummaryWriter
 
 import sacred
-from sacred import Experiment
-import sys
 from sacred.observers import MongoObserver, TelegramObserver
 from sacred.stflow import LogFileWriter
+import sys
 import atexit
 import tarfile
 import argparse
 import json
 
+from gnn_agglomeration.experiment import ex
 from gnn_agglomeration.config import Config
 
 # TODO parametrize imports to avoid overhead here
@@ -31,8 +31,6 @@ from gnn_agglomeration.pyg_datasets.diameter_dataset import DiameterDataset
 from gnn_agglomeration.pyg_datasets.count_neighbors_dataset import CountNeighborsDataset
 from gnn_agglomeration.pyg_datasets.iterative_dataset import IterativeDataset
 from gnn_agglomeration.pyg_datasets.hemibrain_dataset import HemibrainDataset
-
-ex = Experiment()
 
 
 @ex.main
@@ -79,43 +77,62 @@ def main(_config, _run, _log):
     val_writer = SummaryWriter(os.path.join(
         config.run_abs_path, 'summary', 'validation'))
 
-    # create and load dataset
-    # TODO generalize
+    # create and load datasets
+    # TODO generalize to padded, blockwise
     if config.dataset_type == 'HemibrainDataset':
-        dataset = globals()[config.dataset_type](
-            root=config.dataset_abs_path, config=config, length=config.samples)
+        train_dataset = globals()[config.dataset_type](
+            root=config.dataset_abs_path,
+            config=config,
+            length=config.samples,
+            roi_offset=config.train_roi_offset,
+            roi_shape=config.train_roi_shape
+        )
+
+        #TODO adapt params
+        validation_dataset = globals()[config.dataset_type](
+            root=config.dataset_abs_path,
+            config=config,
+            length=int(config.samples * config.validation_split),
+            roi_offset=config.train_roi_offset,
+            roi_shape=config.train_roi_shape
+        )
+
+        # TODO adapt params
+        test_dataset = globals()[config.dataset_type](
+            root=config.dataset_abs_path,
+            config=config,
+            length=int(config.samples * config.test_split),
+            roi_offset=config.train_roi_offset,
+            roi_shape=config.train_roi_shape
+        )
+
     else:
         dataset = globals()[config.dataset_type](
             root=config.dataset_abs_path, config=config)
+        # split into train and test
+        split_train_idx = int(
+            config.samples * (1 - config.test_split - config.validation_split))
+        split_validation_idx = int(config.samples * (1 - config.test_split))
 
-    dataset.update_config(config)
-    assert dataset[0].edge_attr.size(1) == config.pseudo_dimensionality
+        train_dataset = dataset[:split_train_idx]
+        validation_dataset = dataset[split_train_idx:split_validation_idx]
+        test_dataset = dataset[split_validation_idx:]
+
+        # TODO if model is loaded, use the same train val test split.
+        # shuffle can return the permutation of the dataset, which can then be used to permute the same way
+        # dataset, perm = dataset.shuffle(return_perm=True)
+        # when loading a model:
+        # dataset = dataset.__indexing__(permutation)
+
+    train_dataset.update_config(config)
+    assert train_dataset.__getitem__(0).edge_attr.size(1) == config.pseudo_dimensionality
 
     if config.standardize_targets:
-        config.targets_mean, config.targets_std = dataset.targets_mean_std()
-
-    # TODO if model is loaded, use the same train val test split.
-    # shuffle can return the permutation of the dataset, which can then be used to permute the same way
-    # dataset, perm = dataset.shuffle(return_perm=True)
-    # when loading a model:
-    # dataset = dataset.__indexing__(permutation)
-
-    # split into train and test
-    split_train_idx = int(
-        config.samples * (1 - config.test_split - config.validation_split))
-    split_validation_idx = int(config.samples * (1 - config.test_split))
-
-    # TODO change back
-    # TODO avoid list-like splitting to work out-of-memory
-    train_dataset = dataset
-    validation_dataset = dataset
-    test_dataset = dataset
-    # train_dataset = dataset[:split_train_idx]
-    # validation_dataset = dataset[split_train_idx:split_validation_idx]
-    # test_dataset = dataset[split_validation_idx:]
+        config.targets_mean, config.targets_std = train_dataset.targets_mean_std()
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+    # TODO Shuffling necessary for data straight from database?
     data_loader_train = DataLoader(
         train_dataset, batch_size=config.batch_size_train, shuffle=True)
     data_loader_validation = DataLoader(
