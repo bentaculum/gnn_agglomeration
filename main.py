@@ -30,7 +30,9 @@ from gnn_agglomeration.result_plotting import ResultPlotting
 from gnn_agglomeration.pyg_datasets.diameter_dataset import DiameterDataset
 from gnn_agglomeration.pyg_datasets.count_neighbors_dataset import CountNeighborsDataset
 from gnn_agglomeration.pyg_datasets.iterative_dataset import IterativeDataset
-from gnn_agglomeration.pyg_datasets.hemibrain_dataset import HemibrainDataset
+from gnn_agglomeration.pyg_datasets.hemibrain_dataset_random import HemibrainDatasetRandom
+from gnn_agglomeration.pyg_datasets.hemibrain_dataset_blockwise import HemibrainDatasetBlockwise
+
 
 
 @ex.main
@@ -78,32 +80,27 @@ def main(_config, _run, _log):
         config.run_abs_path, 'summary', 'validation'))
 
     # create and load datasets
-    # TODO generalize to padded, blockwise
     if config.dataset_type == 'HemibrainDataset':
-        train_dataset = globals()[config.dataset_type](
+        train_dataset = HemibrainDatasetRandom(
             root=config.dataset_abs_path,
             config=config,
-            length=config.samples,
             roi_offset=config.train_roi_offset,
-            roi_shape=config.train_roi_shape
+            roi_shape=config.train_roi_shape,
+            length=config.samples
         )
 
-        #TODO adapt params
-        validation_dataset = globals()[config.dataset_type](
+        validation_dataset = HemibrainDatasetBlockwise(
             root=config.dataset_abs_path,
             config=config,
-            length=int(config.samples * config.validation_split),
-            roi_offset=config.train_roi_offset,
-            roi_shape=config.train_roi_shape
+            roi_offset=config.val_roi_offset,
+            roi_shape=config.val_roi_shape
         )
 
-        # TODO adapt params
-        test_dataset = globals()[config.dataset_type](
+        test_dataset = HemibrainDatasetBlockwise(
             root=config.dataset_abs_path,
             config=config,
-            length=int(config.samples * config.test_split),
-            roi_offset=config.train_roi_offset,
-            roi_shape=config.train_roi_shape
+            roi_offset=config.test_roi_offset,
+            roi_shape=config.test_roi_shape
         )
 
     else:

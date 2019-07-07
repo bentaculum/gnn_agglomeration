@@ -486,6 +486,8 @@ class Config:
             help='whether to use the edge information for the final fc layer')
         self.default['fc_use_edge'] = True
 
+        #########################
+
         self.parser.add_argument(
             '--train_roi_offset',
             type=positive_int,
@@ -498,7 +500,37 @@ class Config:
             type=positive_int,
             nargs=3,
             help='ROI size, starting at roi_offset')
-        self.default['train_roi_shape'] = [11800, 11800, 11800]
+        self.default['train_roi_shape'] = [11800 - 2*1180, 11800, 11800]
+
+        self.parser.add_argument(
+            '--val_roi_offset',
+            type=positive_int,
+            nargs=3,
+            help='ROI absolute position of lower vertex')
+        self.default['val_roi_offset'] = [140800 + 8*1180, 205120, 198400]
+
+        self.parser.add_argument(
+            '--val_roi_shape',
+            type=positive_int,
+            nargs=3,
+            help='ROI size, starting at roi_offset')
+        self.default['val_roi_shape'] = [1180, 11800, 11800]
+
+        self.parser.add_argument(
+            '--test_roi_offset',
+            type=positive_int,
+            nargs=3,
+            help='ROI absolute position of lower vertex')
+        self.default['test_roi_offset'] = [140800 + 9*1180, 205120, 198400]
+
+        self.parser.add_argument(
+            '--test_roi_shape',
+            type=positive_int,
+            nargs=3,
+            help='ROI size, starting at roi_offset')
+        self.default['test_roi_shape'] = [1180, 11800, 11800]
+
+        #########################
 
         self.parser.add_argument(
             '--block_size',
@@ -537,6 +569,13 @@ class Config:
             type=str,
             help='name of mongodb collection for RAG edges')
         self.default['edges_collection'] = 'edges_hist_quant_50'
+
+        self.parser.add_argument(
+            '--graph_type',
+            type=str,
+            choices=['HemibrainGraphUnmasked', 'HemibrainGraphMasked'],
+            help='which type of graph to extract from db')
+        self.default['graph_type'] = 'HemibrainGraphUnmasked'
 
     def localhost(self):
         return {

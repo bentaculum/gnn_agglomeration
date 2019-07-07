@@ -1,45 +1,59 @@
 import torch
 from torch_geometric.data import Dataset
-from torch_geometric.data import Data
 import torch_geometric.transforms as T
 import numpy as np
-import json
-import os
 import daisy
 import configparser
+from abc import ABC, abstractmethod
 
-from .hemibrain_graph import HemibrainGraph
 
-class HemibrainDataset(Dataset):
-    def __init__(self, root, config, length, roi_offset, roi_shape):
+class HemibrainDataset(Dataset, ABC):
+    def __init__(self, root, config, roi_offset, roi_shape, length=None):
         self.config = config
-        self.len = length
         self.roi_offset = roi_offset
         self.roi_shape = roi_shape
+        self.len = length
+
         transform = getattr(T, config.data_transform)(norm=True, cat=True)
         super(HemibrainDataset, self).__init__(
             root=root, transform=transform, pre_transform=None)
 
-        with open(config.db_host, 'r') as f:
+        self.pad_total_roi()
+        self.connect_to_db()
+
+        # TODO possible?
+        # self.check_dataset_vs_config()
+
+    def pad_total_roi(self):
+        # pad the entire volume, padded area not part of total roi any more
+        self.roi_offset = np.array(self.roi_offset) + np.array(self.config.block_padding)
+        self.roi_shape = np.array(self.roi_shape) - 2 * np.array(self.config.block_padding)
+
+    def pad_block(self, offset, shape):
+        # enlarge the block with padding in all dimensions
+        offset_padded = np.array(offset) - np.array(self.config.block_padding)
+        shape_padded = np.array(shape) + 2 * np.array(self.config.block_padding)
+        return offset_padded, shape_padded
+
+    def connect_to_db(self):
+        with open(self.config.db_host, 'r') as f:
             pw_parser = configparser.ConfigParser()
             pw_parser.read_file(f)
 
         # Graph provider
         # TODO fully parametrize once necessary
         self.graph_provider = daisy.persistence.MongoDbGraphProvider(
-            db_name=config.db_name,
+            db_name=self.config.db_name,
             host=pw_parser['DEFAULT']['db_host'],
             mode='r',
-            nodes_collection=config.nodes_collection,
-            edges_collection=config.edges_collection,
+            nodes_collection=self.config.nodes_collection,
+            edges_collection=self.config.edges_collection,
             endpoint_names=['u', 'v'],
             position_attribute=[
                 'center_z',
                 'center_y',
                 'center_x'])
 
-        # TODO possible?
-        # self.check_dataset_vs_config()
 
     def __len__(self):
         return self.len
@@ -58,31 +72,9 @@ class HemibrainDataset(Dataset):
     def _process(self):
         pass
 
+    @abstractmethod
     def get(self, idx):
-        """
-        block size from global config file, roi_offset and roi_shape
-        are local attributes
-        """
-
-        random_offset = np.zeros(3, dtype=np.int_)
-        random_offset[0] = np.random.randint(
-            low=0, high=self.roi_shape[0] - self.config.block_size[0])
-        random_offset[1] = np.random.randint(
-            low=0, high=self.roi_shape[1] - self.config.block_size[1])
-        random_offset[2] = np.random.randint(
-            low=0, high=self.roi_shape[2] - self.config.block_size[2])
-        total_offset = self.roi_offset + random_offset
-
-        graph = HemibrainGraph()
-        graph.read_and_process(
-            graph_provider=self.graph_provider,
-            block_offset=total_offset,
-            block_shape=self.config.block_size
-        )
-
-        # TODO dynamic data augmentation
-
-        return graph
+        pass
 
     # TODO not necessary unless I save the processed graphs to file again
     def check_dataset_vs_config(self):
