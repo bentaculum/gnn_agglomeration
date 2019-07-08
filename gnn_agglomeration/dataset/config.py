@@ -16,6 +16,7 @@ p.add(
     '--fragments_ds',
     type=str,
     help='relative path to fragments in the .zarr file')
+p.add('--lut_out_path', type=str, help='where to store the lookup table from overlapping')
 p.add(
     '--groundtruth_zarr',
     type=str,

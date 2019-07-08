@@ -185,6 +185,22 @@ def update_rag_db_with_gt(gt):
     logger.debug(f"Updated edges in {time.time() - start:.3f} s")
 
 
+def save_to_lookup_table(gt):
+    # TODO check data type
+    start = time.time()
+    lut = np.array([list(gt.keys()), list(gt.values)])
+
+    # stick to naming convention for re-using lsd experiments script
+    filename = 'seg_%s_%d' % (config.edges_collection, int(config.threshold_overlap * 100))
+    if not os.path.isdir(os.path.join(config.fragments_zarr, config.lut_out_path)):
+        os.makedirs(os.path.join(config.fragments_zarr, config.lut_out_path))
+    out_file = os.path.join(config.fragments_zarr, config.lut_out_path, filename)
+
+    np.savez_compressed(out_file, fragment_segment_lut=lut)
+    logger.debug(f"Saved overlap relabelling to LUT in {time.time() - start:.3f} s")
+
+
 if __name__ == '__main__':
     ground_truth = overlap()
+    save_to_lookup_table(ground_truth)
     update_rag_db_with_gt(ground_truth)
