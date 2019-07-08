@@ -31,6 +31,12 @@ p.add('--db_name', type=str, help='database name')
 p.add('--nodes_collection', type=str, help='nodes collection in mongoDB')
 p.add('--edges_collection', type=str, help='edges collection in mongoDB')
 
+p.add('--new_node_attr', type=str, help='fragment-wise best effort label')
+p.add('--new_edge_attr', type=str, help='binary best effort merge score')
+p.add('--new_ege_masking', type=str,
+      help="binary masking to avoid labelling two adjacent background fragments as 'merge'")
+p.add('--new_edge_attr_trinary', type=str, help='trinary value: merge, do not merge, unknown')
+
 # [DATA]
 p.add(
     '--background_id',
@@ -47,6 +53,7 @@ p.add(
 p.add('--num_workers', type=int, help='number of daisy subprocesses')
 p.add('--block_size', type=int, nargs='+',
       help='block size used for processing fragments')
+p.add('--padding', type=str, help='padding used for fragment creation. Not used at the moment')
 
 # [MISCELLANEOUS]
 p.add(
@@ -60,7 +67,6 @@ p.add(
         'DEBUG',
         'NOTSET'],
     help='basic logging level')
-
 
 config = p.parse_args()
 logging.info(f"\n{p.format_values()}")

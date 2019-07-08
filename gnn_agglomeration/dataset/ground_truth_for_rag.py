@@ -130,35 +130,50 @@ def update_rag_db_with_gt(gt):
     nx.set_node_attributes(graph, values=gt, name=config.new_node_attr)
 
     # Two binary values:
-    # - merge_ground_truth is 1 if two fragments have the same id, 0 otherwise
-    # - merge_labeled is 1 if two fragment ids are non-zero and the same, 0 otherwise
+    # - gt_merge_score is 0 if two fragments have the same id, 1 otherwise (lower means merge earlier)
+    # - merge_labeled is 0 if both fragments are background, 1 otherwise
+
+    # Trinary value: gt_merge_score_trinary
 
     edge_gt = {}
     edge_labeled = {}
+    edge_gt_trinary = {}
 
     start = time.time()
     for u, v in graph.edges(data=False):
         if u not in gt or v not in gt:
-            edge_label = 0
-            labeled = 0
+            # maybe edges going out of the ROI
+            # TODO careful with this edge case
+            logger.warning(f'nodes of edge {u} - {v} not contained in overlap ground truth')
+            continue
         else:
             if gt[u] == gt[v]:
-                edge_label = 1
-            else:
                 edge_label = 0
+            else:
+                edge_label = 1
 
             if gt[u] == config.background_id and gt[v] == config.background_id:
                 labeled = 0
             else:
                 labeled = 1
 
+            # TODO either trinary- or two-binaries-solution
+            if gt[u] == config.background_id and gt[v] == config.background_id:
+                gt_trinary = None
+            elif gt[u] == gt[v]:
+                gt_trinary = 0
+            else:
+                gt_trinary = 1
+
         edge_gt[(u, v)] = edge_label
         edge_labeled[(u, v)] = labeled
+        edge_gt_trinary[(u, v)] = gt_trinary
 
     logger.debug(f"Computed edge ground truth in {time.time() - start:.3f} s")
 
     nx.set_edge_attributes(graph, values=edge_gt, name=config.new_edge_attr)
     nx.set_edge_attributes(graph, values=edge_labeled, name=config.new_edge_masking)
+    nx.set_edge_attributes(graph, values=edge_gt_trinary, name=config.new_edge_attr_trinary)
 
     start = time.time()
     graph.update_node_attrs(roi=roi, attributes=[config.new_node_attr])
@@ -166,7 +181,7 @@ def update_rag_db_with_gt(gt):
 
     start = time.time()
     graph.update_edge_attrs(roi=roi, attributes=[
-                            config.new_edge_attr, config.new_edge_masking])
+                            config.new_edge_attr, config.new_edge_masking, config.new_edge_attr_trinary])
     logger.debug(f"Updated edges in {time.time() - start:.3f} s")
 
 
