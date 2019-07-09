@@ -13,18 +13,15 @@ logger.setLevel(logging.INFO)
 
 class HemibrainDatasetBlockwise(HemibrainDataset):
     def __init__(self, root, config, roi_offset, roi_shape, length=None):
-        self.config = config
-        self.roi_offset = roi_offset
-        self.roi_shape = roi_shape
+        super(HemibrainDatasetBlockwise, self).__init__(
+            root=root,
+            config=config,
+            roi_offset=roi_offset,
+            roi_shape=roi_shape,
+            length=length
+        )
 
-        transform = getattr(T, config.data_transform)(norm=True, cat=True)
-        super(HemibrainDataset, self).__init__(
-            root=root, transform=transform, pre_transform=None)
-
-        self.pad_total_roi()
         self.define_block_offsets()
-        self.connect_to_db()
-
 
     def define_block_offsets(self):
         """
