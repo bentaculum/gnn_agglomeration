@@ -81,30 +81,33 @@ def main(_config, _run, _log):
     # create and load datasets
     if config.dataset_type == 'HemibrainDataset':
         train_dataset = HemibrainDatasetRandom(
-            root=config.dataset_abs_path,
+            root=config.dataset_abs_path_train,
             config=config,
             roi_offset=config.train_roi_offset,
             roi_shape=config.train_roi_shape,
-            length=config.samples
+            length=config.samples,
+            save_processed=config.save_processed_train
         )
 
         validation_dataset = HemibrainDatasetBlockwise(
-            root=config.dataset_abs_path,
+            root=config.dataset_abs_path_val,
             config=config,
             roi_offset=config.val_roi_offset,
-            roi_shape=config.val_roi_shape
+            roi_shape=config.val_roi_shape,
+            save_processed=config.save_processed_val
         )
 
         test_dataset = HemibrainDatasetBlockwise(
-            root=config.dataset_abs_path,
+            root=config.dataset_abs_path_test,
             config=config,
             roi_offset=config.test_roi_offset,
-            roi_shape=config.test_roi_shape
+            roi_shape=config.test_roi_shape,
+            save_processed=config.save_processed_test
         )
 
     else:
         dataset = globals()[config.dataset_type](
-            root=config.dataset_abs_path, config=config)
+            root=config.dataset_abs_path_train, config=config)
         # split into train and test
         split_train_idx = int(
             config.samples * (1 - config.test_split - config.validation_split))

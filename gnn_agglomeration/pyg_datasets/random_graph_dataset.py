@@ -52,11 +52,11 @@ class RandomGraphDataset(InMemoryDataset, ABC):
         data, slices = self.collate(data_list)
         torch.save((data, slices), self.processed_paths[0])
 
-        with open(os.path.join(self.config.dataset_abs_path, 'config.json'), 'w') as f:
+        with open(os.path.join(self.root, 'config.json'), 'w') as f:
             json.dump(vars(self.config), f)
 
     def check_dataset_vs_config(self):
-        with open(os.path.join(self.config.dataset_abs_path, 'config.json'), 'r') as json_file:
+        with open(os.path.join(self.root, 'config.json'), 'r') as json_file:
             data_config = json.load(json_file)
         run_conf_dict = vars(self.config)
         for key in self.check_config_vars:

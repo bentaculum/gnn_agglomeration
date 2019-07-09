@@ -5,24 +5,33 @@ import numpy as np
 import daisy
 import configparser
 from abc import ABC, abstractmethod
+import logging
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 class HemibrainDataset(Dataset, ABC):
-    def __init__(self, root, config, roi_offset, roi_shape, length=None):
+    def __init__(self, root, config, roi_offset, roi_shape, length=None, save_processed=False):
         self.config = config
         self.roi_offset = roi_offset
         self.roi_shape = roi_shape
         self.len = length
+        self.save_processed = save_processed
+
+        self.pad_total_roi()
+        self.connect_to_db()
+        self.prepare()
 
         transform = getattr(T, config.data_transform)(norm=True, cat=True)
         super(HemibrainDataset, self).__init__(
             root=root, transform=transform, pre_transform=None)
 
-        self.pad_total_roi()
-        self.connect_to_db()
-
         # TODO possible?
         # self.check_dataset_vs_config()
+
+    def prepare(self):
+        pass
 
     def pad_total_roi(self):
         # pad the entire volume, padded area not part of total roi any more
@@ -63,16 +72,32 @@ class HemibrainDataset(Dataset, ABC):
 
     @property
     def processed_file_names(self):
-        return ['processed_data.pt']
+        return [f'processed_data_{i}.pt' for i in range(self.len)]
+
+    def process(self):
+        logger.info(f'Writing dataset to {root} ...')
+        for i in range(self.len):
+            data = self.get_from_db(i)
+            torch.save(data, self.processed_paths[i])
+
+        # with open(os.path.join(self.config.dataset_abs_path, 'config.json'), 'w') as f:
+        #     json.dump(vars(self.config), f)
 
     def _download(self):
         pass
 
     def _process(self):
-        pass
+        if self.save_processed:
+            super()._process()
+
+    def get(self, idx):
+        if self.save_processed:
+            return torch.load(self.processed_paths[idx])
+        else:
+            return self.get_from_db(idx)
 
     @abstractmethod
-    def get(self, idx):
+    def get_from_db(self, idx):
         pass
 
     # TODO not necessary unless I save the processed graphs to file again

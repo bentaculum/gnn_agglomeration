@@ -1,5 +1,4 @@
 import torch
-import torch_geometric.transforms as T
 import numpy as np
 import logging
 
@@ -12,15 +11,8 @@ logger.setLevel(logging.INFO)
 
 
 class HemibrainDatasetBlockwise(HemibrainDataset):
-    def __init__(self, root, config, roi_offset, roi_shape, length=None):
-        super(HemibrainDatasetBlockwise, self).__init__(
-            root=root,
-            config=config,
-            roi_offset=roi_offset,
-            roi_shape=roi_shape,
-            length=length
-        )
 
+    def prepare(self):
         self.define_block_offsets()
 
     def define_block_offsets(self):
@@ -29,12 +21,13 @@ class HemibrainDatasetBlockwise(HemibrainDataset):
         are local attributes
         """
 
-        logger.info(f'block size: {self.config.block_size}')
+        logger.debug(f'block size: {self.config.block_size}')
         logger.debug(f'padding: {self.config.block_padding}')
 
         blocks_per_dim = (np.array(self.roi_shape) / np.array(self.config.block_size)).astype(int)
-        logger.info(f'blocks per dim: {blocks_per_dim}')
-        self.len = int(np.sum(blocks_per_dim))
+        logger.debug(f'blocks per dim: {blocks_per_dim}')
+        self.len = int(np.prod(blocks_per_dim))
+        logger.info(f'num blocks in dataset: {self.len}')
 
         self.block_offsets = []
 
@@ -46,11 +39,13 @@ class HemibrainDatasetBlockwise(HemibrainDataset):
                         self.config.block_size, dtype=np.int_)
                     self.block_offsets.append(block_offset_new)
 
-    def get(self, idx):
+    def get_from_db(self, idx):
         """
         block size from global config file, roi_offset and roi_shape
         are local attributes
         """
+
+        # TODO remove duplicate code
 
         # Get precomputed block offset, pad the block
         inner_offset = self.block_offsets[idx]

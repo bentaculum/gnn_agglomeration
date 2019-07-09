@@ -5,13 +5,16 @@ from .hemibrain_dataset import HemibrainDataset
 from .hemibrain_graph_unmasked import HemibrainGraphUnmasked
 from .hemibrain_graph_masked import HemibrainGraphMasked
 
+
 class HemibrainDatasetRandom(HemibrainDataset):
 
-    def get(self, idx):
+    def get_from_db(self, idx):
         """
         block size from global config file, roi_offset and roi_shape
         are local attributes
         """
+
+        # TODO remove duplicate code
 
         random_offset = np.zeros(3, dtype=np.int_)
         random_offset[0] = np.random.randint(

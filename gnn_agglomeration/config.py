@@ -93,10 +93,22 @@ class Config:
         self.default['dataset_type'] = 'HemibrainDataset'
 
         self.parser.add_argument(
-            '--dataset_path',
+            '--dataset_path_train',
             type=str,
-            help='the directory to read the Dataset from')
-        self.default['dataset_path'] = 'data/example_latest'
+            help='the directory to read the training dataset from')
+        self.default['dataset_path_train'] = 'data/default_train'
+
+        self.parser.add_argument(
+            '--dataset_path_val',
+            type=str,
+            help='the directory to read the validation dataset from')
+        self.default['dataset_path_val'] = 'data/default_val'
+
+        self.parser.add_argument(
+            '--dataset_path_test',
+            type=str,
+            help='the directory to read the test dataset from')
+        self.default['dataset_path_test'] = 'data/default_test'
 
         self.parser.add_argument(
             '--run_path',
@@ -589,6 +601,24 @@ class Config:
             help='whether to pin memory for pre-fetching')
         self.default['dataloader_pin_memory'] = False
 
+        self.parser.add_argument(
+            '--save_processed_train',
+            type=str2bool,
+            help='whether to store the processed training dataset to file')
+        self.default['save_processed_train'] = False
+
+        self.parser.add_argument(
+            '--save_processed_val',
+            type=str2bool,
+            help='whether to store the processed validation dataset to file')
+        self.default['save_processed_val'] = False
+
+        self.parser.add_argument(
+            '--save_processed_test',
+            type=str2bool,
+            help='whether to store the processed test dataset to file')
+        self.default['save_processed_test'] = False
+
     def localhost(self):
         return {
             'mongo_url': 'localhost:27017',
@@ -684,8 +714,13 @@ class Config:
         # set the absolute paths in the config file
         config['run_abs_path'] = os.path.join(
             config['root_dir'], config['run_path'], rel_run_path)
-        config['dataset_abs_path'] = os.path.join(
-            config['root_dir'], config['dataset_path'])
+        config['dataset_abs_path_train'] = os.path.join(
+            config['root_dir'], config['dataset_path_train'])
+        config['dataset_abs_path_val'] = os.path.join(
+            config['root_dir'], config['dataset_path_val'])
+        config['dataset_abs_path_test'] = os.path.join(
+            config['root_dir'], config['dataset_path_test'])
+
         config.update(getattr(self, config['machine'])())
 
         return config, remaining_args
