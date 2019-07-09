@@ -144,7 +144,8 @@ def update_rag_db_with_gt(gt):
         if u not in gt or v not in gt:
             # maybe edges going out of the ROI
             # TODO careful with this edge case
-            logger.warning(f'nodes of edge {u} - {v} not contained in overlap ground truth')
+            logger.warning(
+                f'nodes of edge {u} - {v} not contained in overlap ground truth')
             continue
         else:
             if gt[u] == gt[v]:
@@ -172,8 +173,10 @@ def update_rag_db_with_gt(gt):
     logger.debug(f"Computed edge ground truth in {time.time() - start:.3f} s")
 
     nx.set_edge_attributes(graph, values=edge_gt, name=config.new_edge_attr)
-    nx.set_edge_attributes(graph, values=edge_labeled, name=config.new_edge_masking)
-    nx.set_edge_attributes(graph, values=edge_gt_trinary, name=config.new_edge_attr_trinary)
+    nx.set_edge_attributes(graph, values=edge_labeled,
+                           name=config.new_edge_masking)
+    nx.set_edge_attributes(graph, values=edge_gt_trinary,
+                           name=config.new_edge_attr_trinary)
 
     start = time.time()
     graph.update_node_attrs(roi=roi, attributes=[config.new_node_attr])
@@ -188,16 +191,19 @@ def update_rag_db_with_gt(gt):
 def save_to_lookup_table(gt):
     # TODO check data type
     start = time.time()
-    lut = np.array([list(gt.keys()), list(gt.values)])
+    lut = np.array([list(gt.keys()), list(gt.values())])
 
     # stick to naming convention for re-using lsd experiments script
-    filename = 'seg_%s_%d' % (config.edges_collection, int(config.threshold_overlap * 100))
+    filename = 'seg_%s_%d' % (config.edges_collection,
+                              int(config.threshold_overlap * 100))
     if not os.path.isdir(os.path.join(config.fragments_zarr, config.lut_out_path)):
         os.makedirs(os.path.join(config.fragments_zarr, config.lut_out_path))
-    out_file = os.path.join(config.fragments_zarr, config.lut_out_path, filename)
+    out_file = os.path.join(config.fragments_zarr,
+                            config.lut_out_path, filename)
 
     np.savez_compressed(out_file, fragment_segment_lut=lut)
-    logger.debug(f"Saved overlap relabelling to LUT in {time.time() - start:.3f} s")
+    logger.debug(
+        f"Saved overlap relabelling to LUT in {time.time() - start:.3f} s")
 
 
 if __name__ == '__main__':
