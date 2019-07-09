@@ -261,7 +261,7 @@ def main(_config, _run, _log):
 
         # final print routine
         print('')
-        dataset.print_summary()
+        train_dataset.print_summary()
         print('Total number of parameters: {}'.format(total_params))
         print('Mean train loss ({0} samples): {1:.3f}'.format(
             train_dataset.__len__(),
