@@ -577,6 +577,18 @@ class Config:
             help='which type of graph to extract from db')
         self.default['graph_type'] = 'HemibrainGraphUnmasked'
 
+        self.parser.add_argument(
+            '--num_workers',
+            type=int,
+            help='number of workers for tasks that are split into python subprocesses')
+        self.default['num_workers'] = 5
+
+        self.parser.add_argument(
+            '--dataloader_pin_memory',
+            type=str2bool,
+            help='whether to pin memory for pre-fetching')
+        self.default['dataloader_pin_memory'] = False
+
     def localhost(self):
         return {
             'mongo_url': 'localhost:27017',

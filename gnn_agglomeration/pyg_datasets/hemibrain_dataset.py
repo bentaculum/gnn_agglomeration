@@ -54,7 +54,6 @@ class HemibrainDataset(Dataset, ABC):
                 'center_y',
                 'center_x'])
 
-
     def __len__(self):
         return self.len
 

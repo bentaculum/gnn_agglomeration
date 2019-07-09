@@ -34,7 +34,6 @@ from gnn_agglomeration.pyg_datasets.hemibrain_dataset_random import HemibrainDat
 from gnn_agglomeration.pyg_datasets.hemibrain_dataset_blockwise import HemibrainDatasetBlockwise
 
 
-
 @ex.main
 @ex.capture
 @LogFileWriter(ex)
@@ -129,11 +128,11 @@ def main(_config, _run, _log):
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    # TODO Shuffling necessary for data straight from database?
     data_loader_train = DataLoader(
-        train_dataset, batch_size=config.batch_size_train, shuffle=True)
+        train_dataset, batch_size=config.batch_size_train, shuffle=False, num_workers=config.num_workers,
+        pin_memory=config.dataloader_pin_memory)
     data_loader_validation = DataLoader(
-        validation_dataset, batch_size=config.batch_size_eval, shuffle=False)
+        validation_dataset, batch_size=config.batch_size_eval, shuffle=False, num_workers=config.num_workers)
 
     if not config.load_model:
         model = globals()[config.model](
@@ -236,7 +235,7 @@ def main(_config, _run, _log):
 
         # test loss
         data_loader_test = DataLoader(
-            test_dataset, batch_size=config.batch_size_eval, shuffle=False)
+            test_dataset, batch_size=config.batch_size_eval, shuffle=False, num_workers=config.num_workers)
         test_loss = 0.0
         test_metric = 0.0
         nr_nodes_test = 0
