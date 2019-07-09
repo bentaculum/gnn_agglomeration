@@ -22,8 +22,16 @@ class ModelType(torch.nn.Module, ABC):
         pass
 
     @abstractmethod
-    def loss(self, inputs, targets):
+    def loss_one_by_one(self, inputs, targets):
         pass
+
+    def loss(self, inputs, targets, mask):
+        l = self.loss_one_by_one(inputs, targets)
+        # in pyg, the graphs in a mini-batch get merged on dimension 0
+        # TODO remove assert statement
+        assert l.size(0) == mask.size(0)
+
+        return torch.mean(l * mask, dim=0, keepdim=False)
 
     @abstractmethod
     def out_to_predictions(self, out):

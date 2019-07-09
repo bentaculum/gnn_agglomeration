@@ -56,6 +56,7 @@ class CountNeighborsGraph(MyGraph):
         self.edge_index = edge_index
         self.y = y
         self.pos = pos
+        self.mask = torch.ones_like(self.y, dtype=torch.float)
 
     def plot(self):
         # TODO adapt

@@ -19,14 +19,14 @@ class RegressionProblem(ModelType):
     def out_nonlinearity(self, x):
         return x
 
-    def loss(self, inputs, targets):
+    def loss_one_by_one(self, inputs, targets):
         # TODO standardizing on the fly might be costly
         inputs = inputs.squeeze()
         targets = targets.float()
         if self.config.standardize_targets:
             targets = (targets - self.config.targets_mean) / \
                 self.config.targets_std
-        return F.mse_loss(inputs, targets, reduction='mean')
+        return F.mse_loss(inputs, targets, reduction='none')
 
     def out_to_predictions(self, out):
         out = out.squeeze()

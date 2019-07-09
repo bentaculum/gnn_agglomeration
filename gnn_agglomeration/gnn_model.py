@@ -48,9 +48,9 @@ class GnnModel(torch.nn.Module, ABC):
     def forward(self, data):
         pass
 
-    def loss(self, inputs, targets):
+    def loss(self, inputs, targets, mask):
         self.current_loss = self.model_type.loss(
-            inputs=inputs, targets=targets)
+            inputs=inputs, targets=targets, mask=mask)
         self.write_to_variable_summary(
             self.current_loss, 'out_layer', self.model_type.loss_name)
         return self.current_loss
@@ -89,7 +89,7 @@ class GnnModel(torch.nn.Module, ABC):
 
     def evaluate(self, data):
         out = self.forward(data)
-        _ = self.loss(out, data.y)
+        _ = self.loss(out, data.y, data.mask)
         return self.current_loss
 
     def train(self, mode=True):

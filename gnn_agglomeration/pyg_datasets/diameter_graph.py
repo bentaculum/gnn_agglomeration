@@ -140,6 +140,7 @@ class DiameterGraph(MyGraph):
         self.edge_attr = torch.tensor(affinities_list, dtype=torch.float)
         self.y = torch.tensor(class_list, dtype=torch.long)
         self.pos = pos_list
+        self.mask = torch.ones_like(self.y, dtype=torch.float)
 
     def plot_predictions(self, config, pred, graph_nr, run, acc, logger):
         # add the positions in euclidian space to the model

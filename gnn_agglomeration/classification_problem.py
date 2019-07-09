@@ -18,8 +18,8 @@ class ClassificationProblem(ModelType):
     def out_nonlinearity(self, x):
         return F.log_softmax(x, dim=1)
 
-    def loss(self, inputs, targets):
-        return F.nll_loss(inputs, targets, reduction='mean')
+    def loss_one_by_one(self, inputs, targets):
+        return F.nll_loss(inputs, targets, reduction='none')
 
     def out_to_predictions(self, out):
         _, pred = out.max(dim=1)

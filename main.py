@@ -218,7 +218,7 @@ def main(_config, _run, _log):
             data_ft = data_ft.to(device)
             out_ft = model(data_ft)
             final_loss_train += model.loss(out_ft,
-                                           data_ft.y).item() * data_ft.num_nodes
+                                           data_ft.y, data_ft.mask).item() * data_ft.num_nodes
             final_metric_train += model.out_to_metric(
                 out_ft, data_ft.y) * data_ft.num_nodes
             final_nr_nodes_train += data_ft.num_nodes
@@ -247,7 +247,7 @@ def main(_config, _run, _log):
             data_fe = data_fe.to(device)
             out_fe = model(data_fe)
             test_loss += model.loss(out_fe,
-                                    data_fe.y).item() * data_fe.num_nodes
+                                    data_fe.y, data_fe.mask).item() * data_fe.num_nodes
             test_metric += model.out_to_metric(out_fe,
                                                data_fe.y) * data_fe.num_nodes
             nr_nodes_test += data_fe.num_nodes
@@ -344,7 +344,7 @@ def main(_config, _run, _log):
             # call the forward method
             out = model(data)
 
-            loss = model.loss(out, data.y)
+            loss = model.loss(out, data.y, data.mask)
             model.print_current_loss(epoch, batch_i, _log)
             epoch_loss += loss.item() * data.num_nodes
             epoch_metric_train += model.out_to_metric(
@@ -391,7 +391,7 @@ def main(_config, _run, _log):
         for batch_i, data in enumerate(data_loader_validation):
             data = data.to(device)
             out = model(data)
-            loss = model.loss(out, data.y)
+            loss = model.loss(out, data.y, data.mask)
             model.print_current_loss(
                 epoch, 'validation {}'.format(batch_i), _log)
             validation_loss += loss.item() * data.num_nodes

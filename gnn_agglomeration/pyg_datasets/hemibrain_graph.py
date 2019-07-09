@@ -29,10 +29,14 @@ class HemibrainGraph(Data, ABC):
         # columns in desired order
         # TODO account for directed edges
         # TODO parametrize the used names
-        df_edges = df_edges[['u', 'v', 'merge_score', 'merge_ground_truth', 'merge_labeled']]
-        df_edges['merge_score'] = df_edges['merge_score'].astype(np.float32)
-        df_edges['merge_ground_truth'] = df_edges['merge_ground_truth'].astype(np.int_)
-        df_edges['merge_labeled'] = df_edges['merge_ground_truth'].astype(np.int_)
+        merge_score_field = 'merge_score'
+        gt_merge_score_field = 'gt_merge_score'
+        merge_labeled_field = 'merge_labeled'
+
+        df_edges = df_edges[['u', 'v', merge_score_field, gt_merge_score_field, merge_labeled_field]]
+        df_edges[merge_score_field] = df_edges[merge_score_field].astype(np.float32)
+        df_edges[gt_merge_score_field] = df_edges[gt_merge_score_field].astype(np.int_)
+        df_edges[merge_labeled_field] = df_edges[merge_labeled_field].astype(np.int_)
 
         nodes_remap = dict(zip(df_nodes['id'], range(len(df_nodes))))
         node_ids = torch.tensor(df_nodes['id'].values, dtype=torch.long)
@@ -53,7 +57,7 @@ class HemibrainGraph(Data, ABC):
         edge_index_dir[1::2, :] = np.flip(edge_index_dir[1::2, :], axis=1)
         edge_index = torch.tensor(edge_index_dir.transpose(), dtype=torch.long)
 
-        edge_attr_undir = df_edges['merge_score'].values
+        edge_attr_undir = df_edges[merge_score_field].values
         edge_attr_dir = np.repeat(edge_attr_undir, 2, axis=0)
         edge_attr = torch.tensor(edge_attr_dir, dtype=torch.float)
 
@@ -63,8 +67,8 @@ class HemibrainGraph(Data, ABC):
         x = torch.ones(len(df_nodes), 1, dtype=torch.float)
 
         # Targets operate on undirected edges, therefore no duplicate necessary
-        mask = torch.tensor(df_edges['merge_labeled'].values, dtype=torch.long)
-        y = torch.tensor(df_edges['merge_ground_truth'].values, dtype=torch.long)
+        mask = torch.tensor(df_edges[merge_labeled_field].values, dtype=torch.float)
+        y = torch.tensor(df_edges[gt_merge_score_field].values, dtype=torch.long)
 
         return edge_index, edge_attr, x, pos, node_ids, mask, y
 

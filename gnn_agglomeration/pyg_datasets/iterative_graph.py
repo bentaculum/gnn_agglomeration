@@ -221,6 +221,7 @@ class IterativeGraph(MyGraph):
             self.y = torch.tensor(class_list, dtype=torch.long)
 
         self.pos = torch.tensor(pos_list, dtype=torch.float)
+        self.mask = torch.ones_like(self.y, dtype=torch.float)
 
     def plot_predictions(self, config, pred, graph_nr, run, acc, logger):
         # add the positions in euclidian space to the model
