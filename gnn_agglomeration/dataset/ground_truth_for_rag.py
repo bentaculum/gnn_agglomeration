@@ -191,7 +191,7 @@ def update_rag_db_with_gt(gt):
 def save_to_lookup_table(gt):
     # TODO check data type
     start = time.time()
-    lut = np.array([list(gt.keys()), list(gt.values())])
+    lut = np.array([list(gt.keys()), list(gt.values())], dtype=np.uint64)
 
     # stick to naming convention for re-using lsd experiments script
     filename = 'seg_%s_%d' % (config.edges_collection,

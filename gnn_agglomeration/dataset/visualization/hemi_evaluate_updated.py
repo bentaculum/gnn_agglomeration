@@ -40,9 +40,11 @@ mtlsd_segmentation_benjamin = [
     daisy.open_ds(output_file, f'volumes/segmentation_benjamin/s{i}') for i in range(9)
 ]
 
-mtlsd_frags_best_effort = [
-    daisy.open_ds(output_file, f'volumes/fragment_best_effort/s{i}') for i in range(9)
-]
+# mtlsd_frags_best_effort = [
+# daisy.open_ds(output_file, f'volumes/fragment_best_effort/s{i}') for i in range(9)
+# ]
+mtlsd_frags_best_effort = daisy.open_ds(
+    output_file, 'volumes/fragments_gt_best_effort')
 
 # mtlsd_seg = [
 # daisy.open_ds(f, 'volumes/segmentation_64/s%d' % s)
@@ -55,11 +57,11 @@ with viewer.txn() as s:
     add_layer(s, raw, 'raw')
 
     add_layer(s, mtlsd_frags_best_effort, 'mtlsd frags best effort')
+    add_layer(s, mtlsd_frags, 'mtlsd frags')
     add_layer(s, mtlsd_segmentation_benjamin, 'mtlsd segmentation benjamin')
     # does not work
     # add_layer(s, gt, 'original gt')
     add_layer(s, relabelled, 'relabelled gt')
     # add_layer(s, mtlsd_affs, 'mtlsd affs', shader='rgb')
-    add_layer(s, mtlsd_frags, 'mtlsd frags')
     # add_layer(s, mtlsd_seg, 'mtlsd seg')
 print(viewer)

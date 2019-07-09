@@ -73,7 +73,7 @@ def extract_segmentation(
     lut_dir = os.path.join(
         fragments_file,
         'luts',
-        'fragment_to_segment_benjamin')
+        'fragment_to_overlap_gt')
 
     if run_type:
         lut_dir = os.path.join(lut_dir, run_type)
