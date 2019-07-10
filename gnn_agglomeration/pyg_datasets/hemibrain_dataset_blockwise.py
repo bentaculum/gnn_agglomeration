@@ -60,6 +60,4 @@ class HemibrainDatasetBlockwise(HemibrainDataset):
             inner_block_shape=self.config.block_size,
         )
 
-        # TODO dynamic data augmentation
-
         return graph

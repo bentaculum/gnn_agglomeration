@@ -619,6 +619,19 @@ class Config:
             help='whether to store the processed test dataset to file')
         self.default['save_processed_test'] = False
 
+        self.parser.add_argument(
+            '--data_augmentation',
+            type=str,
+            help='either a transform from pytorch geometric or a custom combination of such')
+        self.default['data_augmentation'] = 'augment_hemibrain'
+
+        self.parser.add_argument(
+            '--augment_translate_limit',
+            type=positive_int,
+            nargs=3,
+            help='maximal absolute translation for each dimension, in nanometers')
+        self.default['augment_translate_limit'] = [80, 80, 80]
+
     def localhost(self):
         return {
             'mongo_url': 'localhost:27017',
