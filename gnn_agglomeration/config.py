@@ -12,6 +12,7 @@ class SortingHelpFormatter(argparse.HelpFormatter):
     """
     sort arguments when listed on the command line via --help option
     """
+
     def add_arguments(self, actions):
         actions = sorted(actions, key=attrgetter('option_strings'))
         super(SortingHelpFormatter, self).add_arguments(actions)
@@ -512,14 +513,14 @@ class Config:
             type=positive_int,
             nargs=3,
             help='ROI size, starting at roi_offset')
-        self.default['train_roi_shape'] = [11800 - 2*1180, 11800, 11800]
+        self.default['train_roi_shape'] = [11800 - 2 * 1180, 11800, 11800]
 
         self.parser.add_argument(
             '--val_roi_offset',
             type=positive_int,
             nargs=3,
             help='ROI absolute position of lower vertex')
-        self.default['val_roi_offset'] = [140800 + 8*1180, 205120, 198400]
+        self.default['val_roi_offset'] = [140800 + 8 * 1180, 205120, 198400]
 
         self.parser.add_argument(
             '--val_roi_shape',
@@ -533,7 +534,7 @@ class Config:
             type=positive_int,
             nargs=3,
             help='ROI absolute position of lower vertex')
-        self.default['test_roi_offset'] = [140800 + 9*1180, 205120, 198400]
+        self.default['test_roi_offset'] = [140800 + 9 * 1180, 205120, 198400]
 
         self.parser.add_argument(
             '--test_roi_shape',
@@ -632,6 +633,12 @@ class Config:
             nargs=3,
             help='maximal absolute translation for each dimension, in nanometers')
         self.default['augment_translate_limit'] = [80, 80, 80]
+
+        self.parser.add_argument(
+            '--edge_attr_noise_std',
+            type=float,
+            help='standard deviation of noise distribution for edge attributes. If 0, no noise is added.')
+        self.default['edge_attr_noise_std'] = 0.0
 
     def localhost(self):
         return {
