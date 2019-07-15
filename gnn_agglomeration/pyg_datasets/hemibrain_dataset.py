@@ -6,6 +6,7 @@ import daisy
 import configparser
 from abc import ABC, abstractmethod
 import logging
+from tqdm import tqdm
 
 from ..data_transforms.augment_hemibrain import AugmentHemibrain
 
@@ -80,7 +81,8 @@ class HemibrainDataset(Dataset, ABC):
 
     def process(self):
         logger.info(f'Writing dataset to {root} ...')
-        for i in range(self.len):
+        # TODO use multiprocessing here to speed it up
+        for i in tqdm(range(self.len)):
             data = self.get_from_db(i)
             torch.save(data, self.processed_paths[i])
 
