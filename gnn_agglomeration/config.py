@@ -97,19 +97,19 @@ class Config:
             '--dataset_path_train',
             type=str,
             help='the directory to read the training dataset from')
-        self.default['dataset_path_train'] = 'data/default_train'
+        self.default['dataset_path_train'] = 'data/hemi/12_micron_cube/default_train'
 
         self.parser.add_argument(
             '--dataset_path_val',
             type=str,
             help='the directory to read the validation dataset from')
-        self.default['dataset_path_val'] = 'data/default_val'
+        self.default['dataset_path_val'] = 'data/hemi/12_micron_cube/default_val'
 
         self.parser.add_argument(
             '--dataset_path_test',
             type=str,
             help='the directory to read the test dataset from')
-        self.default['dataset_path_test'] = 'data/default_test'
+        self.default['dataset_path_test'] = 'data/hemi/12_micron_cube/default_test'
 
         self.parser.add_argument(
             '--run_path',
