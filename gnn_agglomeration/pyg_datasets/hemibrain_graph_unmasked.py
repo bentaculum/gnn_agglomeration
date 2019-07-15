@@ -12,7 +12,13 @@ class HemibrainGraphUnmasked(HemibrainGraph):
 
     # can't overwrite __init__ using different args than base class
 
-    def read_and_process(self, graph_provider, block_offset, block_shape, inner_block_offset, inner_block_shape):
+    def read_and_process(
+            self,
+            graph_provider,
+            block_offset,
+            block_shape,
+            inner_block_offset,
+            inner_block_shape):
         logger.debug(
             'read\n'
             f'\tblock offset: {block_offset}\n'
@@ -29,9 +35,9 @@ class HemibrainGraphUnmasked(HemibrainGraph):
             raise ValueError('No edges found in roi %s' % roi)
 
         self.edge_index, \
-        self.edge_attr, \
-        self.x, \
-        self.pos, \
-        self.node_ids, \
-        self.mask, \
-        self.y = self.parse_rag_excerpt(node_attrs, edge_attrs)
+            self.edge_attr, \
+            self.x, \
+            self.pos, \
+            self.node_ids, \
+            self.mask, \
+            self.y = self.parse_rag_excerpt(node_attrs, edge_attrs)

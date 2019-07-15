@@ -27,10 +27,10 @@ def downscale_block(in_array, out_array, factor, block):
 
     n_channels = len(in_data.shape) - dims
     if n_channels >= 1:
-        factor = (1,)*n_channels + factor
+        factor = (1,) * n_channels + factor
 
     if in_data.dtype == np.uint64:
-        slices = tuple(slice(k//2, None, k) for k in factor)
+        slices = tuple(slice(k // 2, None, k) for k in factor)
         out_data = in_data[slices]
     else:
         out_data = skimage.measure.block_reduce(in_data, factor, np.mean)
@@ -49,7 +49,7 @@ def downscale(in_array, out_array, factor, write_size):
     print("Downsampling by factor %s" % (factor,))
 
     dims = in_array.roi.dims()
-    block_roi = daisy.Roi((0,)*dims, write_size)
+    block_roi = daisy.Roi((0,) * dims, write_size)
 
     print("Processing ROI %s with blocks %s" % (out_array.roi, block_roi))
 
@@ -114,13 +114,13 @@ def create_scale_pyramid(in_file, in_ds_name, scales, chunk_shape):
         try:
             scale = daisy.Coordinate(scale)
         except Exception:
-            scale = daisy.Coordinate((scale,)*chunk_shape.dims())
+            scale = daisy.Coordinate((scale,) * chunk_shape.dims())
 
-        next_voxel_size = prev_array.voxel_size*scale
+        next_voxel_size = prev_array.voxel_size * scale
         next_total_roi = prev_array.roi.snap_to_grid(
             next_voxel_size,
             mode='grow')
-        next_write_size = chunk_shape*next_voxel_size
+        next_write_size = chunk_shape * next_voxel_size
 
         print("Next voxel size: %s" % (next_voxel_size,))
         print("Next total ROI: %s" % next_total_roi)

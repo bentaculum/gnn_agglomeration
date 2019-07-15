@@ -24,7 +24,8 @@ class HemibrainDatasetBlockwise(HemibrainDataset):
         logger.debug(f'block size: {self.config.block_size}')
         logger.debug(f'padding: {self.config.block_padding}')
 
-        blocks_per_dim = (np.array(self.roi_shape) / np.array(self.config.block_size)).astype(int)
+        blocks_per_dim = (np.array(self.roi_shape) /
+                          np.array(self.config.block_size)).astype(int)
         logger.debug(f'blocks per dim: {blocks_per_dim}')
         self.len = int(np.prod(blocks_per_dim))
         logger.info(f'num blocks in dataset: {self.len}')
@@ -49,7 +50,8 @@ class HemibrainDatasetBlockwise(HemibrainDataset):
 
         # Get precomputed block offset, pad the block
         inner_offset = self.block_offsets[idx]
-        outer_offset, outer_shape = self.pad_block(inner_offset, self.config.block_size)
+        outer_offset, outer_shape = self.pad_block(
+            inner_offset, self.config.block_size)
 
         graph = globals()[self.config.graph_type]()
         graph.read_and_process(

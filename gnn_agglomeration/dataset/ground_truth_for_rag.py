@@ -183,8 +183,12 @@ def update_rag_db_with_gt(gt):
     logger.debug(f"Updated nodes in {time.time() - start:.3f} s")
 
     start = time.time()
-    graph.update_edge_attrs(roi=roi, attributes=[
-                            config.new_edge_attr, config.new_edge_masking, config.new_edge_attr_trinary])
+    graph.update_edge_attrs(
+        roi=roi,
+        attributes=[
+            config.new_edge_attr,
+            config.new_edge_masking,
+            config.new_edge_attr_trinary])
     logger.debug(f"Updated edges in {time.time() - start:.3f} s")
 
 
@@ -196,7 +200,10 @@ def save_to_lookup_table(gt):
     # stick to naming convention for re-using lsd experiments script
     filename = 'seg_%s_%d' % (config.edges_collection,
                               int(config.threshold_overlap * 100))
-    if not os.path.isdir(os.path.join(config.fragments_zarr, config.lut_out_path)):
+    if not os.path.isdir(
+        os.path.join(
+            config.fragments_zarr,
+            config.lut_out_path)):
         os.makedirs(os.path.join(config.fragments_zarr, config.lut_out_path))
     out_file = os.path.join(config.fragments_zarr,
                             config.lut_out_path, filename)

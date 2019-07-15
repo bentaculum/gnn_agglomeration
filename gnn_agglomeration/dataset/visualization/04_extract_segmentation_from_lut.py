@@ -68,7 +68,7 @@ def extract_segmentation(
         dtype=np.uint64,
         write_roi=write_roi)
 
-    lut_filename = 'seg_%s_%d' % (edges_collection, int(threshold*100))
+    lut_filename = 'seg_%s_%d' % (edges_collection, int(threshold * 100))
 
     lut_dir = os.path.join(
         fragments_file,

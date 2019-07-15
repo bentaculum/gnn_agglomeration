@@ -37,12 +37,14 @@ mtlsd_frags = [
 ]
 
 mtlsd_segmentation_benjamin = [
-    daisy.open_ds(output_file, f'volumes/segmentation_benjamin/s{i}') for i in range(9)
-]
+    daisy.open_ds(
+        output_file,
+        f'volumes/segmentation_benjamin/s{i}') for i in range(9)]
 
 mtlsd_frags_best_effort = [
-    daisy.open_ds(output_file, f'volumes/fragments_gt_best_effort/s{i}') for i in range(9)
-]
+    daisy.open_ds(
+        output_file,
+        f'volumes/fragments_gt_best_effort/s{i}') for i in range(9)]
 # mtlsd_frags_best_effort = daisy.open_ds(
 # output_file, 'volumes/fragments_gt_best_effort')
 

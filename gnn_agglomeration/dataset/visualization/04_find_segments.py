@@ -163,7 +163,7 @@ def get_connected_components(
     print("Storing fragment-segment LUT for threshold %.3f..." % threshold)
     start = time.time()
 
-    lookup = 'seg_%s_%d' % (edges_collection, int(threshold*100))
+    lookup = 'seg_%s_%d' % (edges_collection, int(threshold * 100))
 
     out_file = os.path.join(out_dir, lookup)
 

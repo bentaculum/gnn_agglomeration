@@ -124,7 +124,8 @@ def main(_config, _run, _log):
         # dataset = dataset.__indexing__(permutation)
 
     train_dataset.update_config(config)
-    assert train_dataset.__getitem__(0).edge_attr.size(1) == config.pseudo_dimensionality
+    assert train_dataset.__getitem__(0).edge_attr.size(
+        1) == config.pseudo_dimensionality
 
     if config.standardize_targets:
         config.targets_mean, config.targets_std = train_dataset.targets_mean_std()
@@ -132,10 +133,16 @@ def main(_config, _run, _log):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     data_loader_train = DataLoader(
-        train_dataset, batch_size=config.batch_size_train, shuffle=False, num_workers=config.num_workers,
+        train_dataset,
+        batch_size=config.batch_size_train,
+        shuffle=False,
+        num_workers=config.num_workers,
         pin_memory=config.dataloader_pin_memory)
     data_loader_validation = DataLoader(
-        validation_dataset, batch_size=config.batch_size_eval, shuffle=False, num_workers=config.num_workers)
+        validation_dataset,
+        batch_size=config.batch_size_eval,
+        shuffle=False,
+        num_workers=config.num_workers)
 
     if not config.load_model:
         model = globals()[config.model](
@@ -220,7 +227,8 @@ def main(_config, _run, _log):
             data_ft = data_ft.to(device)
             out_ft = model(data_ft)
             final_loss_train += model.loss(out_ft,
-                                           data_ft.y, data_ft.mask).item() * data_ft.num_nodes
+                                           data_ft.y,
+                                           data_ft.mask).item() * data_ft.num_nodes
             final_metric_train += model.out_to_metric(
                 out_ft, data_ft.y) * data_ft.num_nodes
             final_nr_nodes_train += data_ft.num_nodes
@@ -238,7 +246,10 @@ def main(_config, _run, _log):
 
         # test loss
         data_loader_test = DataLoader(
-            test_dataset, batch_size=config.batch_size_eval, shuffle=False, num_workers=config.num_workers)
+            test_dataset,
+            batch_size=config.batch_size_eval,
+            shuffle=False,
+            num_workers=config.num_workers)
         test_loss = 0.0
         test_metric = 0.0
         nr_nodes_test = 0
@@ -248,8 +259,8 @@ def main(_config, _run, _log):
         for data_fe in data_loader_test:
             data_fe = data_fe.to(device)
             out_fe = model(data_fe)
-            test_loss += model.loss(out_fe,
-                                    data_fe.y, data_fe.mask).item() * data_fe.num_nodes
+            test_loss += model.loss(out_fe, data_fe.y,
+                                    data_fe.mask).item() * data_fe.num_nodes
             test_metric += model.out_to_metric(out_fe,
                                                data_fe.y) * data_fe.num_nodes
             nr_nodes_test += data_fe.num_nodes

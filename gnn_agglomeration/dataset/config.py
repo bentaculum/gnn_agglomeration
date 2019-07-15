@@ -35,8 +35,10 @@ p.add('--edges_collection', type=str, help='edges collection in mongoDB')
 
 p.add('--new_node_attr', type=str, help='fragment-wise best effort label')
 p.add('--new_edge_attr', type=str, help='binary best effort merge score')
-p.add('--new_edge_masking', type=str,
-      help="binary masking to avoid labelling two adjacent background fragments as 'merge'")
+p.add(
+    '--new_edge_masking',
+    type=str,
+    help="binary masking to avoid labelling two adjacent background fragments as 'merge'")
 p.add('--new_edge_attr_trinary', type=str,
       help='trinary value: merge, do not merge, unknown')
 

@@ -15,7 +15,14 @@ logger.setLevel(logging.INFO)
 
 
 class HemibrainDataset(Dataset, ABC):
-    def __init__(self, root, config, roi_offset, roi_shape, length=None, save_processed=False):
+    def __init__(
+            self,
+            root,
+            config,
+            roi_offset,
+            roi_shape,
+            length=None,
+            save_processed=False):
         self.config = config
         self.roi_offset = roi_offset
         self.roi_shape = roi_shape
@@ -27,7 +34,8 @@ class HemibrainDataset(Dataset, ABC):
         self.prepare()
 
         data_augmentation = globals()[config.data_augmentation](config=config)
-        coordinate_transform = getattr(T, config.data_transform)(norm=True, cat=True)
+        coordinate_transform = getattr(
+            T, config.data_transform)(norm=True, cat=True)
         transform = T.Compose([data_augmentation, coordinate_transform])
         super(HemibrainDataset, self).__init__(
             root=root, transform=transform, pre_transform=None)
@@ -40,13 +48,16 @@ class HemibrainDataset(Dataset, ABC):
 
     def pad_total_roi(self):
         # pad the entire volume, padded area not part of total roi any more
-        self.roi_offset = np.array(self.roi_offset) + np.array(self.config.block_padding)
-        self.roi_shape = np.array(self.roi_shape) - 2 * np.array(self.config.block_padding)
+        self.roi_offset = np.array(self.roi_offset) + \
+            np.array(self.config.block_padding)
+        self.roi_shape = np.array(self.roi_shape) - \
+            2 * np.array(self.config.block_padding)
 
     def pad_block(self, offset, shape):
         # enlarge the block with padding in all dimensions
         offset_padded = np.array(offset) - np.array(self.config.block_padding)
-        shape_padded = np.array(shape) + 2 * np.array(self.config.block_padding)
+        shape_padded = np.array(shape) + 2 * \
+            np.array(self.config.block_padding)
         return offset_padded, shape_padded
 
     def connect_to_db(self):
@@ -80,7 +91,7 @@ class HemibrainDataset(Dataset, ABC):
         return [f'processed_data_{i}.pt' for i in range(self.len)]
 
     def process(self):
-        logger.info(f'Writing dataset to {root} ...')
+        logger.info(f'Writing dataset to {self.root} ...')
         # TODO use multiprocessing here to speed it up
         for i in tqdm(range(self.len)):
             data = self.get_from_db(i)

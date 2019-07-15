@@ -25,7 +25,8 @@ class HemibrainDatasetRandom(HemibrainDataset):
             low=0, high=self.roi_shape[2] - self.config.block_size[2])
         total_offset = self.roi_offset + random_offset
 
-        outer_offset, outer_shape = self.pad_block(total_offset, self.config.block_size)
+        outer_offset, outer_shape = self.pad_block(
+            total_offset, self.config.block_size)
         graph = globals()[self.config.graph_type]()
         graph.read_and_process(
             graph_provider=self.graph_provider,

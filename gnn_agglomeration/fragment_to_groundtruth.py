@@ -64,7 +64,7 @@ def overlap_in_block(block, fragments, groundtruth, tmp_path):
 
         max_count = counter.most_common(1)[0][1]
         all_counts = sum(counter.values())
-        if max_count/all_counts > threshold_overlap:
+        if max_count / all_counts > threshold_overlap:
             # most common elem
             frag_dict[i] = int(counter.most_common(1)[0][0])
         else:
