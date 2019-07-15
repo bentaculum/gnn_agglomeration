@@ -7,6 +7,7 @@ import configparser
 from abc import ABC, abstractmethod
 import logging
 from tqdm import tqdm
+import os
 
 from ..data_transforms.augment_hemibrain import AugmentHemibrain
 
@@ -49,15 +50,15 @@ class HemibrainDataset(Dataset, ABC):
     def pad_total_roi(self):
         # pad the entire volume, padded area not part of total roi any more
         self.roi_offset = np.array(self.roi_offset) + \
-            np.array(self.config.block_padding)
+                          np.array(self.config.block_padding)
         self.roi_shape = np.array(self.roi_shape) - \
-            2 * np.array(self.config.block_padding)
+                         2 * np.array(self.config.block_padding)
 
     def pad_block(self, offset, shape):
         # enlarge the block with padding in all dimensions
         offset_padded = np.array(offset) - np.array(self.config.block_padding)
         shape_padded = np.array(shape) + 2 * \
-            np.array(self.config.block_padding)
+                       np.array(self.config.block_padding)
         return offset_padded, shape_padded
 
     def connect_to_db(self):
@@ -94,8 +95,9 @@ class HemibrainDataset(Dataset, ABC):
         logger.info(f'Writing dataset to {self.root} ...')
         # TODO use multiprocessing here to speed it up
         for i in tqdm(range(self.len)):
-            data = self.get_from_db(i)
-            torch.save(data, self.processed_paths[i])
+            if not os.path.isfile(self.processed_paths[i]):
+                data = self.get_from_db(i)
+                torch.save(data, self.processed_paths[i])
 
         # with open(os.path.join(self.config.dataset_abs_path, 'config.json'), 'w') as f:
         #     json.dump(vars(self.config), f)
@@ -105,7 +107,11 @@ class HemibrainDataset(Dataset, ABC):
 
     def _process(self):
         if self.save_processed:
-            super()._process()
+            if not os.path.isdir(self.processed_dir):
+                os.makedirs(self.processed_dir)
+
+            print('Processing...')
+            self.process()
 
     def get(self, idx):
         if self.save_processed:
