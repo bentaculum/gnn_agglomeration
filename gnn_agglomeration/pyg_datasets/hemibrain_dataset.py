@@ -7,6 +7,8 @@ import configparser
 from abc import ABC, abstractmethod
 import logging
 
+from ..data_transforms.augment_hemibrain import AugmentHemibrain
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
@@ -23,7 +25,9 @@ class HemibrainDataset(Dataset, ABC):
         self.connect_to_db()
         self.prepare()
 
-        transform = getattr(T, config.data_transform)(norm=True, cat=True)
+        data_augmentation = globals()[config.data_augmentation](config=config)
+        coordinate_transform = getattr(T, config.data_transform)(norm=True, cat=True)
+        transform = T.Compose([data_augmentation, coordinate_transform])
         super(HemibrainDataset, self).__init__(
             root=root, transform=transform, pre_transform=None)
 

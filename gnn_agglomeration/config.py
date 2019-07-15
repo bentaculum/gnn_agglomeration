@@ -622,8 +622,9 @@ class Config:
         self.parser.add_argument(
             '--data_augmentation',
             type=str,
+            choices=['AugmentHemibrain'],
             help='either a transform from pytorch geometric or a custom combination of such')
-        self.default['data_augmentation'] = 'augment_hemibrain'
+        self.default['data_augmentation'] = 'AugmentHemibrain'
 
         self.parser.add_argument(
             '--augment_translate_limit',

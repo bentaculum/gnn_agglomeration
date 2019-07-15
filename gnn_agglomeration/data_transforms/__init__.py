@@ -1,1 +1,1 @@
-from .augment_hemibrain import Augment_Hemibrain
+from .augment_hemibrain import AugmentHemibrain
