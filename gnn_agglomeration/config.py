@@ -69,9 +69,10 @@ class Config:
         self.parser.add_argument(
             '--data_transform',
             type=str,
-            choices=['Cartesian', 'LocalCartesian', 'Distance', 'Polar'],
+            choices=['Cartesian', 'LocalCartesian',
+                     'Distance', 'Polar', 'Spherical'],
             help='define the edge attributes (pseudo coordinates)')
-        self.default['data_transform'] = 'Cartesian'
+        self.default['data_transform'] = 'Spherical'
 
         self.parser.add_argument(
             '--theta_max',
@@ -201,13 +202,13 @@ class Config:
             '--training_epochs',
             type=positive_int,
             help='number of training epochs')
-        self.default['training_epochs'] = 200
+        self.default['training_epochs'] = 100
 
         self.parser.add_argument(
             '--samples',
             type=positive_int,
             help='Number of random graphs to create, if a new dataset is created')
-        self.default['samples'] = 100
+        self.default['samples'] = 4096
 
         self.parser.add_argument(
             '--standardize_targets',
@@ -333,7 +334,7 @@ class Config:
             type=str,
             choices=['value', 'inf', '1', '2'],
             help='gradient clipping per value or L_-norm')
-        self.default['clip_method'] = 'value'
+        self.default['clip_method'] = 'inf'
 
         self.parser.add_argument(
             '--att_heads_concat',
@@ -441,7 +442,7 @@ class Config:
                 'localhost',
                 'slowpoke1'],
             help='machine-dependent parameters to be imported, e.g. for connecting to the MongoDB')
-        self.default['machine'] = 'localhost'
+        self.default['machine'] = 'slowpoke1'
 
         self.parser.add_argument(
             '--msts',
