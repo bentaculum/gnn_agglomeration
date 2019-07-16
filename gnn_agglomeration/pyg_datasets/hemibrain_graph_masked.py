@@ -6,7 +6,7 @@ import time
 from .hemibrain_graph import HemibrainGraph
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class HemibrainGraphMasked(HemibrainGraph):
@@ -28,11 +28,11 @@ class HemibrainGraphMasked(HemibrainGraph):
         #     f'\tblock shape: {block_shape}'
         # )
 
-        start = time.time()
+        # start = time.time()
         roi = daisy.Roi(list(block_offset), list(block_shape))
         node_attrs = graph_provider.read_nodes(roi=roi)
         edge_attrs = graph_provider.read_edges(roi=roi, nodes=node_attrs)
-        logger.debug(f'read block in {time.time() - start} s')
+        # logger.debug(f'read block in {time.time() - start} s')
 
         if len(node_attrs) == 0:
             raise ValueError('No nodes found in roi %s' % roi)
@@ -55,7 +55,6 @@ class HemibrainGraphMasked(HemibrainGraph):
             mask=mask)
 
     def mask_target_edges(self, graph_provider, inner_roi, mask):
-        start = time.time()
         # parse inner block
         inner_nodes = graph_provider.read_nodes(roi=inner_roi)
         inner_edges = graph_provider.read_edges(
@@ -77,11 +76,11 @@ class HemibrainGraphMasked(HemibrainGraph):
         outer_orig_edge_index = self.node_ids[outer_idx_flat].reshape(
             (-1, 2)).tolist()
 
-        for i, edge in enumerate(outer_orig_edge_index):
-            if edge not in inner_orig_edge_index:
-                # we have n labels (undirected), but 2n directed edges
-                # --> div 2
-                mask[int(i / 2)] = 0
+        outer_tuples = [tuple(i) for i in outer_orig_edge_index]
+        inner_tuples = [tuple(i) for i in inner_orig_edge_index]
+        context_edges = set(outer_tuples) - set(inner_tuples)
+        for c in context_edges:
+            idx = outer_tuples.index(c)
+            mask[int(idx / 2)] = 0
 
-        logger.debug(f'masking inner ROI in {time.time() - start} s')
         return mask
