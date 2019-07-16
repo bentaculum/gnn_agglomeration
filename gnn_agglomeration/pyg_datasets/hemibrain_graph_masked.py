@@ -1,13 +1,12 @@
 import torch
 import logging
 import daisy
-import numpy as np
-import pandas as pd
+import time
 
 from .hemibrain_graph import HemibrainGraph
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class HemibrainGraphMasked(HemibrainGraph):
@@ -21,16 +20,19 @@ class HemibrainGraphMasked(HemibrainGraph):
             block_shape,
             inner_block_offset,
             inner_block_shape):
-        # TODO remove duplicate code
-        logger.debug(
-            'read\n'
-            f'\tblock offset: {block_offset}\n'
-            f'\tblock shape: {block_shape}'
-        )
 
+        # TODO remove duplicate code
+        # logger.debug(
+        #     'read\n'
+        #     f'\tblock offset: {block_offset}\n'
+        #     f'\tblock shape: {block_shape}'
+        # )
+
+        start = time.time()
         roi = daisy.Roi(list(block_offset), list(block_shape))
         node_attrs = graph_provider.read_nodes(roi=roi)
         edge_attrs = graph_provider.read_edges(roi=roi, nodes=node_attrs)
+        logger.debug(f'read block in {time.time() - start} s')
 
         if len(node_attrs) == 0:
             raise ValueError('No nodes found in roi %s' % roi)
@@ -53,10 +55,16 @@ class HemibrainGraphMasked(HemibrainGraph):
             mask=mask)
 
     def mask_target_edges(self, graph_provider, inner_roi, mask):
+        start = time.time()
         # parse inner block
         inner_nodes = graph_provider.read_nodes(roi=inner_roi)
         inner_edges = graph_provider.read_edges(
             roi=inner_roi, nodes=inner_nodes)
+
+        if len(inner_nodes) == 0:
+            raise ValueError('No nodes found in roi %s' % inner_roi)
+        if len(inner_edges) == 0:
+            raise ValueError('No edges found in roi %s' % inner_roi)
 
         inner_edge_index, _, _, _, inner_node_ids, _, _ = self.parse_rag_excerpt(
             inner_nodes, inner_edges)
@@ -75,4 +83,5 @@ class HemibrainGraphMasked(HemibrainGraph):
                 # --> div 2
                 mask[int(i / 2)] = 0
 
+        logger.debug(f'masking inner ROI in {time.time() - start} s')
         return mask

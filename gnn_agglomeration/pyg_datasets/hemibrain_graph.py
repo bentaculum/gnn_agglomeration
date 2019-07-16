@@ -1,13 +1,13 @@
 import torch
 from torch_geometric.data import Data
 import logging
-import daisy
 import numpy as np
 import pandas as pd
 from abc import ABC, abstractmethod
+import time
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class HemibrainGraph(Data, ABC):
@@ -25,6 +25,7 @@ class HemibrainGraph(Data, ABC):
         pass
 
     def parse_rag_excerpt(self, node_attrs, edge_attrs):
+        start = time.time()
         df_nodes = pd.DataFrame(node_attrs)
         # columns in desired order
         # Careful, I use int64 instead of uint64 here
@@ -32,8 +33,8 @@ class HemibrainGraph(Data, ABC):
                              'center_y', 'center_x']].astype(np.int64)
 
         df_edges = pd.DataFrame(edge_attrs)
+
         # columns in desired order
-        # TODO account for directed edges
         # TODO parametrize the used names
         merge_score_field = 'merge_score'
         gt_merge_score_field = 'gt_merge_score'
@@ -51,16 +52,26 @@ class HemibrainGraph(Data, ABC):
         nodes_remap = dict(zip(df_nodes['id'], range(len(df_nodes))))
         node_ids = torch.tensor(df_nodes['id'].values, dtype=torch.long)
 
+        logger.debug(f'data type conversion in {time.time() - start} s')
+        start = time.time()
+
         df_edges['u'] = df_edges['u'].map(nodes_remap)
         df_edges['v'] = df_edges['v'].map(nodes_remap)
+
+        logger.debug(f'node id remapping in {time.time() - start} s')
+        start = time.time()
 
         # Drop edges for which one of the incident nodes is not in the
         # extracted node set
         df_edges = df_edges[np.isfinite(
             df_edges['u']) & np.isfinite(df_edges['v'])]
 
+        # Cast to np.int64 for going to torch.long
         df_edges['u'] = df_edges['u'].astype(np.int64)
         df_edges['v'] = df_edges['v'].astype(np.int64)
+
+        logger.debug(f'edge editing in {time.time() - start} s')
+        start = time.time()
 
         # edge index requires dimensionality of (2,e)
         # pyg works with directed edges, duplicate each edge here
@@ -72,6 +83,8 @@ class HemibrainGraph(Data, ABC):
         edge_attr_undir = df_edges[merge_score_field].values
         edge_attr_dir = np.repeat(edge_attr_undir, 2, axis=0)
         edge_attr = torch.tensor(edge_attr_dir, dtype=torch.float)
+
+        logger.debug(f'duplicating edges in {time.time() - start} s')
 
         pos = torch.tensor(
             df_nodes[['center_z', 'center_y', 'center_x']].values, dtype=torch.float)
