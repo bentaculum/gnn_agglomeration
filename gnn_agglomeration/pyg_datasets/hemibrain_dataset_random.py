@@ -1,10 +1,13 @@
 import torch
 import numpy as np
+import logging
 
 from .hemibrain_dataset import HemibrainDataset
 from .hemibrain_graph_unmasked import HemibrainGraphUnmasked
 from .hemibrain_graph_masked import HemibrainGraphMasked
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 class HemibrainDatasetRandom(HemibrainDataset):
 
@@ -28,12 +31,17 @@ class HemibrainDatasetRandom(HemibrainDataset):
         outer_offset, outer_shape = self.pad_block(
             total_offset, self.config.block_size)
         graph = globals()[self.config.graph_type]()
-        graph.read_and_process(
-            graph_provider=self.graph_provider,
-            block_offset=outer_offset,
-            block_shape=outer_shape,
-            inner_block_offset=total_offset,
-            inner_block_shape=self.config.block_size
-        )
 
-        return graph
+        try:
+            graph.read_and_process(
+                graph_provider=self.graph_provider,
+                block_offset=outer_offset,
+                block_shape=outer_shape,
+                inner_block_offset=total_offset,
+                inner_block_shape=self.config.block_size
+            )
+            return graph
+        except ValueError as e:
+            logger.warning(f'{e}, getting graph from another random block')
+            return self.get_from_db(idx)
+

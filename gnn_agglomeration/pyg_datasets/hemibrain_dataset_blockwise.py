@@ -54,12 +54,21 @@ class HemibrainDatasetBlockwise(HemibrainDataset):
             inner_offset, self.config.block_size)
 
         graph = globals()[self.config.graph_type]()
-        graph.read_and_process(
-            graph_provider=self.graph_provider,
-            block_offset=outer_offset,
-            block_shape=outer_shape,
-            inner_block_offset=inner_offset,
-            inner_block_shape=self.config.block_size,
-        )
-
-        return graph
+        try:
+            graph.read_and_process(
+                graph_provider=self.graph_provider,
+                block_offset=outer_offset,
+                block_shape=outer_shape,
+                inner_block_offset=inner_offset,
+                inner_block_shape=self.config.block_size,
+            )
+            return graph
+        except ValueError as e:
+            logger.warning(f'{e}, duplicating previous graph')
+            if idx > 0:
+                return self.get_from_db(idx - 1)
+            else:
+                raise NotImplementedError(
+                    f'Error for last block in block-wise loading: {e}'
+                    'Cannot replace the first block if it is empty'
+                )
