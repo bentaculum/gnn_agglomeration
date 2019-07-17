@@ -13,3 +13,4 @@ src
 *.log
 *.pickle
 *db_host.ini
+misc
