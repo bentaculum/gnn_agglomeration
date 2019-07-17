@@ -84,7 +84,7 @@ class GnnModel(torch.nn.Module, ABC):
             targets=targets, predictions=predictions)
 
     def print_current_loss(self, epoch, batch_i, logger):
-        logger.debug('epoch {}, batch {}, {}: {} '.format(
+        logger.info('epoch {}, batch {}, {}: {} '.format(
             epoch, batch_i, self.model_type.loss_name, self.current_loss))
 
     def evaluate(self, data):

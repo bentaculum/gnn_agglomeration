@@ -2,15 +2,13 @@ import torch
 import os
 import tensorboardX
 import torch.nn.functional as F
-import chartify
-import pandas as pd
 
 from .model_type import ModelType
 
 
 class ClassificationProblem(ModelType):
     def __init__(self, config):
-        super(ClassificationProblem, self).__init__(config)
+        super().__init__(config)
 
         self.loss_name = 'NLL_loss'
         self.out_channels = self.config.classes

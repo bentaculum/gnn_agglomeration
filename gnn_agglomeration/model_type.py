@@ -31,7 +31,10 @@ class ModelType(torch.nn.Module, ABC):
         # TODO remove assert statement
         assert l.size(0) == mask.size(0)
 
-        return torch.mean(l * mask, dim=0, keepdim=False)
+        return torch.sum(l * mask) / torch.sum(mask)
+
+        # old, mean without masking
+        # return torch.mean(l * mask, dim=0, keepdim=False)
 
     @abstractmethod
     def out_to_predictions(self, out):
