@@ -12,6 +12,7 @@ import atexit
 import tarfile
 import argparse
 import json
+import time
 
 from gnn_agglomeration.experiment import ex
 from gnn_agglomeration.config import Config
@@ -347,6 +348,8 @@ def main(_config, _run, _log):
     # -----------------------------------------------
 
     for epoch in range(model.epoch, config.training_epochs):
+        start_epoch_train = time.time()
+
         # put model in training mode (e.g. use dropout)
         model.train()
         epoch_loss = 0.0
@@ -360,6 +363,8 @@ def main(_config, _run, _log):
 
             loss = model.loss(out, data.y, data.mask)
             model.print_current_loss(epoch, batch_i, _log)
+            _log.debug(f'total num nodes: {data.num_nodes}')
+
             epoch_loss += loss.item() * data.num_nodes
             epoch_metric_train += model.out_to_metric(
                 out, data.y) * data.num_nodes
@@ -397,6 +402,9 @@ def main(_config, _run, _log):
         _run.log_scalar('loss_train', epoch_loss, epoch)
         _run.log_scalar('accuracy_train', epoch_metric_train, epoch)
 
+        _log.info(f'training in {time.time() - start_epoch_train:.3f} s')
+        start_epoch_val = time.time()
+
         # validation
         model.eval()
         validation_loss = 0.0
@@ -430,8 +438,11 @@ def main(_config, _run, _log):
 
         model.epoch += 1
 
+        _log.info(f'validation in {time.time() - start_epoch_val:.3f} s')
+
         # save intermediate models
         if model.epoch % config.checkpoint_interval == 0:
+            _log.info('saving model ...')
             model.save('epoch_{}'.format(model.epoch))
 
     # save the final model
