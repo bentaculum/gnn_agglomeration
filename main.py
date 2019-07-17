@@ -276,17 +276,18 @@ def main(_config, _run, _log):
         # final print routine
         print('')
         train_dataset.print_summary()
-        print('Total number of parameters: {}'.format(total_params))
-        print('Mean train loss ({0} samples): {1:.3f}'.format(
-            train_dataset.__len__(),
-            final_loss_train))
-        print('Mean accuracy on train set: {0:.3f}'.format(
-            final_metric_train))
-        print('Mean test loss ({0} samples): {1:.3f}'.format(
-            test_dataset.__len__(),
-            test_loss))
-        print('Mean accuracy on test set: {0:.3f}'.format(
-            test_metric))
+
+        _log.info(
+            f'Total number of parameters: {total_params}')
+        _log.info(
+            f'Mean train loss ({train_dataset.__len__()} samples): {final_loss_train:.3f}')
+        _log.info(
+            f'Mean accuracy on train set: {final_metric_train:.3f}')
+        _log.info(
+            f'Mean test loss ({test_dataset.__len__()} samples): {test_loss:.3f}')
+        _log.info(
+            f'Mean accuracy on test set: {test_metric:.3f}')
+
         print('')
 
         # plot targets vs predictions. default is a confusion matrix
