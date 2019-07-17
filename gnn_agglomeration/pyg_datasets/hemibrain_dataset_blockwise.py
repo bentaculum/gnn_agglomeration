@@ -1,6 +1,8 @@
 import torch
 import numpy as np
 import logging
+import daisy
+import os
 
 from .hemibrain_dataset import HemibrainDataset
 from .hemibrain_graph_unmasked import HemibrainGraphUnmasked
@@ -21,6 +23,8 @@ class HemibrainDatasetBlockwise(HemibrainDataset):
         are local attributes
         """
 
+        # TODO I only need the length
+
         logger.debug(f'block size: {self.config.block_size}')
         logger.debug(f'padding: {self.config.block_padding}')
 
@@ -40,16 +44,34 @@ class HemibrainDatasetBlockwise(HemibrainDataset):
                         self.config.block_size, dtype=np.int_)
                     self.block_offsets.append(block_offset_new)
 
-    def get_from_db(self, idx):
+    def process(self):
+        logger.info(f'Writing dataset to {self.root} ...')
+
+        daisy.run_blockwise(
+            total_roi=self.roi_shape,
+            read_roi=daisy.Roi(offset=(0, 0, 0), shape=self.config.block_size),
+            write_roi=daisy.Roi(offset=(0, 0, 0), shape=self.config.block_size),
+            process_function=lambda block: self.process_worker(
+                block=block),
+            fit='valid',
+            num_workers=self.config.num_workers,
+            read_write_conflict=False,
+            max_retries=1)
+
+    def process_worker(self, block):
+        logger.info(f'block id {block.block_id}')
+        if not os.path.isfile(self.processed_paths[block.block_id]):
+            data = self.get_from_db(block)
+            torch.save(data, self.processed_paths[block.block_id])
+
+    def get_from_db(self, block):
         """
         block size from global config file, roi_offset and roi_shape
         are local attributes
         """
 
-        # TODO remove duplicate code
-
         # Get precomputed block offset, pad the block
-        inner_offset = self.block_offsets[idx]
+        inner_offset = block.read_roi.get_offset()
         outer_offset, outer_shape = self.pad_block(
             inner_offset, self.config.block_size)
 
@@ -65,8 +87,8 @@ class HemibrainDatasetBlockwise(HemibrainDataset):
             return graph
         except ValueError as e:
             logger.warning(f'{e}, duplicating previous graph')
-            if idx > 0:
-                return self.get_from_db(idx - 1)
+            if block.block_id > 0:
+                return self.get_from_db(block.block_id - 1)
             else:
                 raise NotImplementedError(
                     f'Error for last block in block-wise loading: {e}'

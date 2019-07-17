@@ -93,7 +93,6 @@ class HemibrainDataset(Dataset, ABC):
 
     def process(self):
         logger.info(f'Writing dataset to {self.root} ...')
-        # TODO use multiprocessing here to speed it up
         for i in tqdm(range(self.len)):
             if not os.path.isfile(self.processed_paths[i]):
                 data = self.get_from_db(i)

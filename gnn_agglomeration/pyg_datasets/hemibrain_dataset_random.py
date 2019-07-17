@@ -9,6 +9,7 @@ from .hemibrain_graph_masked import HemibrainGraphMasked
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+
 class HemibrainDatasetRandom(HemibrainDataset):
 
     def get_from_db(self, idx):
