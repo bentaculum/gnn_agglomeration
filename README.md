@@ -1,4 +1,7 @@
 # Supervoxel Agglomeration using Graph Neural Networks
+
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/7a92c3102bdf4bb4ac5257a800754932)](https://app.codacy.com/app/benjamin9555/gnn_agglomeration?utm_source=github.com&utm_medium=referral&utm_content=benjamin9555/gnn_agglomeration&utm_campaign=Badge_Grade_Dashboard)
+
 using [pytorch_geometric](https://github.com/rusty1s/pytorch_geometric)
 
 ### Installation
