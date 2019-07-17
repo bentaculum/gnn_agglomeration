@@ -229,26 +229,26 @@ class Config:
             '--batch_size_train',
             type=positive_int,
             help='batch size for training')
-        self.default['batch_size_train'] = 8
+        self.default['batch_size_train'] = 4
 
         self.parser.add_argument(
             '--batch_size_eval',
             type=positive_int,
             help='batch size for evaluation')
-        self.default['batch_size_eval'] = 8
+        self.default['batch_size_eval'] = 4
 
         self.parser.add_argument(
             '--hidden_layers',
             type=nonnegative_int,
             help='number of hidden layers')
-        self.default['hidden_layers'] = 0
+        self.default['hidden_layers'] = 3
 
         self.parser.add_argument(
             '--hidden_units',
             type=positive_int,
             nargs='+',
             help='number of units per hidden layer in the GNN')
-        self.default['hidden_units'] = [1]
+        self.default['hidden_units'] = [32, 8, 4, 1]
 
         self.parser.add_argument(
             '--use_bias',
@@ -260,27 +260,27 @@ class Config:
             '--fc_bias',
             type=str2bool,
             help='whether to use a bias term for the final fully connected layer')
-        self.default['fc_bias'] = False
+        self.default['fc_bias'] = True
 
         self.parser.add_argument(
             '--fc_layers',
             type=positive_int,
             help='number of fully connected layers in the end, at least 1')
-        self.default['fc_layers'] = 1
+        self.default['fc_layers'] = 7
 
         self.parser.add_argument(
             '--fc_layer_dims',
             type=positive_int,
             nargs='*',
             help='list of hidden layer dims for fc layers in the end')
-        self.default['fc_layer_dims'] = []
+        self.default['fc_layer_dims'] = [32, 32, 16, 16, 8, 8]
 
         self.parser.add_argument(
             '--fc_dropout_probs',
             type=unit_float,
             nargs='*',
             help='fc network: dropout probs')
-        self.default['fc_dropout_probs'] = []
+        self.default['fc_dropout_probs'] = [0, 0.2, 0, 0, 0, 0]
 
         self.parser.add_argument(
             '--fc_batch_norm',
@@ -300,7 +300,7 @@ class Config:
             type=unit_float,
             nargs='+',
             help='dropout probabilites during training for the input layer and all the hidden layers')
-        self.default['dropout_probs'] = [0.0]
+        self.default['dropout_probs'] = [0.3, 0.3, 0.0, 0.0]
 
         self.parser.add_argument(
             '--adam_lr',
@@ -330,7 +330,7 @@ class Config:
             '--clip_value',
             type=float,
             help='gradients are clipped at this value')
-        self.default['clip_value'] = 0.1
+        self.default['clip_value'] = 1.0
 
         self.parser.add_argument(
             '--clip_method',
@@ -355,14 +355,14 @@ class Config:
             '--att_layers',
             type=positive_int,
             help='Attention NN: number of layers')
-        self.default['att_layers'] = 1
+        self.default['att_layers'] = 7
 
         self.parser.add_argument(
             '--att_layer_dims',
             type=positive_int,
             nargs='+',
             help='Attention NN: list of layer dimensions')
-        self.default['att_layer_dims'] = [1]
+        self.default['att_layer_dims'] = [32, 32, 16, 16, 8, 8, 1]
 
         self.parser.add_argument(
             '--att_non_linearity',
@@ -381,7 +381,7 @@ class Config:
             type=unit_float,
             nargs='+',
             help='Attention NN: dropout probabilites during training for the input layer and all the hidden layers')
-        self.default['att_dropout_probs'] = [0.0]
+        self.default['att_dropout_probs'] = [0, 0.2, 0.2, 0.2, 0.2, 0, 0]
 
         self.parser.add_argument(
             '--att_bias',
@@ -592,7 +592,7 @@ class Config:
             type=str,
             choices=['HemibrainGraphUnmasked', 'HemibrainGraphMasked'],
             help='which type of graph to extract from db')
-        self.default['graph_type'] = 'HemibrainGraphUnmasked'
+        self.default['graph_type'] = 'HemibrainGraphMasked'
 
         self.parser.add_argument(
             '--num_workers',
