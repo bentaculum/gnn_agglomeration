@@ -485,4 +485,5 @@ if __name__ == '__main__':
     ex.captured_out_filter = sacred.utils.apply_backspaces_and_linefeeds
 
     r = ex.run_commandline(argv)
-    os._exit(0)
+    # os._exit(0)
+    sys.exit()
