@@ -48,7 +48,7 @@ class HemibrainDatasetBlockwise(HemibrainDataset):
         logger.info(f'Writing dataset to {self.root} ...')
 
         daisy.run_blockwise(
-            total_roi=self.roi_shape,
+            total_roi=daisy.Roi(offset=self.roi_offset, shape=self.roi_shape),
             read_roi=daisy.Roi(offset=(0, 0, 0), shape=self.config.block_size),
             write_roi=daisy.Roi(offset=(0, 0, 0), shape=self.config.block_size),
             process_function=lambda block: self.process_worker(
