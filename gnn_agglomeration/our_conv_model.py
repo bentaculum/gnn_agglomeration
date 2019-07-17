@@ -139,7 +139,7 @@ class OurConvModel(GnnModel):
             if self.training:
                 for j, weight in enumerate(l.weight_list):
                     self.write_to_variable_summary(
-                        weight, 'layer_{}_nodenet_{}'.format(i, j), 'weights')
+                        weight, f'layer_{i}', f'nodenet_{j}/weights')
                 if self.config.use_bias:
                     self.write_to_variable_summary(
                         l.bias, 'layer_{}'.format(i), 'weights_bias')
@@ -182,13 +182,13 @@ class OurConvModel(GnnModel):
         for i, l in enumerate(self.fc_layers_list):
             if self.training:
                 self.write_to_variable_summary(
-                    l.weight, 'out_layer_fc_{}'.format(i), 'weights')
+                    l.weight, 'out_layer', f'fc_{i}/weights')
                 if self.config.fc_bias:
                     self.write_to_variable_summary(
-                        l.bias, 'out_layer_fc_{}'.format(i), 'bias')
+                        l.bias, 'out_layer', f'fc_{i}/bias')
             x = l(x)
             self.write_to_variable_summary(
-                x, 'out_layer_fc_{}'.format(i), 'pre_activations')
+                x, 'out_layer', f'fc_{i}/pre_activations')
 
             if i == self.config.fc_layers - 1:
                 x = self.model_type.out_nonlinearity(x)
