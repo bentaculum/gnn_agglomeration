@@ -636,7 +636,7 @@ class Config:
             type=positive_int,
             nargs=3,
             help='maximal absolute translation for each dimension, in nanometers')
-        self.default['augment_translate_limit'] = [80, 80, 80]
+        self.default['augment_translate_limit'] = [20, 20, 20]
 
         self.parser.add_argument(
             '--edge_attr_noise_std',

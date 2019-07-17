@@ -414,8 +414,8 @@ def main(_config, _run, _log):
             data = data.to(device)
             out = model(data)
             loss = model.loss(out, data.y, data.mask)
-            model.print_current_loss(
-                epoch, 'validation {}'.format(batch_i), _log)
+            # model.print_current_loss(
+            # epoch, 'validation {}'.format(batch_i), _log)
             validation_loss += loss.item() * data.num_nodes
             epoch_metric_val += model.out_to_metric(
                 out, data.y) * data.num_nodes
@@ -435,6 +435,7 @@ def main(_config, _run, _log):
 
         _run.log_scalar('loss_val', validation_loss, epoch)
         _run.log_scalar('accuracy_val', epoch_metric_val, epoch)
+        _run.result = f'train acc: {epoch_metric_train:.3f}, val acc: {epoch_metric_val:.3f}'
 
         model.epoch += 1
 
