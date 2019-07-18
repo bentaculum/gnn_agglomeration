@@ -131,6 +131,8 @@ def main(_config, _run, _log):
     if config.standardize_targets and config.model_type == 'RegressionProblem':
         config.targets_mean, config.targets_std = train_dataset.targets_mean_std()
 
+    _log.info('Datasets are ready')
+
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     data_loader_train = DataLoader(
@@ -192,6 +194,7 @@ def main(_config, _run, _log):
     total_params = sum(p.numel()
                        for p in model.parameters() if p.requires_grad)
     _run.log_scalar('nr_params', total_params, config.training_epochs)
+    _log.info('Model is ready')
 
     # save config to file and store in DB
     config_filepath = os.path.join(config.run_abs_path, 'config.json')
