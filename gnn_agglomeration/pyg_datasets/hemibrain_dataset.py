@@ -124,6 +124,14 @@ class HemibrainDataset(Dataset, ABC):
     def get_from_db(self, idx):
         pass
 
+    def targets_mean_std(self):
+        """
+        Not possible to estimate target mean and variance for a dataset that
+        is not in memory without doing a preliminary pass. For randomly
+        fetched RAG snippets you could estimate on n pre-fetched graphs
+        """
+        raise NotImplementedError('Online mean and variance estimation not implemented')
+
     # TODO not necessary unless I save the processed graphs to file again
     def check_dataset_vs_config(self):
         pass
@@ -154,11 +162,3 @@ class HemibrainDataset(Dataset, ABC):
     def print_summary(self):
         pass
 
-    def targets_mean_std(self):
-        # TODO this should be preprocessed and saved to file for large datasets
-        targets = []
-        for i in range(self.__len__()):
-            targets.extend(self.get(i).y)
-
-        targets = np.array(targets)
-        return np.mean(targets), np.std(targets)

@@ -128,7 +128,7 @@ def main(_config, _run, _log):
     assert train_dataset.__getitem__(0).edge_attr.size(
         1) == config.pseudo_dimensionality
 
-    if config.standardize_targets:
+    if config.standardize_targets and config.model_type == 'RegressionProblem':
         config.targets_mean, config.targets_std = train_dataset.targets_mean_std()
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')

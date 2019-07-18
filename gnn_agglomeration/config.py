@@ -217,7 +217,7 @@ class Config:
             '--standardize_targets',
             type=str2bool,
             help='targets to mean 0, std 1, if Regression is performed')
-        self.default['standardize_targets'] = True
+        self.default['standardize_targets'] = False
 
         self.parser.add_argument(
             '--non_linearity',
