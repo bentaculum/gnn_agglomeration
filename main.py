@@ -13,6 +13,7 @@ import tarfile
 import argparse
 import json
 import time
+import numpy as np
 
 from gnn_agglomeration.experiment import ex
 from gnn_agglomeration.config import Config
@@ -140,12 +141,16 @@ def main(_config, _run, _log):
         batch_size=config.batch_size_train,
         shuffle=False,
         num_workers=config.num_workers,
-        pin_memory=config.dataloader_pin_memory)
+        pin_memory=config.dataloader_pin_memory,
+        worker_init_fn=lambda idx: np.random.seed()
+    )
     data_loader_validation = DataLoader(
         validation_dataset,
         batch_size=config.batch_size_eval,
         shuffle=False,
-        num_workers=config.num_workers)
+        num_workers=config.num_workers,
+        worker_init_fn=lambda idx: np.random.seed()
+    )
 
     if not config.load_model:
         model = globals()[config.model](
@@ -208,6 +213,7 @@ def main(_config, _run, _log):
         # ---------------- EVALUATION ROUTINE -----------
         # -----------------------------------------------
 
+        _log.info('saving tensorboardx summary files ...')
         # save the tensorboardx summary files
         summary_dir_exit = os.path.join(
             config.run_abs_path, config.summary_dir)
@@ -227,6 +233,9 @@ def main(_config, _run, _log):
         final_loss_train = 0.0
         final_metric_train = 0.0
         final_nr_nodes_train = 0
+
+        _log.info('final training pass ...')
+        start = time.time()
         for data_ft in data_loader_train:
             data_ft = data_ft.to(device)
             out_ft = model(data_ft)
@@ -247,19 +256,24 @@ def main(_config, _run, _log):
             'accuracy_train_final',
             final_metric_train,
             config.training_epochs)
+        _log.info(f'final training pass in {time.time() - start:.3f}s')
 
         # test loss
         data_loader_test = DataLoader(
             test_dataset,
             batch_size=config.batch_size_eval,
             shuffle=False,
-            num_workers=config.num_workers)
+            num_workers=config.num_workers,
+            worker_init_fn=lambda idx: np.random.seed()
+        )
         test_loss = 0.0
         test_metric = 0.0
         nr_nodes_test = 0
         test_predictions = []
         test_targets = []
 
+        _log.info('test pass ...')
+        start = time.time()
         for data_fe in data_loader_test:
             data_fe = data_fe.to(device)
             out_fe = model(data_fe)
@@ -276,6 +290,7 @@ def main(_config, _run, _log):
 
         _run.log_scalar('loss_test', test_loss, config.training_epochs)
         _run.log_scalar('accuracy_test', test_metric, config.training_epochs)
+        _log.info(f'test pass in {time.time() - start:.3f}s')
 
         # final print routine
         print('')
@@ -488,5 +503,4 @@ if __name__ == '__main__':
     ex.captured_out_filter = sacred.utils.apply_backspaces_and_linefeeds
 
     r = ex.run_commandline(argv)
-    # os._exit(0)
     sys.exit()

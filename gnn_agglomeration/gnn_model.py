@@ -150,8 +150,6 @@ class GnnModel(torch.nn.Module, ABC):
         stddev = torch.std(var.data)
         self.current_writer.add_scalar(os.path.join(
             namespace, var_name, 'stddev'), stddev, iteration)
-        # self.current_writer.add_scalar(os.path.join(namespace, var_name, 'max'), torch.max(var), iteration)
-        # self.current_writer.add_scalar(os.path.join(namespace, var_name, 'min'), torch.min(var), iteration)
         if self.config.log_histograms:
             self.current_writer.add_histogram(os.path.join(
                 namespace, var_name), var.data, iteration)

@@ -137,7 +137,7 @@ class Config:
             '--log_only_gradients',
             type=str2bool,
             help='whether to write gradients to tensorboard')
-        self.default['log_only_gradients'] = False
+        self.default['log_only_gradients'] = True
 
         self.parser.add_argument(
             '--log_histograms',
