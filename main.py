@@ -476,6 +476,8 @@ def main(_config, _run, _log):
 
     ###########################
 
+    # After training loop is over, the exit function is called directly
+    atexit.unregister(atexit_tasks)
     return atexit_tasks(model=model)
 
 
@@ -503,4 +505,3 @@ if __name__ == '__main__':
     ex.captured_out_filter = sacred.utils.apply_backspaces_and_linefeeds
 
     r = ex.run_commandline(argv)
-    sys.exit()
