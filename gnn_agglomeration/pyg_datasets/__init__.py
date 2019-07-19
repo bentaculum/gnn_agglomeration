@@ -1,9 +1,7 @@
-from .count_neighbors_dataset import CountNeighborsDataset  # noqa
-from .count_neighbors_graph import CountNeighborsGraph  # noqa
-from .diameter_dataset import DiameterDataset  # noqa
-from .diameter_graph import DiameterGraph  # noqa
-from .hemibrain_dataset import HemibrainDataset  # noqa
-from .iterative_dataset import IterativeDataset  # noqa
-from .iterative_graph import IterativeGraph  # noqa
-from .my_graph import MyGraph  # noqa
-from .random_graph_dataset import RandomGraphDataset  # noqa
+from .hemibrain_dataset_blockwise import HemibrainDatasetBlockwise  # noqa
+from .hemibrain_dataset_random import HemibrainDatasetRandom  # noqa
+
+from .hemibrain_graph_unmasked import HemibrainGraphUnmasked  # noqa
+from .hemibrain_graph_masked import HemibrainGraphMasked  # noqa
+
+from . import toy_datasets

@@ -1,7 +1,6 @@
 import torch
 import logging
 import daisy
-import time
 
 from .hemibrain_graph import HemibrainGraph
 
