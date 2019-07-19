@@ -217,129 +217,140 @@ def main(_config, _run, _log):
         model.eval()
         model.current_writer = None
 
-        # train loss
-        final_loss_train = 0.0
-        final_metric_train = 0.0
-        final_nr_nodes_train = 0
-
-        _log.info('final training pass ...')
-        start = time.time()
-        for data_ft in data_loader_train:
-            data_ft = data_ft.to(device)
-            out_ft = model(data_ft)
-            final_loss_train += model.loss(out_ft,
-                                           data_ft.y,
-                                           data_ft.mask).item() * data_ft.num_nodes
-            final_metric_train += model.out_to_metric(
-                out_ft, data_ft.y) * data_ft.num_nodes
-            final_nr_nodes_train += data_ft.num_nodes
-        final_loss_train /= final_nr_nodes_train
-        final_metric_train /= final_nr_nodes_train
-
-        _run.log_scalar(
-            'loss_train_final',
-            final_loss_train,
-            config.training_epochs)
-        _run.log_scalar(
-            'accuracy_train_final',
-            final_metric_train,
-            config.training_epochs)
-        _log.info(f'final training pass in {time.time() - start:.3f}s')
-
-        # test loss
-        data_loader_test = DataLoader(
-            test_dataset,
-            batch_size=config.batch_size_eval,
-            shuffle=False,
-            num_workers=config.num_workers,
-            worker_init_fn=lambda idx: np.random.seed()
-        )
-        test_loss = 0.0
-        test_metric = 0.0
-        nr_nodes_test = 0
-        test_predictions = []
-        test_targets = []
-
-        _log.info('test pass ...')
-        start = time.time()
-        for data_fe in data_loader_test:
-            data_fe = data_fe.to(device)
-            out_fe = model(data_fe)
-            test_loss += model.loss(out_fe, data_fe.y,
-                                    data_fe.mask).item() * data_fe.num_nodes
-            test_metric += model.out_to_metric(out_fe,
-                                               data_fe.y) * data_fe.num_nodes
-            nr_nodes_test += data_fe.num_nodes
-            pred = model.out_to_predictions(out_fe)
-            test_predictions.extend(model.predictions_to_list(pred))
-            test_targets.extend(data_fe.y.tolist())
-        test_loss /= nr_nodes_test
-        test_metric /= nr_nodes_test
-
-        _run.log_scalar('loss_test', test_loss, config.training_epochs)
-        _run.log_scalar('accuracy_test', test_metric, config.training_epochs)
-        _log.info(f'test pass in {time.time() - start:.3f}s\n')
-
         # final print routine
         train_dataset.print_summary()
 
         _log.info(
             f'Total number of parameters: {total_params}')
+
+        if config.final_training_pass:
+            # train loss
+            final_loss_train = 0.0
+            final_metric_train = 0.0
+            final_nr_nodes_train = 0
+
+            _log.info('final training pass ...')
+            start = time.time()
+            for data_ft in data_loader_train:
+                data_ft = data_ft.to(device)
+                out_ft = model(data_ft)
+                final_loss_train += model.loss(out_ft,
+                                               data_ft.y,
+                                               data_ft.mask).item() * data_ft.num_nodes
+                final_metric_train += model.out_to_metric(
+                    out_ft, data_ft.y) * data_ft.num_nodes
+                final_nr_nodes_train += data_ft.num_nodes
+            final_loss_train /= final_nr_nodes_train
+            final_metric_train /= final_nr_nodes_train
+
+            _run.log_scalar(
+                'loss_train_final',
+                final_loss_train,
+                config.training_epochs)
+            _run.log_scalar(
+                'accuracy_train_final',
+                final_metric_train,
+                config.training_epochs)
+            _log.info(f'final training pass in {time.time() - start:.3f}s')
+        else:
+            # report training loss of last epoch
+            final_loss_train = epoch_loss
+            final_metric_train = epoch_metric_train
+
         _log.info(
             f'Mean train loss ({train_dataset.__len__()} samples): {final_loss_train:.3f}')
         _log.info(
             f'Mean accuracy on train set: {final_metric_train:.3f}')
-        _log.info(
-            f'Mean test loss ({test_dataset.__len__()} samples): {test_loss:.3f}')
-        _log.info(
-            f'Mean accuracy on test set: {test_metric:.3f}\n')
 
-        # plot targets vs predictions. default is a confusion matrix
-        model.plot_targets_vs_predictions(
-            targets=test_targets, predictions=test_predictions)
-        _run.add_artifact(
-            filename=os.path.join(
-                config.run_abs_path,
-                config.confusion_matrix_path),
-            name=config.confusion_matrix_path)
+        if config.final_test_pass:
 
-        # if Regression, plot targets vs. continuous outputs
-        # if isinstance(model.model_type, RegressionProblem):
-        #     test_outputs = []
-        #     for data in data_loader_test:
-        #         data = data.to(device)
-        #         out = torch.squeeze(model(data)).tolist()
-        #         test_outputs.extend(out)
-        #     model.model_type.plot_targets_vs_outputs(
-        #         targets=test_targets, outputs=test_outputs)
+            # test loss
+            data_loader_test = DataLoader(
+                test_dataset,
+                batch_size=config.batch_size_eval,
+                shuffle=False,
+                num_workers=config.num_workers,
+                worker_init_fn=lambda idx: np.random.seed()
+            )
+            test_loss = 0.0
+            test_metric = 0.0
+            nr_nodes_test = 0
+            test_predictions = []
+            test_targets = []
 
-        # plot errors by location
-        # plotter = ResultPlotting(config=config)
-        # plotter.plot_errors_by_location(
-        # data=test_dataset, predictions=test_predictions,
-        # targets=test_targets)
+            _log.info('test pass ...')
+            start = time.time()
+            for data_fe in data_loader_test:
+                data_fe = data_fe.to(device)
+                out_fe = model(data_fe)
+                test_loss += model.loss(out_fe, data_fe.y,
+                                        data_fe.mask).item() * data_fe.num_nodes
+                test_metric += model.out_to_metric(out_fe,
+                                                   data_fe.y) * data_fe.num_nodes
+                nr_nodes_test += data_fe.num_nodes
+                pred = model.out_to_predictions(out_fe)
+                test_predictions.extend(model.predictions_to_list(pred))
+                test_targets.extend(data_fe.y.tolist())
+            test_loss /= nr_nodes_test
+            test_metric /= nr_nodes_test
 
-        # plot the graphs in the test dataset for visual inspection
-        if config.plot_graphs_testset:
-            if config.plot_graphs_testset < 0 or config.plot_graphs_testset > test_dataset.__len__():
-                plot_limit = test_dataset.__len__()
-            else:
-                plot_limit = config.plot_graphs_testset
+            _run.log_scalar('loss_test', test_loss, config.training_epochs)
+            _run.log_scalar('accuracy_test', test_metric, config.training_epochs)
+            _log.info(f'test pass in {time.time() - start:.3f}s\n')
 
-            for i in range(plot_limit):
-                g = test_dataset[i]
-                g.to(device)
-                out_p = model(g)
-                g.plot_predictions(
-                    config=config,
-                    pred=model.predictions_to_list(
-                        model.out_to_predictions(out_p)),
-                    graph_nr=i,
-                    run=_run,
-                    acc=model.out_to_metric(
-                        out_p,
-                        g.y),
-                    logger=_log)
+            _log.info(
+                f'Mean test loss ({test_dataset.__len__()} samples): {test_loss:.3f}')
+            _log.info(
+                f'Mean accuracy on test set: {test_metric:.3f}\n')
+
+            # plot targets vs predictions. default is a confusion matrix
+            model.plot_targets_vs_predictions(
+                targets=test_targets, predictions=test_predictions)
+            _run.add_artifact(
+                filename=os.path.join(
+                    config.run_abs_path,
+                    config.confusion_matrix_path),
+                name=config.confusion_matrix_path)
+
+            # if Regression, plot targets vs. continuous outputs
+            # if isinstance(model.model_type, RegressionProblem):
+            #     test_outputs = []
+            #     for data in data_loader_test:
+            #         data = data.to(device)
+            #         out = torch.squeeze(model(data)).tolist()
+            #         test_outputs.extend(out)
+            #     model.model_type.plot_targets_vs_outputs(
+            #         targets=test_targets, outputs=test_outputs)
+
+            # plot the graphs in the test dataset for visual inspection
+            if config.plot_graphs_testset:
+                if config.plot_graphs_testset < 0 or config.plot_graphs_testset > test_dataset.__len__():
+                    plot_limit = test_dataset.__len__()
+                else:
+                    plot_limit = config.plot_graphs_testset
+
+                for i in range(plot_limit):
+                    g = test_dataset[i]
+                    g.to(device)
+                    out_p = model(g)
+                    g.plot_predictions(
+                        config=config,
+                        pred=model.predictions_to_list(
+                            model.out_to_predictions(out_p)),
+                        graph_nr=i,
+                        run=_run,
+                        acc=model.out_to_metric(
+                            out_p,
+                            g.y),
+                        logger=_log)
+        else:
+            # report validation loss of last epoch
+            test_loss = validation_loss
+            test_metric = epoch_metric_val
+            _log.info(
+                f'Mean validation loss ({test_dataset.__len__()} samples): {test_loss:.3f}')
+            _log.info(
+                f'Mean accuracy on validation set: {test_metric:.3f}\n')
 
         return '\n{0}\ntrain acc: {1:.3f}\ntest acc: {2:.3f}'.format(
             _run.meta_info['options']['--comment'], final_metric_train, test_metric)

@@ -644,6 +644,18 @@ class Config:
             help='standard deviation of noise distribution for edge attributes. If 0, no noise is added.')
         self.default['edge_attr_noise_std'] = 0.0
 
+        self.parser.add_argument(
+            '--final_training_pass',
+            type=str2bool,
+            help='whether to do a pass over the training data with network in evaluation mode')
+        self.default['final_training_pass'] = False
+
+        self.parser.add_argument(
+            '--final_test_pass',
+            type=str2bool,
+            help='whether to evaluate on the testset')
+        self.default['final_test_pass'] = True
+
     def localhost(self):
         return {
             'mongo_url': 'localhost:27017',
