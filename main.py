@@ -15,23 +15,11 @@ import json
 import time
 import numpy as np
 
+from gnn_agglomeration.pyg_datasets import *
+from gnn_agglomeration.nn.models import *
 from gnn_agglomeration.experiment import ex
 from gnn_agglomeration.config import Config
 
-# TODO parametrize imports to avoid overhead here
-# TODO import the entire gnn_agglomeration package
-from gnn_agglomeration.gcn_model import GcnModel
-from gnn_agglomeration.gmm_conv_model import GmmConvModel
-from gnn_agglomeration.spline_conv_model import SplineConvModel
-from gnn_agglomeration.minimal_spline_conv_model import MinimalSplineConvModel
-from gnn_agglomeration.gat_conv_model import GatConvModel
-from gnn_agglomeration.our_conv_model import OurConvModel
-from gnn_agglomeration.regression_problem import RegressionProblem
-from gnn_agglomeration.result_plotting import ResultPlotting
-
-from gnn_agglomeration.pyg_datasets.diameter_dataset import DiameterDataset
-from gnn_agglomeration.pyg_datasets.count_neighbors_dataset import CountNeighborsDataset
-from gnn_agglomeration.pyg_datasets.iterative_dataset import IterativeDataset
 from gnn_agglomeration.pyg_datasets.hemibrain_dataset_random import HemibrainDatasetRandom
 from gnn_agglomeration.pyg_datasets.hemibrain_dataset_blockwise import HemibrainDatasetBlockwise
 

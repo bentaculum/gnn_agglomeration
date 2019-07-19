@@ -9,7 +9,7 @@ import logging
 from tqdm import tqdm
 import os
 
-from ..data_transforms.augment_hemibrain import AugmentHemibrain
+from ..data_transforms import *
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

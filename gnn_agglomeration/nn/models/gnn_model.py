@@ -1,11 +1,9 @@
 import torch
 from abc import ABC, abstractmethod
 import os
-import tensorboardX
 import json
 
-from .classification_problem import ClassificationProblem
-from .regression_problem import RegressionProblem
+from .model_type import *
 
 
 class GnnModel(torch.nn.Module, ABC):
