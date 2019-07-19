@@ -278,10 +278,9 @@ def main(_config, _run, _log):
 
         _run.log_scalar('loss_test', test_loss, config.training_epochs)
         _run.log_scalar('accuracy_test', test_metric, config.training_epochs)
-        _log.info(f'test pass in {time.time() - start:.3f}s')
+        _log.info(f'test pass in {time.time() - start:.3f}s\n')
 
         # final print routine
-        print('')
         train_dataset.print_summary()
 
         _log.info(
@@ -293,9 +292,7 @@ def main(_config, _run, _log):
         _log.info(
             f'Mean test loss ({test_dataset.__len__()} samples): {test_loss:.3f}')
         _log.info(
-            f'Mean accuracy on test set: {test_metric:.3f}')
-
-        print('')
+            f'Mean accuracy on test set: {test_metric:.3f}\n')
 
         # plot targets vs predictions. default is a confusion matrix
         model.plot_targets_vs_predictions(
