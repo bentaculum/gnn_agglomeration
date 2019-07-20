@@ -1,5 +1,4 @@
 import torch
-from torch.nn import functional as F
 from abc import ABC, abstractmethod
 import os
 
@@ -27,14 +26,8 @@ class ModelType(torch.nn.Module, ABC):
 
     def loss(self, inputs, targets, mask):
         l = self.loss_one_by_one(inputs, targets)
-        # in pyg, the graphs in a mini-batch get merged on dimension 0
-        # TODO remove assert statement
-        assert l.size(0) == mask.size(0)
-
-        return torch.sum(l * mask) / torch.sum(mask)
-
-        # old, mean without masking
-        # return torch.mean(l * mask, dim=0, keepdim=False)
+        # add tiny float to avoid division by 0 when sum(mask) is 0
+        return torch.sum(l * mask) / (torch.sum(mask) + torch.finfo(torch.float).tiny)
 
     @abstractmethod
     def out_to_predictions(self, out):
