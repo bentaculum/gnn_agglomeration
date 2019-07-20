@@ -20,10 +20,6 @@ from gnn_agglomeration.nn.models import *
 from gnn_agglomeration.experiment import ex
 from gnn_agglomeration.config import Config
 
-from gnn_agglomeration.pyg_datasets.hemibrain_dataset_random import HemibrainDatasetRandom
-from gnn_agglomeration.pyg_datasets.hemibrain_dataset_random_in_memory import HemibrainDatasetRandomInMemory
-from gnn_agglomeration.pyg_datasets.hemibrain_dataset_blockwise import HemibrainDatasetBlockwise
-
 
 @ex.main
 @ex.capture
@@ -70,8 +66,9 @@ def main(_config, _run, _log):
         config.run_abs_path, 'summary', 'validation'))
 
     # create and load datasets
-    if config.dataset_type == 'HemibrainDataset':
-        train_dataset = HemibrainDatasetRandomInMemory(
+    if config.dataset_type_train.startswith('HemibrainDataset'):
+        _log.info('Preparing training dataset ...')
+        train_dataset = globals()[config.dataset_type_train](
             root=config.dataset_abs_path_train,
             config=config,
             roi_offset=config.train_roi_offset,
@@ -80,7 +77,8 @@ def main(_config, _run, _log):
             save_processed=config.save_processed_train
         )
 
-        validation_dataset = HemibrainDatasetBlockwise(
+        _log.info('Preparing validation dataset ...')
+        validation_dataset = globals()[config.dataset_type_val](
             root=config.dataset_abs_path_val,
             config=config,
             roi_offset=config.val_roi_offset,
@@ -88,7 +86,8 @@ def main(_config, _run, _log):
             save_processed=config.save_processed_val
         )
 
-        test_dataset = HemibrainDatasetBlockwise(
+        _log.info('Preparing test dataset ...')
+        test_dataset = globals()[config.dataset_type_test](
             root=config.dataset_abs_path_test,
             config=config,
             roi_offset=config.test_roi_offset,
@@ -97,7 +96,7 @@ def main(_config, _run, _log):
         )
 
     else:
-        dataset = globals()[config.dataset_type](
+        dataset = globals()[config.dataset_type_train](
             root=config.dataset_abs_path_train, config=config)
         # split into train and test
         split_train_idx = int(

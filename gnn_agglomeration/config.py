@@ -87,15 +87,43 @@ class Config:
         self.default['theta'] = 0.1
 
         self.parser.add_argument(
-            '--dataset_type',
+            '--dataset_type_train',
             type=str,
             choices=[
                 'DiameterDataset',
                 'CountNeighborsDataset',
                 'IterativeDataset',
-                'HemibrainDataset'],
+                'HemibrainDatasetRandom',
+                'HemibrainDatasetRandomInMemory',
+                'HemibrainDatasetBlockwise',
+                'HemibrainDatasetBlockwiseInMemory'
+            ],
             help='choose from different types of local datasets')
-        self.default['dataset_type'] = 'HemibrainDataset'
+        self.default['dataset_type_train'] = 'HemibrainDatasetRandomInMemory'
+
+        self.parser.add_argument(
+            '--dataset_type_val',
+            type=str,
+            choices=[
+                'HemibrainDatasetRandom',
+                'HemibrainDatasetRandomInMemory',
+                'HemibrainDatasetBlockwise',
+                'HemibrainDatasetBlockwiseInMemory'
+            ],
+            help='choose from different types of local datasets')
+        self.default['dataset_type_val'] = 'HemibrainDatasetBlockwiseInMemory'
+
+        self.parser.add_argument(
+            '--dataset_type_test',
+            type=str,
+            choices=[
+                'HemibrainDatasetRandom',
+                'HemibrainDatasetRandomInMemory',
+                'HemibrainDatasetBlockwise',
+                'HemibrainDatasetBlockwiseInMemory'
+            ],
+            help='choose from different types of local datasets')
+        self.default['dataset_type_test'] = 'HemibrainDatasetBlockwiseInMemory'
 
         self.parser.add_argument(
             '--dataset_path_train',

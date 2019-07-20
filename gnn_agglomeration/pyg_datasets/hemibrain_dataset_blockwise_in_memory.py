@@ -3,7 +3,7 @@ import logging
 from torch_geometric.data import InMemoryDataset
 from tqdm import tqdm
 
-from .hemibrain_dataset_random import HemibrainDatasetRandom
+from .hemibrain_dataset_blockwise import HemibrainDatasetBlockwise
 from .hemibrain_graph_unmasked import HemibrainGraphUnmasked
 from .hemibrain_graph_masked import HemibrainGraphMasked
 
@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class HemibrainDatasetRandomInMemory(InMemoryDataset, HemibrainDatasetRandom):
+class HemibrainDatasetBlockwiseInMemory(InMemoryDataset, HemibrainDatasetBlockwise):
     def __init__(
             self,
             root,
@@ -21,7 +21,7 @@ class HemibrainDatasetRandomInMemory(InMemoryDataset, HemibrainDatasetRandom):
             length=None,
             save_processed=False):
 
-        HemibrainDatasetRandom.__init__(
+        HemibrainDatasetBlockwise.__init__(
             self,
             root=root,
             config=config,
