@@ -47,39 +47,20 @@ class HemibrainGraphMasked(HemibrainGraph):
             self.y = self.parse_rag_excerpt(node_attrs, edge_attrs)
 
         self.mask = self.mask_target_edges(
-            graph_provider=graph_provider,
             inner_roi=daisy.Roi(
                 list(inner_block_offset),
                 list(inner_block_shape)),
             mask=mask)
 
-    def mask_target_edges(self, graph_provider, inner_roi, mask):
-        # parse inner block
-        inner_nodes = graph_provider.read_nodes(roi=inner_roi)
-        inner_edges = graph_provider.read_edges(
-            roi=inner_roi, nodes=inner_nodes)
+    def mask_target_edges(self, inner_roi, mask):
+        lower_limit = torch.tensor(inner_roi.get_offset(), dtype=torch.float)
+        upper_limit = lower_limit + torch.tensor(inner_roi.get_shape(), dtype=torch.float)
 
-        if len(inner_nodes) == 0:
-            raise ValueError('No nodes found in roi %s' % inner_roi)
-        if len(inner_edges) == 0:
-            raise ValueError('No edges found in roi %s' % inner_roi)
+        nodes_in = torch.all(self.pos > lower_limit, dim=1) & torch.all(self.pos < upper_limit, dim=1)
+        edge_index_flat = torch.transpose(self.edge_index, 0, 1).flatten()
+        edge_index_bool = nodes_in[edge_index_flat].reshape(-1, 2)
 
-        inner_edge_index, _, _, _, inner_node_ids, _, _ = self.parse_rag_excerpt(
-            inner_nodes, inner_edges)
+        edge_valid_directed = torch.all(edge_index_bool, dim=1)
+        inner_mask = edge_valid_directed[0::2]
 
-        # remap inner and outer node ids to original ids
-        inner_idx_flat = torch.transpose(inner_edge_index, 0, 1).flatten()
-        inner_orig_edge_index = inner_node_ids[inner_idx_flat].reshape(
-            (-1, 2)).tolist()
-        outer_idx_flat = torch.transpose(self.edge_index, 0, 1).flatten()
-        outer_orig_edge_index = self.node_ids[outer_idx_flat].reshape(
-            (-1, 2)).tolist()
-
-        outer_tuples = [tuple(i) for i in outer_orig_edge_index]
-        inner_tuples = [tuple(i) for i in inner_orig_edge_index]
-        context_edges = set(outer_tuples) - set(inner_tuples)
-        for c in context_edges:
-            idx = outer_tuples.index(c)
-            mask[int(idx / 2)] = 0
-
-        return mask
+        return (inner_mask & mask.byte()).float()

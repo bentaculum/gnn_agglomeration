@@ -52,6 +52,11 @@ class HemibrainGraph(Data, ABC):
             if e[node1_field] not in node_attrs[id_field] or e[node2_field] not in node_attrs[id_field]:
                 edges_list.remove(e)
 
+        # If all edges were removed in the step above, raise a ValueError
+        # that is caught later on
+        if len(edges_list) == 0:
+            raise ValueError(f'Removed all edges in ROI, as one node is outside of ROI')
+
         edges_attrs = to_np_arrays(edges_list)
 
         node_ids = torch.tensor(node_attrs[id_field].astype(np.int64), dtype=torch.long)
