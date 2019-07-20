@@ -59,7 +59,7 @@ class OurConv(MessagePassing):
                  bias=True,
                  normalize_with_softmax=True,
                  local_layers=1,
-                 local_hidden_dims=[],
+                 local_hidden_dims=None,
                  non_linearity='leaky_relu',
                  attention_nn_params=None):
         super(OurConv, self).__init__('add')
@@ -77,7 +77,12 @@ class OurConv(MessagePassing):
         self.local_layers = local_layers
         self.weight_list = torch.nn.ParameterList()
 
-        weight_dims = local_hidden_dims.copy()
+        # avoid empty list as default value
+        if not local_hidden_dims:
+            weight_dims = []
+        else:
+            weight_dims = local_hidden_dims.copy()
+
         weight_dims.insert(0, in_channels)
         weight_dims.append(heads * out_channels)
 
