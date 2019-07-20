@@ -21,6 +21,7 @@ from gnn_agglomeration.experiment import ex
 from gnn_agglomeration.config import Config
 
 from gnn_agglomeration.pyg_datasets.hemibrain_dataset_random import HemibrainDatasetRandom
+from gnn_agglomeration.pyg_datasets.hemibrain_dataset_random_in_memory import HemibrainDatasetRandomInMemory
 from gnn_agglomeration.pyg_datasets.hemibrain_dataset_blockwise import HemibrainDatasetBlockwise
 
 
@@ -70,7 +71,7 @@ def main(_config, _run, _log):
 
     # create and load datasets
     if config.dataset_type == 'HemibrainDataset':
-        train_dataset = HemibrainDatasetRandom(
+        train_dataset = HemibrainDatasetRandomInMemory(
             root=config.dataset_abs_path_train,
             config=config,
             roi_offset=config.train_roi_offset,
