@@ -28,7 +28,7 @@ class GnnModel(torch.nn.Module, ABC):
                 'The model type you have specified is not implemented')
 
         self.layers()
-        self.optimizer()
+        self.init_optimizer()
 
         self.epoch = epoch
         self.train_writer = train_writer
@@ -53,7 +53,7 @@ class GnnModel(torch.nn.Module, ABC):
             self.current_loss, 'out_layer', self.model_type.loss_name)
         return self.current_loss
 
-    def optimizer(self):
+    def init_optimizer(self):
         self.optimizer = torch.optim.Adam(
             self.parameters(),
             lr=self.config.adam_lr,
