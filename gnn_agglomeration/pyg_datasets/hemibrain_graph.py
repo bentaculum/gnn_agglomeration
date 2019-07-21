@@ -25,7 +25,6 @@ class HemibrainGraph(Data, ABC):
         pass
 
     def parse_rag_excerpt(self, nodes_list, edges_list):
-        start_parse = time.time()
 
         # TODO parametrize the used names
         id_field = 'id'
@@ -48,9 +47,11 @@ class HemibrainGraph(Data, ABC):
         # TODO maybe port to numpy, but generally fast
         # Drop edges for which one of the incident nodes is not in the
         # extracted node set
+        start = time.time()
         for e in reversed(edges_list):
             if e[node1_field] not in node_attrs[id_field] or e[node2_field] not in node_attrs[id_field]:
                 edges_list.remove(e)
+        logger.debug(f'drop edges at the border in {time.time() - start}s')
 
         # If all edges were removed in the step above, raise a ValueError
         # that is caught later on
@@ -69,13 +70,15 @@ class HemibrainGraph(Data, ABC):
             new_values=np.arange(len(node_attrs[id_field]), dtype=np.int64),
             inplace=True
         )
+        logger.debug(f'remapping {len(edges_attrs[node1_field])} edges (u) in {time.time() - start} s')
+        start = time.time()
         edges_attrs[node2_field] = replace_values(
             in_array=edges_attrs[node2_field].astype(np.int64),
             old_values=node_attrs[id_field].astype(np.int64),
             new_values=np.arange(len(node_attrs[id_field]), dtype=np.int64),
             inplace=True
         )
-        logger.debug(f'remapping {len(edges_attrs[node1_field])} edges in {time.time() - start} s')
+        logger.debug(f'remapping {len(edges_attrs[node2_field])} edges (v) in {time.time() - start} s')
 
         # TODO I could potentially avoid transposing twice
         # edge index requires dimensionality of (2,e)
@@ -106,8 +109,6 @@ class HemibrainGraph(Data, ABC):
         y = torch.tensor(
             edges_attrs[gt_merge_score_field],
             dtype=torch.long)
-
-        logger.debug(f'parsing total in {time.time() - start_parse} s')
 
         return edge_index, edge_attr, x, pos, node_ids, mask, y
 
