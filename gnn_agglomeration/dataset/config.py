@@ -2,7 +2,7 @@ import configargparse
 import configparser
 import logging
 
-p = configargparse.ArgParser(default_config_files=['./config.ini'])
+p = configargparse.ArgParser(default_config_files=['.configs/config.ini'])
 p.add('--config_file', is_config_file=True,
       help='file path to config that overwrites the default configs')
 
