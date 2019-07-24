@@ -26,6 +26,7 @@ def find_segments(
         thresholds_step,
         con_comp_score,
         lut_fragment_segment,
+        num_workers,
         run_type=None,
         **kwargs):
     '''
@@ -88,7 +89,7 @@ def find_segments(
     node_attrs, edge_attrs = graph_provider.read_blockwise(
         roi,
         block_size=daisy.Coordinate((10000, 10000, 10000)),
-        num_workers=kwargs['num_workers'])
+        num_workers=num_workers)
 
     print("Read graph in %.3fs" % (time.time() - start))
 
@@ -189,6 +190,7 @@ if __name__ == "__main__":
         thresholds_step=config.con_comp_thresholds_step,
         con_comp_score=config.con_comp_score,
         lut_fragment_segment=config.lut_fragment_segment,
+        num_workers=config.num_workers,
         run_type=None
     )
 

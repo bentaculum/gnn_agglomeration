@@ -12,7 +12,7 @@ import waterz
 from funlib.segment.arrays import replace_values
 from funlib.evaluate import rand_voi
 
-from .config import config
+from config import config
 
 logging.basicConfig(level=logging.INFO)
 
