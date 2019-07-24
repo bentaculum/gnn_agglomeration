@@ -103,7 +103,8 @@ def overlap():
 
     frag_to_gt = overlap_reduce(tmp_path=temp_dir)
 
-    pickle.dump(frag_to_gt, open(os.path_join(temp_dir, 'frag_to_gt.pickle'), 'wb'))
+    pickle.dump(frag_to_gt, open(os.path.join(
+        temp_dir, 'frag_to_gt.pickle'), 'wb'))
     return frag_to_gt
 
 
