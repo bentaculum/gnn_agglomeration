@@ -277,7 +277,7 @@ if __name__ == "__main__":
         num_workers=config.num_workers,
         configuration=config.configuration,
         volume_size=config.volume_size,
-        lut_fragment_segment,
+        lut_fragment_segment=config.lut_fragment_segment,
         relabel=False,
         erode=False,
         border_threshold=None
