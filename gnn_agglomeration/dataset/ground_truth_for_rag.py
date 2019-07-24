@@ -96,10 +96,11 @@ def overlap():
     logger.info(
         f"Blockwise overlapping of fragments and ground truth in {time.time() - start:.3f}s")
     logger.debug(
-        f"num blocks: { np.prod(np.ceil(np.array(config.roi_shape) / np.array(config.block_size)))}")
+        f"num blocks: {np.prod(np.ceil(np.array(config.roi_shape) / np.array(config.block_size)))}")
 
     frag_to_gt = overlap_reduce()
 
+    pickle.dump(frag_to_gt, open(os.path_join(temp_dir, 'frag_to_gt.pickle'), 'wb'))
     return frag_to_gt
 
 
@@ -146,7 +147,9 @@ def update_rag_db_with_gt(gt):
             # TODO careful with this edge case
             logger.warning(
                 f'nodes of edge {u} - {v} not contained in overlap ground truth')
-            continue
+            edge_label = 1
+            labeled = 0
+            gt_trinary = None
         else:
             if gt[u] == gt[v]:
                 edge_label = 0
@@ -171,6 +174,7 @@ def update_rag_db_with_gt(gt):
         edge_gt_trinary[(u, v)] = gt_trinary
 
     logger.debug(f"Computed edge ground truth in {time.time() - start:.3f} s")
+    assert len(edge_gt) == len(graph.edges(data=False))
 
     nx.set_edge_attributes(graph, values=edge_gt, name=config.new_edge_attr)
     nx.set_edge_attributes(graph, values=edge_labeled,
@@ -193,7 +197,6 @@ def update_rag_db_with_gt(gt):
 
 
 def save_to_lookup_table(gt):
-    # TODO check data type
     start = time.time()
     lut = np.array([list(gt.keys()), list(gt.values())], dtype=np.uint64)
 
