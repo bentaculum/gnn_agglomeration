@@ -8,6 +8,8 @@ import numpy as np
 import multiprocessing as mp
 from funlib.segment.graphs.impl import connected_components
 
+from config import config
+
 logging.basicConfig(level=logging.INFO)
 logging.getLogger(
     'daisy.persistence.shared_graph_provider').setLevel(logging.DEBUG)
@@ -22,6 +24,9 @@ def find_segments(
         roi_shape,
         thresholds_minmax,
         thresholds_step,
+        con_comp_score,
+        lut_fragment_segment,
+        num_workers,
         run_type=None,
         **kwargs):
     '''
@@ -84,7 +89,7 @@ def find_segments(
     node_attrs, edge_attrs = graph_provider.read_blockwise(
         roi,
         block_size=daisy.Coordinate((10000, 10000, 10000)),
-        num_workers=kwargs['num_workers'])
+        num_workers=num_workers)
 
     print("Read graph in %.3fs" % (time.time() - start))
 
@@ -99,8 +104,7 @@ def find_segments(
     nodes = node_attrs['id']
     edges = np.stack([edge_attrs['u'].astype(np.uint64),
                       edge_attrs['v'].astype(np.uint64)], axis=1)
-    scores = edge_attrs['merge_score'].astype(np.float32)
-    # scores = edge_attrs['merge_ground_truth'].astype(np.float32)
+    scores = edge_attrs[con_comp_score].astype(np.float32)
 
     print('Nodes dtype: ', nodes.dtype)
     print('edges dtype: ', edges.dtype)
@@ -111,12 +115,12 @@ def find_segments(
 
     out_dir = os.path.join(
         fragments_file,
-        'luts',
-        'fragment_to_segment_benjamin')
+        lut_fragment_segment)
 
     if run_type:
         out_dir = os.path.join(out_dir, run_type)
 
+    # TODO make sure I don't overwrite stuff here
     os.makedirs(out_dir, exist_ok=True)
 
     thresholds = list(np.arange(
@@ -173,13 +177,22 @@ def get_connected_components(
 
 
 if __name__ == "__main__":
-
-    config_file = sys.argv[1]
-
-    with open(config_file, 'r') as f:
-        config = json.load(f)
-
     start = time.time()
-    find_segments(**config)
+
+    find_segments(
+        db_host=config.db_host,
+        db_name=config.db_name,
+        fragments_file=config.fragments_zarr,
+        edges_collection=config.edges_collection,
+        roi_offset=config.roi_offset,
+        roi_shape=config.roi_shape,
+        thresholds_minmax=config.con_comp_thresholds_minmax,
+        thresholds_step=config.con_comp_thresholds_step,
+        con_comp_score=config.con_comp_score,
+        lut_fragment_segment=config.lut_fragment_segment,
+        num_workers=config.num_workers,
+        run_type=None
+    )
+
     print('Took %.3f seconds to find segments and store LUTs' %
           (time.time() - start))

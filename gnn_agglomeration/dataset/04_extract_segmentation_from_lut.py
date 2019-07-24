@@ -7,6 +7,8 @@ import sys
 import time
 import numpy as np
 
+from config import config
+
 logging.basicConfig(level=logging.INFO)
 logging.getLogger('daisy.datasets').setLevel(logging.DEBUG)
 
@@ -42,6 +44,7 @@ def extract_segmentation(
         out_file,
         out_dataset,
         num_workers,
+        lut_fragment_segment,
         roi_offset=None,
         roi_shape=None,
         run_type=None,
@@ -72,8 +75,7 @@ def extract_segmentation(
 
     lut_dir = os.path.join(
         fragments_file,
-        'luts',
-        'fragment_to_overlap_gt')
+        lut_fragment_segment)
 
     if run_type:
         lut_dir = os.path.join(lut_dir, run_type)
@@ -109,10 +111,16 @@ def extract_segmentation(
 
 
 if __name__ == "__main__":
-
-    config_file = sys.argv[1]
-
-    with open(config_file, 'r') as f:
-        config = json.load(f)
-
-    extract_segmentation(**config)
+    extract_segmentation(
+        fragments_file=config.fragments_zarr,
+        fragments_dataset=config.fragments_ds,
+        edges_collection=config.edges_collection,
+        threshold=config.lut_threshold,
+        out_file=config.fragments_zarr,
+        out_dataset=config.volume_segmentation,
+        num_workers=config.num_workers,
+        roi_offset=config.roi_offset,
+        roi_shape=config.roi_shape,
+        lut_fragment_segment=config.lut_fragment_segment,
+        run_type=None
+    )

@@ -2,12 +2,12 @@ import configargparse
 import configparser
 import logging
 
-p = configargparse.ArgParser(default_config_files=['.configs/config.ini'])
+p = configargparse.ArgParser(
+    default_config_files=['configs/config_hemi_vanilla_400k_roi_1.ini'])
 p.add('--config_file', is_config_file=True,
       help='file path to config that overwrites the default configs')
 
 # [FILE PATHS]
-p.add('--temp_path', type=str, help='where to temp. store the blockwise outputs')
 p.add(
     '--fragments_zarr',
     type=str,
@@ -16,8 +16,6 @@ p.add(
     '--fragments_ds',
     type=str,
     help='relative path to fragments in the .zarr file')
-p.add('--lut_out_path', type=str,
-      help='where to store the lookup table from overlapping')
 p.add(
     '--groundtruth_zarr',
     type=str,
@@ -26,8 +24,18 @@ p.add(
     '--groundtruth_ds',
     type=str,
     help='relative path to the ground truth in the .zarr file')
+p.add('--temp_path', type=str, help='where to temp. store the blockwise outputs')
+p.add('--lut_fragments_to_overlap_gt', type=str,
+      help='where to store the lookup table from overlapping')
+p.add('--overlap_gt_ds', type=str,
+      help='where to write the extracted segmentation volume')
 
-# [DATABASE]
+p.add('--lut_fragment_segment', type=str,
+      help='where to store the segments found by connected components')
+p.add('--volume_segmentation', type=str,
+      help='where to store the relabelled volume with the final segmentation')
+
+# [DATABASES]
 p.add('--db_host', type=str, help='connection to the RAG mongoDB client')
 p.add('--db_name', type=str, help='database name')
 p.add('--nodes_collection', type=str, help='nodes collection in mongoDB')
@@ -42,6 +50,8 @@ p.add(
 p.add('--new_edge_attr_trinary', type=str,
       help='trinary value: merge, do not merge, unknown')
 
+p.add('--scores_db_name', type=str, help='database for VOI and other metrics')
+
 # [DATA]
 p.add(
     '--background_id',
@@ -49,17 +59,29 @@ p.add(
     help='id for background voxels in fragment data')
 p.add('--roi_offset', type=int, nargs='+', help='3D ROI offset in nanometers')
 p.add('--roi_shape', type=int, nargs='+', help='3D ROI shape in nanometers')
-
-# [DATA PROCESSING]
-p.add(
-    '--threshold_overlap',
-    type=float,
-    help='percentage of overlap required to consider a fragment non-background')
-p.add('--num_workers', type=int, help='number of daisy subprocesses')
 p.add('--block_size', type=int, nargs='+',
       help='block size used for processing fragments')
 p.add('--padding', type=int, nargs=3,
       help='padding used for fragment creation. Not used at the moment')
+
+# [DATA PROCESSING]
+p.add('--num_workers', type=int, help='number of daisy subprocesses')
+p.add('--threshold_overlap',
+      type=float,
+      help='percentage of overlap required to consider a fragment non-background')
+p.add('--con_comp_thresholds_minmax', type=float, nargs=2,
+      help='lower and upper limit for the different runs of connected components')
+p.add('--con_comp_thresholds_step', type=float,
+      help='step size for threshold of connected components runs')
+p.add('--con_comp_score', type=str, help='edge weights for connected components')
+p.add('--lut_threshold', type=float, help='lut to use for extracting a volume')
+
+# [META]
+p.add('--experiment', type=str)
+p.add('--setup', type=str)
+p.add('--iteration', type=int)
+p.add('--configuration', type=str)
+p.add('--volume_size', type=str)
 
 # [MISCELLANEOUS]
 p.add(

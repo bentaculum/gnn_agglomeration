@@ -7,6 +7,8 @@ import pickle
 import shutil
 import os
 import networkx as nx
+import datetime
+import pytz
 
 from config import config
 
@@ -47,15 +49,15 @@ def overlap_in_block(block, fragments, groundtruth, tmp_path):
         tmp_path, f"{block.block_id}.pickle"), 'wb'))
 
 
-def overlap_reduce():
+def overlap_reduce(tmp_path):
     block_dicts = []
-    for f in os.listdir(config.temp_path):
+    for f in os.listdir(tmp_path):
         if f.endswith(".pickle"):
             block_dicts.append(pickle.load(
-                open(os.path.join(config.temp_path, f), 'rb')))
+                open(os.path.join(tmp_path, f), 'rb')))
 
     logger.info(
-        f"Found {len(block_dicts)} block results in {config.temp_path}")
+        f"Found {len(block_dicts)} block results in {tmp_path}")
 
     merged_dicts = dict()
     for b in block_dicts:
@@ -70,9 +72,10 @@ def overlap_reduce():
 
 
 def overlap():
-    if os.path.isdir(config.temp_path):
-        shutil.rmtree(config.temp_path)
-    os.makedirs(config.temp_path)
+    run_datetime = datetime.datetime.now(
+        pytz.timezone('US/Eastern')).strftime('%Y%m%dT%H%M%S.%f%z')
+    temp_dir = os.path.join(config.temp_path, run_datetime)
+    os.makedirs(temp_dir)
 
     fragments = daisy.open_ds(config.fragments_zarr, config.fragments_ds)
     groundtruth = daisy.open_ds(config.groundtruth_zarr, config.groundtruth_ds)
@@ -87,7 +90,7 @@ def overlap():
             block=block,
             fragments=fragments,
             groundtruth=groundtruth,
-            tmp_path=config.temp_path),
+            tmp_path=temp_dir),
         fit='shrink',
         num_workers=config.num_workers,
         read_write_conflict=False,
@@ -98,7 +101,7 @@ def overlap():
     logger.debug(
         f"num blocks: {np.prod(np.ceil(np.array(config.roi_shape) / np.array(config.block_size)))}")
 
-    frag_to_gt = overlap_reduce()
+    frag_to_gt = overlap_reduce(tmp_path=temp_dir)
 
     pickle.dump(frag_to_gt, open(os.path_join(temp_dir, 'frag_to_gt.pickle'), 'wb'))
     return frag_to_gt
@@ -206,10 +209,11 @@ def save_to_lookup_table(gt):
     if not os.path.isdir(
         os.path.join(
             config.fragments_zarr,
-            config.lut_out_path)):
-        os.makedirs(os.path.join(config.fragments_zarr, config.lut_out_path))
+            config.lut_fragments_to_overlap_gt)):
+        os.makedirs(os.path.join(config.fragments_zarr,
+                                 config.lut_fragments_to_overlap_gt))
     out_file = os.path.join(config.fragments_zarr,
-                            config.lut_out_path, filename)
+                            config.lut_fragments_to_overlap_gt, filename)
 
     np.savez_compressed(out_file, fragment_segment_lut=lut)
     logger.debug(
