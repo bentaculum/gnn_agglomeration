@@ -29,6 +29,11 @@ p.add('--lut_fragments_to_overlap_gt', type=str,
 p.add('--overlap_gt_ds', type=str,
       help='where to write the extracted segmentation volume')
 
+p.add('--lut_fragment_segment', type=str,
+      help='where to store the segments found by connected components')
+p.add('--volume_segmentation', type=str,
+      help='where to store the relabelled volume with the final segmentation')
+
 # [DATABASES]
 p.add('--db_host', type=str, help='connection to the RAG mongoDB client')
 p.add('--db_name', type=str, help='database name')
@@ -43,7 +48,8 @@ p.add(
     help="binary masking to avoid labelling two adjacent background fragments as 'merge'")
 p.add('--new_edge_attr_trinary', type=str,
       help='trinary value: merge, do not merge, unknown')
-p.add('scores_db_name', type=str, help='database for VOI and other metrics')
+
+p.add('--scores_db_name', type=str, help='database for VOI and other metrics')
 
 # [DATA]
 p.add(
@@ -66,6 +72,7 @@ p.add('--con_comp_thresholds_minmax', type=float, nargs=2,
       help='lower and upper limit for the different runs of connected components')
 p.add('--con_comp_thresholds_step', type=float,
       help='step size for threshold of connected components runs')
+p.add('--con_comp_score', type=str, help='edge weights for connected components')
 p.add('--lut_threshold', type=float, help='lut to use for extracting a volume')
 
 # [META]

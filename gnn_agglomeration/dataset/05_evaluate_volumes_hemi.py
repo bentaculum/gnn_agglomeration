@@ -12,6 +12,8 @@ import waterz
 from funlib.segment.arrays import replace_values
 from funlib.evaluate import rand_voi
 
+from .config import config
+
 logging.basicConfig(level=logging.INFO)
 
 
@@ -32,12 +34,13 @@ def evaluate(
         num_workers,
         configuration,
         volume_size,
+        lut_fragment_segment,
         relabel=False,
         erode=False,
         border_threshold=None):
 
     # open fragments
-    logging.info("Reading fragments from %s" %fragments_file)
+    logging.info("Reading fragments from %s" % fragments_file)
     fragments = daisy.open_ds(fragments_file, fragments_dataset)
 
     # open RAG DB
@@ -60,7 +63,7 @@ def evaluate(
     logging.info("Number of nodes in RAG: %d", len(rag.nodes()))
     logging.info("Number of edges in RAG: %d", len(rag.edges()))
 
-    #read gt data
+    # read gt data
     gt = daisy.open_ds(gt_file, gt_dataset)
     common_roi = fragments.roi.intersect(gt.roi)
 
@@ -74,22 +77,22 @@ def evaluate(
 
     if relabel:
 
-        #relabel connected components
+        # relabel connected components
         logging.info("Relabelling connected components in GT...")
         gt.materialize()
         components = gt.data
         dtype = components.dtype
         simple_neighborhood = malis.mknhood3d()
         affs_from_components = malis.seg_to_affgraph(
-                components,
-                simple_neighborhood
-                )
+            components,
+            simple_neighborhood
+        )
         components, _ = malis.connected_components_affgraph(
-                affs_from_components,
-                simple_neighborhood
-                )
+            affs_from_components,
+            simple_neighborhood
+        )
         # curate GT
-        components[gt.data>np.uint64(-10)] = 0
+        components[gt.data > np.uint64(-10)] = 0
         gt.data = components.astype(dtype)
 
     if erode:
@@ -116,42 +119,45 @@ def evaluate(
     for threshold in thresholds:
 
         segment_ids = get_segmentation(
-                fragments,
-                fragments_file,
-                edges_collection,
-                threshold)
+            fragments,
+            fragments_file,
+            lut_fragment_segment,
+            edges_collection,
+            threshold)
 
         evaluate_threshold(
-                experiment,
-                setup,
-                iteration,
-                db_host,
-                scores_db_name,
-                edges_collection,
-                segment_ids,
-                gt,
-                threshold,
-                configuration,
-                volume_size)
+            experiment,
+            setup,
+            iteration,
+            db_host,
+            scores_db_name,
+            edges_collection,
+            segment_ids,
+            gt,
+            threshold,
+            configuration,
+            volume_size)
 
 
 def get_segmentation(
         fragments,
         fragments_file,
+        lut_fragment_segment,
         edges_collection,
         threshold):
 
-    logging.info("Loading fragment - segment lookup table for threshold %s..." %threshold)
+    logging.info(
+        "Loading fragment - segment lookup table for threshold %s..." % threshold)
     fragment_segment_lut_dir = os.path.join(
-            fragments_file,
-            'luts/fragment_segment')
+        fragments_file,
+        lut_fragment_segment)
 
     fragment_segment_lut_file = os.path.join(
-            fragment_segment_lut_dir,
-            'seg_%s_%d.npz' % (edges_collection, int(threshold*100)))
+        fragment_segment_lut_dir,
+        'seg_%s_%d.npz' % (edges_collection, int(threshold*100)))
 
     fragment_segment_lut = np.load(
-            fragment_segment_lut_file)['fragment_segment_lut']
+        fragment_segment_lut_file)['fragment_segment_lut']
 
     assert fragment_segment_lut.dtype == np.uint64
 
@@ -159,7 +165,8 @@ def get_segmentation(
 
     logging.info("Relabeling fragment ids with segment ids...")
 
-    segment_ids = replace_values(fragments, fragment_segment_lut[0], fragment_segment_lut[1])
+    segment_ids = replace_values(
+        fragments, fragment_segment_lut[0], fragment_segment_lut[1])
 
     return segment_ids
 
@@ -177,47 +184,47 @@ def evaluate_threshold(
         configuration,
         volume_size):
 
-        #open score DB
-        client = MongoClient(db_host)
-        database = client[scores_db_name]
-        score_collection = database['scores']
+    # open score DB
+    client = MongoClient(db_host)
+    database = client[scores_db_name]
+    score_collection = database['scores']
 
-        #get VOI and RAND
-        logging.info("Calculating VOI scores for threshold %f...", threshold)
+    # get VOI and RAND
+    logging.info("Calculating VOI scores for threshold %f...", threshold)
 
-        logging.info(type(segment_ids))
+    logging.info(type(segment_ids))
 
-        rand_voi_report = rand_voi(
-                gt,
-                segment_ids,
-                return_cluster_scores=False)
+    rand_voi_report = rand_voi(
+        gt,
+        segment_ids,
+        return_cluster_scores=False)
 
-        metrics = rand_voi_report.copy()
+    metrics = rand_voi_report.copy()
 
-        for k in {'voi_split_i', 'voi_merge_j'}:
-            del metrics[k]
+    for k in {'voi_split_i', 'voi_merge_j'}:
+        del metrics[k]
 
-        logging.info("Storing VOI values for threshold %f in DB" %threshold)
+    logging.info("Storing VOI values for threshold %f in DB" % threshold)
 
-        metrics['threshold'] = threshold
-        metrics['experiment'] = experiment
-        metrics['setup'] = setup
-        metrics['iteration'] = iteration
-        metrics['network'] = configuration
-        metrics['volume_size'] = volume_size
-        metrics['merge_function'] = edges_collection.strip('edges_')
+    metrics['threshold'] = threshold
+    metrics['experiment'] = experiment
+    metrics['setup'] = setup
+    metrics['iteration'] = iteration
+    metrics['network'] = configuration
+    metrics['volume_size'] = volume_size
+    metrics['merge_function'] = edges_collection.strip('edges_')
 
-        logging.info(metrics)
+    logging.info(metrics)
 
-        score_collection.replace_one(
-                filter={
-                    'network': metrics['network'],
-                    'volume_size': metrics['volume_size'],
-                    'merge_function': metrics['merge_function'],
-                    'threshold': metrics['threshold']
-                },
-                replacement=metrics,
-                upsert=True)
+    score_collection.replace_one(
+        filter={
+            'network': metrics['network'],
+            'volume_size': metrics['volume_size'],
+            'merge_function': metrics['merge_function'],
+            'threshold': metrics['threshold']
+        },
+        replacement=metrics,
+        upsert=True)
 
 
 def create_border_mask_2d(image, max_dist):
@@ -238,24 +245,40 @@ def create_border_mask_2d(image, max_dist):
     padded = np.pad(image, 1, mode='edge')
 
     border_pixels = np.logical_and(
-        np.logical_and( image == padded[:-2, 1:-1], image == padded[2:, 1:-1] ),
-        np.logical_and( image == padded[1:-1, :-2], image == padded[1:-1, 2:] )
-        )
+        np.logical_and(image == padded[:-2, 1:-1], image == padded[2:, 1:-1]),
+        np.logical_and(image == padded[1:-1, :-2], image == padded[1:-1, 2:])
+    )
 
     distances = scipy.ndimage.distance_transform_edt(
         border_pixels,
         return_distances=True,
         return_indices=False
-        )
+    )
 
     return distances <= max_dist
 
 
 if __name__ == "__main__":
 
-    config_file = sys.argv[1]
-
-    with open(config_file, 'r') as f:
-        config = json.load(f)
-
-    evaluate(**config)
+    evaluate(
+        experiment=config.experiment,
+        setup=config.setup,
+        iteration=config.iteration,
+        gt_file=config.groundtruth_zarr,
+        gt_dataset=config.groundtruth_ds,
+        fragments_file=config.fragments_zarr,
+        fragments_dataset=config.fragments_ds,
+        db_host=config.db_host,
+        rag_db_name=config.db_name,
+        edges_collection=config.edges_collection,
+        scores_db_name=config.scores_db_name,
+        thresholds_minmax=config.con_comp_thresholds_minmax,
+        thresholds_step=config.con_comp_thresholds_step,
+        num_workers=config.num_workers,
+        configuration=config.configuration,
+        volume_size=config.volume_size,
+        lut_fragment_segment,
+        relabel=False,
+        erode=False,
+        border_threshold=None
+    )
