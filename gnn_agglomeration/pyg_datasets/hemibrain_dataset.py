@@ -10,6 +10,7 @@ from tqdm import tqdm
 import os
 import pymongo
 import time
+import bson
 
 from ..data_transforms import *
 
@@ -29,8 +30,8 @@ class HemibrainDataset(Dataset, ABC):
             length=None,
             save_processed=False):
         self.config = config
-        self.roi_offset = roi_offset
-        self.roi_shape = roi_shape
+        self.roi_offset_full = roi_offset
+        self.roi_shape_full = roi_shape
         self.len = length
         self.save_processed = save_processed
 
@@ -52,14 +53,18 @@ class HemibrainDataset(Dataset, ABC):
         pass
 
     def pad_total_roi(self):
-        # pad the entire volume, padded area not part of total roi any more
-        self.roi_offset = np.array(self.roi_offset) + \
+        """
+        pad the entire volume, padded area not part of total roi any more
+        """
+        self.roi_offset = np.array(self.roi_offset_full) + \
             np.array(self.config.block_padding)
-        self.roi_shape = np.array(self.roi_shape) - \
+        self.roi_shape = np.array(self.roi_shape_full) - \
             2 * np.array(self.config.block_padding)
 
     def pad_block(self, offset, shape):
-        # enlarge the block with padding in all dimensions
+        """
+        enlarge the block with padding in all dimensions
+        """
         offset_padded = np.array(offset) - np.array(self.config.block_padding)
         shape_padded = np.array(shape) + 2 * \
             np.array(self.config.block_padding)
@@ -138,19 +143,52 @@ class HemibrainDataset(Dataset, ABC):
 
         # orig_collection = db[self.config.edges_collection]
 
-        roi = daisy.Roi(list(self.roi_offset), list(self.roi_shape))
+        roi = daisy.Roi(list(self.roi_offset_full), list(self.roi_shape_full))
         orig_nodes = self.graph_provider.read_nodes(roi=roi)
         orig_edges = self.graph_provider.read_edges(roi=roi, nodes=orig_nodes)
-        assert len(orig_edges) == len(outputs_dict), \
-            f'num edges in ROI {len(orig_edges)}, num outputs {len(outputs_dict)}'
+
+        # TODO parametrize the used names
+        id_field = 'id'
+        node1_field = 'u'
+        node2_field = 'v'
+
+        def to_np_arrays(inp):
+            d = {}
+            for i in inp:
+                for k, v in i.items():
+                    d.setdefault(k, []).append(v)
+            for k, v in d.items():
+                d[k] = np.array(v)
+            return d
+
+        orig_node_attrs = to_np_arrays(orig_nodes)
+
+        start = time.time()
+        for e in reversed(orig_edges):
+            if e[node1_field] not in orig_node_attrs[id_field] or e[node2_field] not in orig_node_attrs[id_field]:
+                orig_edges.remove(e)
+        logger.debug(f'drop edges at the border in {time.time() - start}s')
+
+        logger.info(f'num edges in ROI {len(orig_edges)}, num outputs {len(outputs_dict)}')
+        assert len(orig_edges) >= len(outputs_dict)
+
+        # TODO insert dummy value 1 for all edges that are not in outputs_dict, but part of full RAG
+        for e in orig_edges:
+            e_list = [e[node1_field], e[node2_field]]
+            e_tuple = tuple([min(e_list), max(e_list)])
+            if e_tuple not in outputs_dict:
+                # TODO parametrize the dummy value 1
+                outputs_dict[e_tuple] = torch.tensor(1, dtype=torch.float).item()
+
+        assert len(orig_edges) >= len(outputs_dict)
 
         collection = db[collection_name]
 
         start = time.time()
         insertion_elems = []
         # TODO parametrize field names
-        for (u, v), merge_score in outputs_dict:
-            insertion_elems.append({'u': u, 'v': v, 'merge_score': merge_score})
+        for (u, v), merge_score in outputs_dict.items():
+            insertion_elems.append({'u': bson.Int64(u), 'v': bson.Int64(v), 'merge_score': float(merge_score)})
         collection.insert_many(insertion_elems, ordered=False)
         logger.debug(f'insert predicted merge_scores in {time.time() - start}s')
 

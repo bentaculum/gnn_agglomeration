@@ -292,7 +292,7 @@ def main(_config, _run, _log):
 
                 if config.write_to_db:
                     start = time.time()
-                    out_1d = model.out_to_one_dim(out_fe)
+                    out_1d = model.out_to_one_dim(out_fe).cpu()
                     # TODO this assumes again that every pairs of directed edges are next to each other
                     edges = torch.transpose(data_fe.edge_index, 0, 1)[0::2]
                     edges = edges[data_fe.roi_mask].cpu().numpy().astype(np.int64)

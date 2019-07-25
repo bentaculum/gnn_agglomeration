@@ -63,6 +63,7 @@ class HemibrainDatasetBlockwise(HemibrainDataset):
             )
             return graph
         except ValueError as e:
+            # TODO this might lead to unnecessary redundancy,
             logger.warning(f'{e}, duplicating previous graph')
             if idx > 0:
                 return self.get_from_db(idx - 1)

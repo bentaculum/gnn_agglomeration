@@ -34,6 +34,7 @@ class HemibrainGraph(Data, ABC):
         gt_merge_score_field = 'gt_merge_score'
         merge_labeled_field = 'merge_labeled'
 
+        # TODO remove duplicate code, this is also used in hemibrain_graph
         def to_np_arrays(inp):
             d = {}
             for i in inp:
