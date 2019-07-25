@@ -64,6 +64,9 @@ class HemibrainGraph(Data, ABC):
         node_ids_np = node_attrs[id_field].astype(np.int64)
         node_ids = torch.tensor(node_ids_np, dtype=torch.long)
 
+        # By not operating inplace and providing out_array, we always use
+        # the C++ implementation of replace_values
+
         logger.debug(
             f'before: interval {node_ids_np.max() - node_ids_np.min()}, min id {node_ids_np.min()}, max id {node_ids_np.max()}, shape {node_ids_np.shape}')
         start = time.time()

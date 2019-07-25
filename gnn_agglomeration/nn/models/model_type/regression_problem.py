@@ -34,6 +34,9 @@ class RegressionProblem(ModelType):
             out = out * self.config.targets_std + self.config.targets_mean
         return out.round().long()
 
+    def out_to_one_dim(self, out):
+        return out.squeeze()
+
     def metric(self, predictions, targets):
         correct = torch.squeeze(predictions).eq(targets).sum().item()
         acc = correct / targets.size(0)

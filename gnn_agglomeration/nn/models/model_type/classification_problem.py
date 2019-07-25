@@ -20,6 +20,12 @@ class ClassificationProblem(ModelType):
         _, pred = out.max(dim=1)
         return pred
 
+    def out_to_one_dim(self, out):
+        if self.out_channels > 2:
+            raise NotImplementedError("projection of outputs to continuous 1d output space not defined yet")
+
+        return out[:, 1]
+
     def predictions_to_list(self, predictions):
         return predictions.tolist()
 

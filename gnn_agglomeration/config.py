@@ -684,6 +684,12 @@ class Config:
             help='whether to evaluate on the testset')
         self.default['final_test_pass'] = True
 
+        self.parser.add_argument(
+            '--write_to_db',
+            type=str2bool,
+            help='whether to write outputs for the test set back to the database')
+        self.default['write_to_db'] = True
+
     def localhost(self):
         return {
             'mongo_url': 'localhost:27017',

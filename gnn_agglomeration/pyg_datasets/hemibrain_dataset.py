@@ -8,11 +8,13 @@ from abc import ABC, abstractmethod
 import logging
 from tqdm import tqdm
 import os
+import pymongo
+import time
 
 from ..data_transforms import *
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 # hack to make daisy logging indep from from sacred logging
 logging.getLogger('daisy.persistence.mongodb_graph_provider').setLevel(logging.INFO)
 
@@ -125,6 +127,32 @@ class HemibrainDataset(Dataset, ABC):
     @abstractmethod
     def get_from_db(self, idx):
         pass
+
+    def write_outputs_to_db(self, outputs_dict, collection_name):
+        with open(self.config.db_host, 'r') as f:
+            pw_parser = configparser.ConfigParser()
+            pw_parser.read_file(f)
+
+        client = pymongo.MongoClient(pw_parser['DEFAULT']['db_host'])
+        db = client[self.config.db_name]
+
+        # orig_collection = db[self.config.edges_collection]
+
+        roi = daisy.Roi(list(self.roi_offset), list(self.roi_shape))
+        orig_nodes = self.graph_provider.read_nodes(roi=roi)
+        orig_edges = self.graph_provider.read_edges(roi=roi, nodes=orig_nodes)
+        assert len(orig_edges) == len(outputs_dict), \
+            f'num edges in ROI {len(orig_edges)}, num outputs {len(outputs_dict)}'
+
+        collection = db[collection_name]
+
+        start = time.time()
+        insertion_elems = []
+        # TODO parametrize field names
+        for (u, v), merge_score in outputs_dict:
+            insertion_elems.append({'u': u, 'v': v, 'merge_score': merge_score})
+        collection.insert_many(insertion_elems, ordered=False)
+        logger.debug(f'insert predicted merge_scores in {time.time() - start}s')
 
     def targets_mean_std(self):
         """

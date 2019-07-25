@@ -15,6 +15,9 @@ import argparse
 import json
 import time
 import numpy as np
+import datetime
+import pytz
+from funlib.segment.arrays import replace_values
 
 from gnn_agglomeration.pyg_datasets import *
 from gnn_agglomeration.nn.models import *
@@ -279,11 +282,43 @@ def main(_config, _run, _log):
             test_predictions = []
             test_targets = []
 
+            test_1d_outputs = dict()
+
             _log.info('test pass ...')
-            start = time.time()
+            start_test_pass = time.time()
             for data_fe in data_loader_test:
                 data_fe = data_fe.to(device)
                 out_fe = model(data_fe)
+
+                if config.write_to_db:
+                    start = time.time()
+                    out_1d = model.out_to_one_dim(out_fe)
+                    # TODO this assumes again that every pairs of directed edges are next to each other
+                    edges = torch.transpose(data_fe.edge_index, 0, 1)[0::2]
+                    edges = edges[data_fe.roi_mask].cpu().numpy().astype(np.int64)
+
+                    edges_orig_labels = np.zeros_like(edges, dtype=np.int64)
+                    edges_orig_labels = replace_values(
+                        in_array=edges,
+                        out_array=edges_orig_labels,
+                        old_values=np.arange(data_fe.num_nodes, dtype=np.int64),
+                        new_values=data_fe.node_ids.cpu().numpy().astype(np.int64),
+                        inplace=False
+                    )
+
+                    # TODO min max might be unnecessary here
+                    # convert to tuples, make sure that directedness is not a problem
+                    edges_list = [tuple([np.min(i), np.max(i)]) for i in edges_orig_labels]
+
+                    for k, v in zip(edges_list, out_1d):
+                        if k not in test_1d_outputs:
+                            test_1d_outputs[k] = v
+                        else:
+                            # TODO adapt strategy here if desired
+                            test_1d_outputs[k] = max(test_1d_outputs[k], v)
+
+                    _log.info(f'writing outputs to dict in {time.time() - start}s')
+
                 test_loss += model.loss(out_fe, data_fe.y,
                                         data_fe.mask).item() * data_fe.num_nodes
                 test_metric += model.out_to_metric(out_fe,
@@ -297,12 +332,21 @@ def main(_config, _run, _log):
 
             _run.log_scalar('loss_test', test_loss, config.training_epochs)
             _run.log_scalar('accuracy_test', test_metric, config.training_epochs)
-            _log.info(f'test pass in {time.time() - start:.3f}s\n')
+            _log.info(f'test pass in {time.time() - start_test_pass:.3f}s\n')
 
             _log.info(
                 f'Mean test loss ({test_dataset.__len__()} samples): {test_loss:.3f}')
             _log.info(
                 f'Mean accuracy on test set: {test_metric:.3f}\n')
+
+            if config.write_to_db:
+                # timestamp = datetime.datetime.now(
+                #     pytz.timezone('US/Eastern')).strftime('%Y%m%dT%H%M%S.%f%z')
+                comment = _run.meta_info['options']['--comment']
+                test_dataset.write_outputs_to_db(
+                    outputs_dict=test_1d_outputs,
+                    collection_name=f'{_run.start_time}_{comment}'
+                )
 
             # plot targets vs predictions. default is a confusion matrix
             model.plot_targets_vs_predictions(

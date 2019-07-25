@@ -50,7 +50,7 @@ class HemibrainGraphMasked(HemibrainGraph):
         logger.debug(f'parse rag excerpt in {time.time() - start} s')
 
         start = time.time()
-        self.mask = self.mask_target_edges(
+        self.mask, self.roi_mask = self.mask_target_edges(
             inner_roi=daisy.Roi(
                 list(inner_block_offset),
                 list(inner_block_shape)),
@@ -68,4 +68,4 @@ class HemibrainGraphMasked(HemibrainGraph):
         edge_valid_directed = torch.all(edge_index_bool, dim=1)
         inner_mask = edge_valid_directed[0::2]
 
-        return (inner_mask & mask.byte()).float()
+        return (inner_mask & mask.byte()).float(), inner_mask

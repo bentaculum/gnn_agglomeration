@@ -34,6 +34,10 @@ class ModelType(torch.nn.Module, ABC):
         pass
 
     @abstractmethod
+    def out_to_one_dim(self, out):
+        pass
+
+    @abstractmethod
     def predictions_to_list(self, predictions):
         pass
 
