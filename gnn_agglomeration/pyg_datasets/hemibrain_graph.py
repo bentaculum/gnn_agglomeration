@@ -56,39 +56,59 @@ class HemibrainGraph(Data, ABC):
         # If all edges were removed in the step above, raise a ValueError
         # that is caught later on
         if len(edges_list) == 0:
-            raise ValueError(f'Removed all edges in ROI, as one node is outside of ROI')
+            raise ValueError(
+                f'Removed all edges in ROI, as one node is outside of ROI')
 
         edges_attrs = to_np_arrays(edges_list)
 
-        node_ids = torch.tensor(node_attrs[id_field].astype(np.int64), dtype=torch.long)
+        node_ids_np = node_attrs[id_field].astype(np.int64)
+        node_ids = torch.tensor(node_ids_np, dtype=torch.long)
+
+        logger.debug(
+            f'before: interval {node_ids_np.max() - node_ids_np.min()}, min id {node_ids_np.min()}, max id {node_ids_np.max()}, shape {node_ids_np.shape}')
+        start = time.time()
+        edges_node1 = np.zeros_like(
+            edges_attrs[node1_field], dtype=np.int64)
+        edges_node1 = replace_values(
+            in_array=edges_attrs[node1_field].astype(np.int64),
+            old_values=node_ids_np,
+            new_values=np.arange(len(node_attrs[id_field]), dtype=np.int64),
+            inplace=False,
+            out_array=edges_node1
+        )
+        edges_attrs[node1_field] = edges_node1
+        logger.debug(
+            f'remapping {len(edges_attrs[node1_field])} edges (u) in {time.time() - start} s')
+        logger.debug(
+            f'edges after: min id {edges_attrs[node1_field].min()}, max id {edges_attrs[node1_field].max()}')
 
         start = time.time()
-        # TODO only call once on merged array?
-        edges_attrs[node1_field] = replace_values(
-            in_array=edges_attrs[node1_field].astype(np.int64),
-            old_values=node_attrs[id_field].astype(np.int64),
-            new_values=np.arange(len(node_attrs[id_field]), dtype=np.int64),
-            inplace=True
-        )
-        logger.debug(f'remapping {len(edges_attrs[node1_field])} edges (u) in {time.time() - start} s')
-        start = time.time()
-        edges_attrs[node2_field] = replace_values(
+        edges_node2 = np.zeros_like(
+            edges_attrs[node2_field], dtype=np.int64)
+        edges_node2 = replace_values(
             in_array=edges_attrs[node2_field].astype(np.int64),
-            old_values=node_attrs[id_field].astype(np.int64),
+            old_values=node_ids_np,
             new_values=np.arange(len(node_attrs[id_field]), dtype=np.int64),
-            inplace=True
-        )
-        logger.debug(f'remapping {len(edges_attrs[node2_field])} edges (v) in {time.time() - start} s')
+            inplace=False,
+            out_array=edges_node2)
+        edges_attrs[node2_field] = edges_node2
+        logger.debug(
+            f'remapping {len(edges_attrs[node2_field])} edges (v) in {time.time() - start} s')
+        logger.debug(
+            f'edges after: min id {edges_attrs[node2_field].min()}, max id {edges_attrs[node2_field].max()}')
 
         # TODO I could potentially avoid transposing twice
         # edge index requires dimensionality of (2,e)
         # pyg works with directed edges, duplicate each edge here
-        edge_index_undir = np.array([edges_attrs[node1_field], edges_attrs[node2_field]]).transpose()
+        edge_index_undir = np.array(
+            [edges_attrs[node1_field], edges_attrs[node2_field]]).transpose()
         edge_index_dir = np.repeat(edge_index_undir, 2, axis=0)
         edge_index_dir[1::2, :] = np.flip(edge_index_dir[1::2, :], axis=1)
-        edge_index = torch.tensor(edge_index_dir.astype(np.int64).transpose(), dtype=torch.long)
+        edge_index = torch.tensor(edge_index_dir.astype(
+            np.int64).transpose(), dtype=torch.long)
 
-        edge_attr_undir = np.expand_dims(edges_attrs[merge_score_field], axis=1)
+        edge_attr_undir = np.expand_dims(
+            edges_attrs[merge_score_field], axis=1)
         edge_attr_dir = np.repeat(edge_attr_undir, 2, axis=0)
         edge_attr = torch.tensor(edge_attr_dir, dtype=torch.float)
 
