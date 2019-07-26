@@ -601,7 +601,7 @@ class Config:
             '--db_name',
             type=str,
             help='name of the used mongodb')
-        self.default['db_name'] = 'gnn_agglomeration_hemi_mtlsd_400k_roi1'
+        self.default['db_name'] = 'gnn_agglomeration_hemi_vanilla_400k_roi_1'
 
         self.parser.add_argument(
             '--nodes_collection',
