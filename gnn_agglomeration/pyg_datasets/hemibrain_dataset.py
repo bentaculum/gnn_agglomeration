@@ -175,6 +175,7 @@ class HemibrainDataset(Dataset, ABC):
         assert len(orig_edges) >= len(outputs_dict)
 
         # TODO insert dummy value 1 for all edges that are not in outputs_dict, but part of full RAG
+        counter = 0
         for e in orig_edges:
             e_list = [e[node1_field], e[node2_field]]
             e_tuple = tuple([min(e_list), max(e_list)])
@@ -182,6 +183,9 @@ class HemibrainDataset(Dataset, ABC):
                 # TODO parametrize the dummy value 1
                 outputs_dict[e_tuple] = torch.tensor(
                     1, dtype=torch.float).item()
+                counter += 1
+
+        logger.debug(f'added {counter} dummy values')
 
         assert len(orig_edges) == len(outputs_dict),\
             f'num edges in ROI {len(orig_edges)}, num outputs including dummy values {len(outputs_dict)}'
