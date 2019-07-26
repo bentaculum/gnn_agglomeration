@@ -84,10 +84,11 @@ graph_provider = daisy.persistence.MongoDbGraphProvider(
         'center_x']
 )
 
-roi = daisy.Roi(list(config.roi_offset), list(config.roi_shape))
+roi = daisy.Roi(list(config.roi_offset), list(np.array(config.roi_shape)))
+logger.debug(roi)
 nodes_attrs, edges_attrs = graph_provider.read_blockwise(
     roi=roi,
-    block_size=daisy.Coordinate((10000, 10000, 10000)),
+    block_size=daisy.Coordinate((3000, 3000, 3000)),
     num_workers=5
 )
 logger.info(f'read graph blockwise in {time.time() - start}s')
@@ -107,27 +108,32 @@ logger.info(f'write nodes and edges to dicts in {time.time() - start}s')
 
 start = time.time()
 lines = {}
-for i, ((u, v), score) in enumerate(edges.items()):
+for i, ((u, v), score) in tqdm(enumerate(edges.items())):
     try:
         l = neuroglancer.LineAnnotation(
-            point_a=nodes[u],
-            point_b=nodes[v],
+            point_a=np.array(nodes[u])[::-1],
+            point_b=np.array(nodes[v])[::-1],
             id=i
         )
         lines.setdefault(score, []).append(l)
     except KeyError:
         pass
 logger.info(f'create LineAnnotations in {time.time() - start}s')
+for k, v in lines.items():
+    logger.info(f'layer {k} with {len(v)} edges')
 
+lines = {0: lines[0]}
 start = time.time()
-colors_list = list(colors.CSS4_COLORS.values())
+# colors_list = list(colors.CSS4_COLORS.values())
+colors_list = ['#ffff00', '#00ff00', '#ff00ff']
 with viewer.txn() as s:
-    for k, v in lines.items():
+    for i, (k, v) in tqdm(enumerate(lines.items())):
         # TODO adapt parameters
         s.layers[str(k)] = neuroglancer.AnnotationLayer(
             voxel_size=(1, 1, 1),
             filter_by_segmentation=False,
-            annotation_color=random.choice(colors_list),
+            # annotation_color=random.choice(colors_list),
+            annotation_color=colors_list[i],
             annotations=v)
 logger.info(f'add annotation layers in {time.time() - start}s')
 
