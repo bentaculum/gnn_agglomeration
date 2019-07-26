@@ -17,7 +17,8 @@ from ..data_transforms import *
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 # hack to make daisy logging indep from from sacred logging
-logging.getLogger('daisy.persistence.mongodb_graph_provider').setLevel(logging.INFO)
+logging.getLogger(
+    'daisy.persistence.mongodb_graph_provider').setLevel(logging.INFO)
 
 
 class HemibrainDataset(Dataset, ABC):
@@ -169,7 +170,8 @@ class HemibrainDataset(Dataset, ABC):
                 orig_edges.remove(e)
         logger.debug(f'drop edges at the border in {time.time() - start}s')
 
-        logger.info(f'num edges in ROI {len(orig_edges)}, num outputs {len(outputs_dict)}')
+        logger.info(
+            f'num edges in ROI {len(orig_edges)}, num outputs {len(outputs_dict)}')
         assert len(orig_edges) >= len(outputs_dict)
 
         # TODO insert dummy value 1 for all edges that are not in outputs_dict, but part of full RAG
@@ -178,9 +180,11 @@ class HemibrainDataset(Dataset, ABC):
             e_tuple = tuple([min(e_list), max(e_list)])
             if e_tuple not in outputs_dict:
                 # TODO parametrize the dummy value 1
-                outputs_dict[e_tuple] = torch.tensor(1, dtype=torch.float).item()
+                outputs_dict[e_tuple] = torch.tensor(
+                    1, dtype=torch.float).item()
 
-        assert len(orig_edges) >= len(outputs_dict)
+        assert len(orig_edges) == len(outputs_dict),\
+            f'num edges in ROI {len(orig_edges)}, num outputs including dummy values {len(outputs_dict)}'
 
         collection = db[collection_name]
 
@@ -188,9 +192,11 @@ class HemibrainDataset(Dataset, ABC):
         insertion_elems = []
         # TODO parametrize field names
         for (u, v), merge_score in outputs_dict.items():
-            insertion_elems.append({'u': bson.Int64(u), 'v': bson.Int64(v), 'merge_score': float(merge_score)})
+            insertion_elems.append(
+                {'u': bson.Int64(u), 'v': bson.Int64(v), 'merge_score': float(merge_score)})
         collection.insert_many(insertion_elems, ordered=False)
-        logger.debug(f'insert predicted merge_scores in {time.time() - start}s')
+        logger.debug(
+            f'insert predicted merge_scores in {time.time() - start}s')
 
     def targets_mean_std(self):
         """
@@ -198,7 +204,8 @@ class HemibrainDataset(Dataset, ABC):
         is not in memory without doing a preliminary pass. For randomly
         fetched RAG snippets you could estimate on n pre-fetched graphs
         """
-        raise NotImplementedError('Online mean and variance estimation not implemented')
+        raise NotImplementedError(
+            'Online mean and variance estimation not implemented')
 
     # TODO not necessary unless I save the processed graphs to file again
     def check_dataset_vs_config(self):
@@ -229,4 +236,3 @@ class HemibrainDataset(Dataset, ABC):
 
     def print_summary(self):
         pass
-

@@ -205,6 +205,12 @@ class Config:
         self.default['plot_graphs_testset'] = 50
 
         self.parser.add_argument(
+            '--plot_targets_vs_predictions',
+            type=str2bool,
+            help='option to plot confusion matrix or similar plot, depending on the model type')
+        self.default['plot_targets_vs_predictions'] = False
+
+        self.parser.add_argument(
             '--validation_split',
             type=unit_float,
             help='define size of validation set, 0 <= ... <= 1')

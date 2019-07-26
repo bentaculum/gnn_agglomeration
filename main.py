@@ -295,20 +295,23 @@ def main(_config, _run, _log):
                     out_1d = model.out_to_one_dim(out_fe).cpu()
                     # TODO this assumes again that every pairs of directed edges are next to each other
                     edges = torch.transpose(data_fe.edge_index, 0, 1)[0::2]
-                    edges = edges[data_fe.roi_mask].cpu().numpy().astype(np.int64)
+                    edges = edges[data_fe.roi_mask].cpu(
+                    ).numpy().astype(np.int64)
 
                     edges_orig_labels = np.zeros_like(edges, dtype=np.int64)
                     edges_orig_labels = replace_values(
                         in_array=edges,
                         out_array=edges_orig_labels,
-                        old_values=np.arange(data_fe.num_nodes, dtype=np.int64),
+                        old_values=np.arange(
+                            data_fe.num_nodes, dtype=np.int64),
                         new_values=data_fe.node_ids.cpu().numpy().astype(np.int64),
                         inplace=False
                     )
 
                     # TODO min max might be unnecessary here
                     # convert to tuples, make sure that directedness is not a problem
-                    edges_list = [tuple([np.min(i), np.max(i)]) for i in edges_orig_labels]
+                    edges_list = [tuple([np.min(i), np.max(i)])
+                                  for i in edges_orig_labels]
 
                     for k, v in zip(edges_list, out_1d):
                         if k not in test_1d_outputs:
@@ -317,7 +320,8 @@ def main(_config, _run, _log):
                             # TODO adapt strategy here if desired
                             test_1d_outputs[k] = max(test_1d_outputs[k], v)
 
-                    _log.info(f'writing outputs to dict in {time.time() - start}s')
+                    _log.info(
+                        f'writing outputs to dict in {time.time() - start}s')
 
                 test_loss += model.loss(out_fe, data_fe.y,
                                         data_fe.mask).item() * data_fe.num_nodes
@@ -331,7 +335,8 @@ def main(_config, _run, _log):
             test_metric /= nr_nodes_test
 
             _run.log_scalar('loss_test', test_loss, config.training_epochs)
-            _run.log_scalar('accuracy_test', test_metric, config.training_epochs)
+            _run.log_scalar('accuracy_test', test_metric,
+                            config.training_epochs)
             _log.info(f'test pass in {time.time() - start_test_pass:.3f}s\n')
 
             _log.info(
@@ -348,24 +353,26 @@ def main(_config, _run, _log):
                     collection_name=f'{_run.start_time}_{comment}'
                 )
 
-            # plot targets vs predictions. default is a confusion matrix
-            model.plot_targets_vs_predictions(
-                targets=test_targets, predictions=test_predictions)
-            _run.add_artifact(
-                filename=os.path.join(
-                    config.run_abs_path,
-                    config.confusion_matrix_path),
-                name=config.confusion_matrix_path)
+            if config.plot_targets_vs_predictions:
+                # TODO fix to run on cluster
+                # plot targets vs predictions. default is a confusion matrix
+                model.plot_targets_vs_predictions(
+                    targets=test_targets, predictions=test_predictions)
+                _run.add_artifact(
+                    filename=os.path.join(
+                        config.run_abs_path,
+                        config.confusion_matrix_path),
+                    name=config.confusion_matrix_path)
 
-            # if Regression, plot targets vs. continuous outputs
-            # if isinstance(model.model_type, RegressionProblem):
-            #     test_outputs = []
-            #     for data in data_loader_test:
-            #         data = data.to(device)
-            #         out = torch.squeeze(model(data)).tolist()
-            #         test_outputs.extend(out)
-            #     model.model_type.plot_targets_vs_outputs(
-            #         targets=test_targets, outputs=test_outputs)
+                # if Regression, plot targets vs. continuous outputs
+                # if isinstance(model.model_type, RegressionProblem):
+                #     test_outputs = []
+                #     for data in data_loader_test:
+                #         data = data.to(device)
+                #         out = torch.squeeze(model(data)).tolist()
+                #         test_outputs.extend(out)
+                #     model.model_type.plot_targets_vs_outputs(
+                #         targets=test_targets, outputs=test_outputs)
 
             # plot the graphs in the test dataset for visual inspection
             if config.plot_graphs_testset:
