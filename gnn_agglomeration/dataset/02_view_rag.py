@@ -50,7 +50,7 @@ for f, datasets in zip(args.file, args.datasets):
             print("Adding %s, %s" % (f, ds))
             a = daisy.open_ds(f, ds)
 
-        except:
+        except BaseException:
 
             print("Didn't work, checking if this is multi-res...")
 
@@ -101,8 +101,8 @@ nodes = {node_id: (z, y, x) for z, y, x, node_id in zip(
 )
 }
 
-edges = {(u, v): score for u, v, score in
-         zip(edges_attrs["u"], edges_attrs["v"], edges_attrs[config.new_edge_attr_trinary])}
+edges = {(u, v): score for u, v, score in zip(
+    edges_attrs["u"], edges_attrs["v"], edges_attrs[config.new_edge_attr_trinary])}
 logger.info(f'write nodes and edges to dicts in {time.time() - start}s')
 
 start = time.time()

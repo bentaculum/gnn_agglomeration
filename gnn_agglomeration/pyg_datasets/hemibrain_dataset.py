@@ -174,7 +174,8 @@ class HemibrainDataset(Dataset, ABC):
             f'num edges in ROI {len(orig_edges)}, num outputs {len(outputs_dict)}')
         assert len(orig_edges) >= len(outputs_dict)
 
-        # TODO insert dummy value 1 for all edges that are not in outputs_dict, but part of full RAG
+        # TODO insert dummy value 1 for all edges that are not in outputs_dict,
+        # but part of full RAG
         counter = 0
         for e in orig_edges:
             e_list = [e[node1_field], e[node2_field]]

@@ -27,8 +27,11 @@ class HemibrainDatasetBlockwise(HemibrainDataset):
         # Therefore the last block in each dimension will be
         # - overlapping with the penultimate
         # - shrunk
-        blocks_per_dim = np.ceil((np.array(self.roi_shape) /
-                                  np.array(self.config.block_size))).astype(int)
+        blocks_per_dim = np.ceil(
+            (np.array(
+                self.roi_shape) /
+                np.array(
+                self.config.block_size))).astype(int)
         logger.debug(f'blocks per dim: {blocks_per_dim}')
 
         self.len = int(np.prod(blocks_per_dim))
@@ -38,7 +41,8 @@ class HemibrainDatasetBlockwise(HemibrainDataset):
         self.block_shapes = []
 
         if self.config.block_fit == 'overlap':
-            assert np.all(np.array(self.config.block_size) <= np.array(self.roi_shape))
+            assert np.all(np.array(self.config.block_size)
+                          <= np.array(self.roi_shape))
 
         # Create offsets for all blocks in ROI
         for i in range(blocks_per_dim[0]):
@@ -46,38 +50,72 @@ class HemibrainDatasetBlockwise(HemibrainDataset):
                 for k in range(blocks_per_dim[2]):
 
                     if self.config.block_fit == 'shrink':
-                        block_offset_new = (np.array(self.roi_offset) + np.array([i, j, k]) * np.array(
-                            self.config.block_size)).astype(np.int_)
+                        block_offset_new = (
+                            np.array(
+                                self.roi_offset) +
+                            np.array(
+                                [
+                                    i,
+                                    j,
+                                    k]) *
+                            np.array(
+                                self.config.block_size)).astype(
+                            np.int_)
 
                         block_shape_new = (np.minimum(
-                            block_offset_new + np.array(self.config.block_size),
+                            block_offset_new +
+                            np.array(self.config.block_size),
                             self.roi_offset + self.roi_shape
                         ) - block_offset_new).astype(np.int_)
 
                     elif self.config.block_fit == 'overlap':
                         block_offset_new = np.minimum(
-                            np.array(self.roi_offset) + np.array([i, j, k]) * np.array(
-                                self.config.block_size, dtype=np.int_),
-                            np.array(self.roi_offset) + np.array(self.roi_shape) - np.array(self.config.block_size)
-                        ).astype(np.int_)
-                        block_shape_new = np.array(self.config.block_size, dtype=np.int_)
+                            np.array(
+                                self.roi_offset) +
+                            np.array(
+                                [
+                                    i,
+                                    j,
+                                    k]) *
+                            np.array(
+                                self.config.block_size,
+                                dtype=np.int_),
+                            np.array(
+                                self.roi_offset) +
+                            np.array(
+                                self.roi_shape) -
+                            np.array(
+                                self.config.block_size)).astype(
+                                    np.int_)
+                        block_shape_new = np.array(
+                            self.config.block_size, dtype=np.int_)
                     else:
-                        raise NotImplementedError(f'block_fit {self.config.block_fit} not implemented')
+                        raise NotImplementedError(
+                            f'block_fit {self.config.block_fit} not implemented')
 
                     # TODO remove asserts
 
                     # lower corner
-                    assert np.all(block_offset_new >= np.array(self.roi_offset))
+                    assert np.all(block_offset_new >=
+                                  np.array(self.roi_offset))
 
                     # shape
-                    assert np.all(block_shape_new <= np.array(self.config.block_size))
+                    assert np.all(block_shape_new <= np.array(
+                        self.config.block_size))
 
                     # upper corner
                     assert np.all(
-                        block_offset_new + block_shape_new <= np.array(self.roi_offset) + np.array(self.roi_shape))
+                        block_offset_new +
+                        block_shape_new <= np.array(
+                            self.roi_offset) +
+                        np.array(
+                            self.roi_shape))
 
                     self.block_offsets.append(block_offset_new)
                     self.block_shapes.append(block_shape_new)
+
+        # TODO sanity check whether the entire ROI is coverted by the created
+        # blocks
 
     def get_from_db(self, idx):
         """

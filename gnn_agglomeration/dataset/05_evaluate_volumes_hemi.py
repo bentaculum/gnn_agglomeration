@@ -101,7 +101,7 @@ def evaluate(
         for z in range(gt.data.shape[0]):
             border_mask = create_border_mask_2d(
                 gt.data[z],
-                float(border_threshold)/gt.voxel_size[1])
+                float(border_threshold) / gt.voxel_size[1])
             gt.data[z][border_mask] = 0
 
     logging.info("Converting fragments to nd array...")
@@ -147,14 +147,15 @@ def get_segmentation(
         threshold):
 
     logging.info(
-        "Loading fragment - segment lookup table for threshold %s..." % threshold)
+        "Loading fragment - segment lookup table for threshold %s..." %
+        threshold)
     fragment_segment_lut_dir = os.path.join(
         fragments_file,
         lut_fragment_segment)
 
     fragment_segment_lut_file = os.path.join(
         fragment_segment_lut_dir,
-        'seg_%s_%d.npz' % (edges_collection, int(threshold*100)))
+        'seg_%s_%d.npz' % (edges_collection, int(threshold * 100)))
 
     fragment_segment_lut = np.load(
         fragment_segment_lut_file)['fragment_segment_lut']

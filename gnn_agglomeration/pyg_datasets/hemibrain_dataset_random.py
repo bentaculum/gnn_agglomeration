@@ -28,7 +28,8 @@ class HemibrainDatasetRandom(HemibrainDataset):
         random_offset[2] = np.random.randint(
             low=0, high=self.roi_shape[2] - self.config.block_size[2])
         total_offset = self.roi_offset + random_offset
-        logger.debug(f'get RAG from {daisy.Roi(total_offset, self.config.block_size)}')
+        logger.debug(
+            f'get RAG from {daisy.Roi(total_offset, self.config.block_size)}')
 
         outer_offset, outer_shape = self.pad_block(
             total_offset, self.config.block_size)
@@ -46,4 +47,3 @@ class HemibrainDatasetRandom(HemibrainDataset):
         except ValueError as e:
             logger.warning(f'{e}, getting graph from another random block')
             return self.get_from_db(idx)
-

@@ -42,7 +42,8 @@ class HemibrainDatasetRandomInMemory(InMemoryDataset, HemibrainDatasetRandom):
         return ['processed_data.pt']
 
     def process(self):
-        logger.info(f'Loading {self.len} graphs and saving them to {self.root} ...')
+        logger.info(
+            f'Loading {self.len} graphs and saving them to {self.root} ...')
         data_list = []
         # TODO use multiprocessing here to speed it up
         for i in tqdm(range(self.len)):

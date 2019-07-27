@@ -27,7 +27,8 @@ class ModelType(torch.nn.Module, ABC):
     def loss(self, inputs, targets, mask):
         l = self.loss_one_by_one(inputs, targets)
         # add tiny float to avoid division by 0 when sum(mask) is 0
-        return torch.sum(l * mask) / (torch.sum(mask) + torch.finfo(torch.float).tiny)
+        return torch.sum(l * mask) / (torch.sum(mask) +
+                                      torch.finfo(torch.float).tiny)
 
     @abstractmethod
     def out_to_predictions(self, out):

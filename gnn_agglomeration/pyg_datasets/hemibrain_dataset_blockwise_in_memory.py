@@ -11,7 +11,9 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class HemibrainDatasetBlockwiseInMemory(InMemoryDataset, HemibrainDatasetBlockwise):
+class HemibrainDatasetBlockwiseInMemory(
+        InMemoryDataset,
+        HemibrainDatasetBlockwise):
     def __init__(
             self,
             root,
@@ -42,7 +44,8 @@ class HemibrainDatasetBlockwiseInMemory(InMemoryDataset, HemibrainDatasetBlockwi
         return ['processed_data.pt']
 
     def process(self):
-        logger.info(f'Loading {self.len} graphs and saving them to {self.root} ...')
+        logger.info(
+            f'Loading {self.len} graphs and saving them to {self.root} ...')
         data_list = []
         # TODO use multiprocessing here to speed it up
         for i in tqdm(range(self.len)):

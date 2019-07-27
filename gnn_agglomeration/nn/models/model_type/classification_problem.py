@@ -22,7 +22,8 @@ class ClassificationProblem(ModelType):
 
     def out_to_one_dim(self, out):
         if self.out_channels > 2:
-            raise NotImplementedError("projection of outputs to continuous 1d output space not defined yet")
+            raise NotImplementedError(
+                "projection of outputs to continuous 1d output space not defined yet")
 
         return out[:, 1]
 

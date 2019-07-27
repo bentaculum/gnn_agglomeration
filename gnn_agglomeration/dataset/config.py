@@ -66,9 +66,10 @@ p.add('--padding', type=int, nargs=3,
 
 # [DATA PROCESSING]
 p.add('--num_workers', type=int, help='number of daisy subprocesses')
-p.add('--threshold_overlap',
-      type=float,
-      help='percentage of overlap required to consider a fragment non-background')
+p.add(
+    '--threshold_overlap',
+    type=float,
+    help='percentage of overlap required to consider a fragment non-background')
 p.add('--con_comp_thresholds_minmax', type=float, nargs=2,
       help='lower and upper limit for the different runs of connected components')
 p.add('--con_comp_thresholds_step', type=float,

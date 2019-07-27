@@ -59,9 +59,14 @@ class HemibrainGraphMasked(HemibrainGraph):
 
     def mask_target_edges(self, inner_roi, mask):
         lower_limit = torch.tensor(inner_roi.get_offset(), dtype=torch.float)
-        upper_limit = lower_limit + torch.tensor(inner_roi.get_shape(), dtype=torch.float)
+        upper_limit = lower_limit + \
+            torch.tensor(inner_roi.get_shape(), dtype=torch.float)
 
-        nodes_in = torch.all(self.pos > lower_limit, dim=1) & torch.all(self.pos < upper_limit, dim=1)
+        nodes_in = torch.all(
+            self.pos > lower_limit,
+            dim=1) & torch.all(
+            self.pos < upper_limit,
+            dim=1)
         edge_index_flat = torch.transpose(self.edge_index, 0, 1).flatten()
         edge_index_bool = nodes_in[edge_index_flat].reshape(-1, 2)
 

@@ -117,11 +117,14 @@ class HemibrainGraph(Data, ABC):
         edge_attr = torch.tensor(edge_attr_dir, dtype=torch.float)
 
         pos = torch.transpose(
-            input=torch.tensor([node_attrs['center_z'], node_attrs['center_y'], node_attrs['center_x']],
-                               dtype=torch.float),
+            input=torch.tensor(
+                [
+                    node_attrs['center_z'],
+                    node_attrs['center_y'],
+                    node_attrs['center_x']],
+                dtype=torch.float),
             dim0=0,
-            dim1=1
-        )
+            dim1=1)
 
         # TODO node features go here
         x = torch.ones(len(node_attrs[id_field]), 1, dtype=torch.float)
