@@ -1,5 +1,4 @@
 from funlib.show.neuroglancer import add_layer, ScalePyramid
-import argparse
 import daisy
 import glob
 import neuroglancer
