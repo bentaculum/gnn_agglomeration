@@ -591,7 +591,7 @@ class Config:
         self.default['block_size'] = [800, 800, 800]
 
         self.parser.add_argument(
-            'block_fit',
+            '--block_fit',
             type=str,
             choices=['shrink', 'overlap'],
             help="For blockwise datasets, how to handle cases where shifting blocks by block_size does not tile the roi_shape")
