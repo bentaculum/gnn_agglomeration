@@ -37,6 +37,9 @@ class HemibrainDatasetBlockwise(HemibrainDataset):
         self.block_offsets = []
         self.block_shapes = []
 
+        if self.config.block_fit == 'overlap':
+            assert np.all(np.array(self.config.block_size) <= np.array(self.roi_shape))
+
         # Create offsets for all blocks in ROI
         for i in range(blocks_per_dim[0]):
             for j in range(blocks_per_dim[1]):
