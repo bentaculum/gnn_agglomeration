@@ -82,28 +82,44 @@ graph_provider = daisy.persistence.MongoDbGraphProvider(
         'center_y',
         'center_x']
 )
+logger.info(f'set up graph provider in {time.time() - start}s')
 
 roi = daisy.Roi(list(config.roi_offset), list(np.array(config.roi_shape)))
 logger.debug(roi)
-nodes_attrs, edges_attrs = graph_provider.read_blockwise(
-    roi=roi,
-    block_size=daisy.Coordinate((3000, 3000, 3000)),
-    num_workers=5
-)
-logger.info(f'read graph blockwise in {time.time() - start}s')
 
 start = time.time()
-nodes = {node_id: (z, y, x) for z, y, x, node_id in zip(
-    nodes_attrs["center_z"],
-    nodes_attrs["center_y"],
-    nodes_attrs["center_x"],
-    nodes_attrs['id']
-)
-}
+nonb_nodes = graph_provider.read_nodes(roi=roi)
+nonb_edges = graph_provider.read_edges(roi=roi, nodes=nonb_nodes)
+logger.info(f'read whole graph in {time.time() - start}s')
 
-edges = {(u, v): score for u, v, score in zip(
-    edges_attrs["u"], edges_attrs["v"], edges_attrs[config.new_edge_attr_trinary])}
+start = time.time()
+nodes = {n['id']: (n['center_z'], n['center_y'], n['center_x'])
+         for n in nonb_nodes}
+
+edges = {(e['u'], e['v']): e[config.new_edge_attr_trinary] for e in nonb_edges}
 logger.info(f'write nodes and edges to dicts in {time.time() - start}s')
+
+# blockwise loading
+# start = time.time()
+# nodes_attrs, edges_attrs = graph_provider.read_blockwise(
+# roi=roi,
+# block_size=daisy.Coordinate((3000, 3000, 3000)),
+# num_workers=5
+# )
+# logger.info(f'read graph blockwise in {time.time() - start}s')
+
+# start = time.time()
+# nodes = {node_id: (z, y, x) for z, y, x, node_id in zip(
+# nodes_attrs["center_z"],
+# nodes_attrs["center_y"],
+# nodes_attrs["center_x"],
+# nodes_attrs['id']
+# )
+# }
+
+# edges = {(u, v): score for u, v, score in zip(
+# edges_attrs["u"], edges_attrs["v"], edges_attrs[config.new_edge_attr_trinary])}
+# logger.info(f'write nodes and edges to dicts in {time.time() - start}s')
 
 start = time.time()
 lines = {}
