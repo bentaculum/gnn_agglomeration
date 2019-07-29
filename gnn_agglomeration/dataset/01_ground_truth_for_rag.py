@@ -4,7 +4,6 @@ import time
 import logging
 from collections import Counter
 import pickle
-import shutil
 import os
 import networkx as nx
 import datetime
@@ -27,6 +26,10 @@ def overlap_in_block(block, fragments, groundtruth, tmp_path):
     logger.debug(f"num of fragment IDs: {(len(frag_ids))}")
 
     frag_dict = dict()
+    background_majorities = []
+    fragment_majorities = []
+    background_percentages = []
+
     # for each of them, create a boolean mask and count the remaining elems
     for i in frag_ids:
         masked_gt = groundtruth[fragments == i]
@@ -35,18 +38,33 @@ def overlap_in_block(block, fragments, groundtruth, tmp_path):
         # write counter into dict as frag:Counter
         counter = Counter(dict(zip(unique, counts)))
 
+        max_id = int(counter.most_common(1)[0][0])
         max_count = counter.most_common(1)[0][1]
         all_counts = sum(counter.values())
-        if max_count / all_counts > config.threshold_overlap:
+        perc = max_count / all_counts
+        if perc > config.threshold_overlap:
             # most common elem
-            frag_dict[i] = int(counter.most_common(1)[0][0])
+            frag_dict[i] = max_id
         else:
-            frag_dict[i] = int(config.background_id)
+            frag_dict[i] = config.background_id
+
+        # logging
+        if max_id == config.background_id:
+            background_majorities.append(perc)
+            background_percentages.append(perc)
+        else:
+            fragment_majorities.append(perc)
+            background_percentages.append(counter[config.background_id])
 
     logger.debug(
         f"write Counter dict for block {block.block_id} to file")
     pickle.dump(frag_dict, open(os.path.join(
         tmp_path, f"{block.block_id}.pickle"), 'wb'))
+    np.savez_compressed(
+        os.path.join(tmp_path, f'{block.block_id}_stats.npz'),
+        background_majorities=background_majorities,
+        fragment_majorities=fragment_majorities,
+        background_percentages=background_percentages)
 
 
 def overlap_reduce(tmp_path):
