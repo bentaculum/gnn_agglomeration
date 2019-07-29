@@ -14,3 +14,4 @@ src
 *.pickle
 *db_host.ini
 misc
+*.ipynb_checkpoints*
