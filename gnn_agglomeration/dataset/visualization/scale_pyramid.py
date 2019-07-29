@@ -63,7 +63,7 @@ def downscale(in_array, out_array, factor, write_size):
             factor,
             b),
         read_write_conflict=False,
-        num_workers=60,
+        num_workers=32,
         max_retries=0,
         fit='shrink')
 
