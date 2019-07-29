@@ -54,7 +54,8 @@ def overlap_in_block(block, fragments, groundtruth, tmp_path):
             background_percentages.append(perc)
         else:
             fragment_majorities.append(perc)
-            background_percentages.append(counter[config.background_id])
+            background_percentages.append(
+                counter[config.background_id] / all_counts)
 
     logger.debug(
         f"write Counter dict for block {block.block_id} to file")
@@ -62,9 +63,9 @@ def overlap_in_block(block, fragments, groundtruth, tmp_path):
         tmp_path, f"{block.block_id}.pickle"), 'wb'))
     np.savez_compressed(
         os.path.join(tmp_path, f'{block.block_id}_stats.npz'),
-        background_majorities=background_majorities,
-        fragment_majorities=fragment_majorities,
-        background_percentages=background_percentages)
+        background_majorities=np.array(background_majorities),
+        fragment_majorities=np.array(fragment_majorities),
+        background_percentages=np.array(background_percentages))
 
 
 def overlap_reduce(tmp_path):
