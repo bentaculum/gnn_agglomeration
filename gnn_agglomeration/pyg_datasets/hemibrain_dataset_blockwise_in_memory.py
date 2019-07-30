@@ -48,7 +48,7 @@ class HemibrainDatasetBlockwiseInMemory(
 
     def process(self):
         logger.info(
-            f'Loading {self.len} graphs and saving them to {self.root} ...')
+            f'Loading {self.len} graphs with {self.config.num_workers} workers and saving them to {self.root} ...')
         start = time.time()
 
         pool = multiprocessing.Pool(
