@@ -43,3 +43,5 @@ class HemibrainGraphUnmasked(HemibrainGraph):
             self.y = self.parse_rag_excerpt(node_attrs, edge_attrs)
 
         self.roi_mask = torch.ones_like(self.mask, dtype=torch.uint8)
+
+        super().assert_graph()

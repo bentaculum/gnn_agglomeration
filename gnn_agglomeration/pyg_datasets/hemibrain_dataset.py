@@ -31,8 +31,8 @@ class HemibrainDataset(Dataset, ABC):
             length=None,
             save_processed=False):
         self.config = config
-        self.roi_offset_full = roi_offset
-        self.roi_shape_full = roi_shape
+        self.roi_offset_full = np.array(roi_offset)
+        self.roi_shape_full = np.array(roi_shape)
         self.len = length
         self.save_processed = save_processed
 

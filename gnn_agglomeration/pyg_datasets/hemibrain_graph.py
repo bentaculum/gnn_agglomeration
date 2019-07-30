@@ -13,6 +13,7 @@ logger.setLevel(logging.INFO)
 class HemibrainGraph(Data, ABC):
 
     # can't overwrite __init__ using different args than base class
+    # TODO can I use kwargs for that?
 
     @abstractmethod
     def read_and_process(
@@ -22,7 +23,42 @@ class HemibrainGraph(Data, ABC):
             block_shape,
             inner_block_offset,
             inner_block_shape):
+        """
+        Initiates reading the graph from DB and converting it to the desired format for torch_geometric.
+        Assigns values to all torch_geometric.Data attributes
+
+        Args:
+            graph_provider (daisy.persistence.MongoDbGraphProvider):
+
+                connection to RAG DB
+
+            block_offset (``list`` of ``int``):
+
+                block offset of extracted graph, in nanometers
+
+            block_shape (``list`` of ``int``):
+
+                block shape of extracted graph, in nanometers
+
+            inner_block_offset (``list`` of ``int``):
+
+                offset of sub-block, which might be used for masking, in nanometers
+
+            inner_block_shape (``list`` of ``int``):
+
+                shape of sub-block, which might be used for masking, in nanometers
+        """
+
         pass
+
+    def assert_graph(self):
+        """
+        check whether bi-directed edges are next to each other in edge_index
+        """
+        uv = self.edge_index[:, 0::2]
+        vu = torch.flip(self.edge_index, dims=[0])[:, 1::2]
+
+        assert torch.equal(uv, vu)
 
     def parse_rag_excerpt(self, nodes_list, edges_list):
 

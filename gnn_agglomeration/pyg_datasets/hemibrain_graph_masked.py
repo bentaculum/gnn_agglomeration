@@ -57,6 +57,8 @@ class HemibrainGraphMasked(HemibrainGraph):
             mask=mask)
         logger.debug(f'mask target edges in {time.time() - start} s')
 
+        super().assert_graph()
+
     def mask_target_edges(self, inner_roi, mask):
         lower_limit = torch.tensor(inner_roi.get_offset(), dtype=torch.float)
         upper_limit = lower_limit + \

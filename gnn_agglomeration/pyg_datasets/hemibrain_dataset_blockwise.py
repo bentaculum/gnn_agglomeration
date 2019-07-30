@@ -1,3 +1,4 @@
+import torch
 import numpy as np
 import logging
 
@@ -30,8 +31,8 @@ class HemibrainDatasetBlockwise(HemibrainDataset):
         blocks_per_dim = np.ceil(
             (np.array(
                 self.roi_shape) /
-                np.array(
-                self.config.block_size))).astype(int)
+             np.array(
+                 self.config.block_size))).astype(int)
         logger.debug(f'blocks per dim: {blocks_per_dim}')
 
         self.len = int(np.prod(blocks_per_dim))
@@ -51,42 +52,28 @@ class HemibrainDatasetBlockwise(HemibrainDataset):
 
                     if self.config.block_fit == 'shrink':
                         block_offset_new = (
-                            np.array(
-                                self.roi_offset) +
-                            np.array(
-                                [
-                                    i,
-                                    j,
-                                    k]) *
-                            np.array(
-                                self.config.block_size)).astype(
-                            np.int_)
+                                np.array(self.roi_offset) +
+                                np.array([i, j, k]) *
+                                np.array(self.config.block_size)
+                        ).astype(np.int_)
 
-                        block_shape_new = (np.minimum(
-                            block_offset_new +
-                            np.array(self.config.block_size),
-                            self.roi_offset + self.roi_shape
-                        ) - block_offset_new).astype(np.int_)
+                        block_shape_new = (
+                                np.minimum(
+                                    block_offset_new +
+                                    np.array(self.config.block_size),
+                                    self.roi_offset + self.roi_shape
+                                ) - block_offset_new
+                        ).astype(np.int_)
 
                     elif self.config.block_fit == 'overlap':
                         block_offset_new = np.minimum(
-                            np.array(
-                                self.roi_offset) +
-                            np.array(
-                                [
-                                    i,
-                                    j,
-                                    k]) *
-                            np.array(
-                                self.config.block_size,
-                                dtype=np.int_),
-                            np.array(
-                                self.roi_offset) +
-                            np.array(
-                                self.roi_shape) -
-                            np.array(
-                                self.config.block_size)).astype(
-                                    np.int_)
+                            np.array(self.roi_offset) +
+                            np.array([i, j, k]) *
+                            np.array(self.config.block_size, dtype=np.int_),
+                            np.array(self.roi_offset) +
+                            np.array(self.roi_shape) -
+                            np.array(self.config.block_size)
+                        ).astype(np.int_)
                         block_shape_new = np.array(
                             self.config.block_size, dtype=np.int_)
                     else:
@@ -114,8 +101,13 @@ class HemibrainDatasetBlockwise(HemibrainDataset):
                     self.block_offsets.append(block_offset_new)
                     self.block_shapes.append(block_shape_new)
 
-        # TODO sanity check whether the entire ROI is coverted by the created
-        # blocks
+        # check whether the entire ROI seems to be covered by the created blocks
+        lower_corner_idx = np.array(self.block_offsets).sum(axis=1).argmin()
+        assert np.array_equal(self.block_offsets[lower_corner_idx], self.roi_offset)
+        upper_corner_idx = (np.array(self.block_offsets) + np.array(self.block_shapes)).sum(axis=1).argmax()
+        assert np.array_equal(
+            self.block_offsets[upper_corner_idx] + self.block_shapes[upper_corner_idx],
+            self.roi_offset + self.roi_shape)
 
     def get_from_db(self, idx):
         """
