@@ -94,7 +94,7 @@ class HemibrainGraph(Data, ABC):
         # that is caught later on
         if len(edges_list) == 0:
             raise ValueError(
-                f'Removed all edges in ROI, as one node is outside of ROI')
+                f'Removed all edges in ROI, as one node is outside of ROI for each edge')
 
         edges_attrs = to_np_arrays(edges_list)
 

@@ -1,11 +1,14 @@
 import torch
-import logging
-from torch_geometric.data import InMemoryDataset
-from tqdm import tqdm
+torch.multiprocessing.set_sharing_strategy('file_system')
+import logging  # noqa
+from torch_geometric.data import InMemoryDataset  # noqa
+import time  # noqa
+import multiprocessing  # noqa
+import numpy as np  # noqa
 
-from .hemibrain_dataset_random import HemibrainDatasetRandom
-from .hemibrain_graph_unmasked import HemibrainGraphUnmasked
-from .hemibrain_graph_masked import HemibrainGraphMasked
+from .hemibrain_dataset_random import HemibrainDatasetRandom  # noqa
+from .hemibrain_graph_unmasked import HemibrainGraphUnmasked  # noqa
+from .hemibrain_graph_masked import HemibrainGraphMasked  # noqa
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -44,11 +47,22 @@ class HemibrainDatasetRandomInMemory(InMemoryDataset, HemibrainDatasetRandom):
     def process(self):
         logger.info(
             f'Loading {self.len} graphs and saving them to {self.root} ...')
-        data_list = []
-        # TODO use multiprocessing here to speed it up
-        for i in tqdm(range(self.len)):
-            data = self.get_from_db(i)
-            data_list.append(data)
+        start = time.time()
+
+        pool = multiprocessing.Pool(
+            processes=self.config.num_workers,
+            initializer=np.random.seed,
+            initargs=())
+        data_mapresult = pool.map_async(
+            func=self.get_from_db,
+            iterable=range(self.len))
+        pool.close()
+        pool.join()
+
+        # strange multiprocessing syntax
+        data_list = data_mapresult.get()
+
+        logger.info(f'processed {self.len} in {time.time() - start}s')
 
         if self.pre_filter is not None:
             data_list = [data for data in data_list if self.pre_filter(data)]

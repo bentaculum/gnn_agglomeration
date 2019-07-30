@@ -29,7 +29,7 @@ class HemibrainDatasetRandom(HemibrainDataset):
             low=0, high=self.roi_shape[2] - self.config.block_size[2])
         total_offset = self.roi_offset + random_offset
         logger.debug(
-            f'get RAG from {daisy.Roi(total_offset, self.config.block_size)}')
+            f'get graph {idx} from {daisy.Roi(total_offset, self.config.block_size)}')
 
         outer_offset, outer_shape = self.pad_block(
             total_offset, self.config.block_size)

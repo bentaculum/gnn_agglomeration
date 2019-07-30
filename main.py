@@ -3,26 +3,27 @@ from sacred.observers import MongoObserver, TelegramObserver
 from sacred.stflow import LogFileWriter
 
 import torch
-import os
-import shutil
-from torch_geometric.data import DataLoader
-from tensorboardX import SummaryWriter
+torch.multiprocessing.set_sharing_strategy('file_system')
+import os  # noqa
+import shutil  # noqa
+from torch_geometric.data import DataLoader  # noqa
+from tensorboardX import SummaryWriter  # noqa
 
-import sys
-import atexit
-import tarfile
-import argparse
-import json
-import time
-import numpy as np
-import datetime
-import pytz
-from funlib.segment.arrays import replace_values
+import sys  # noqa
+import atexit  # noqa
+import tarfile  # noqa
+import argparse  # noqa
+import json  # noqa
+import time  # noqa
+import numpy as np  # noqa
+import datetime  # noqa
+import pytz  # noqa
+from funlib.segment.arrays import replace_values  # noqa
 
-from gnn_agglomeration.pyg_datasets import *
-from gnn_agglomeration.nn.models import *
-from gnn_agglomeration.experiment import ex
-from gnn_agglomeration.config import Config
+from gnn_agglomeration.pyg_datasets import *  # noqa
+from gnn_agglomeration.nn.models import *  # noqa
+from gnn_agglomeration.experiment import ex  # noqa
+from gnn_agglomeration.config import Config  # noqa
 
 
 @ex.main
