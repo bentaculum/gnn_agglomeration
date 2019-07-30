@@ -177,16 +177,31 @@ class HemibrainDataset(Dataset, ABC):
         # TODO insert dummy value 1 for all edges that are not in outputs_dict,
         # but part of full RAG
         counter = 0
+        missing_edges_pos = []
         for e in orig_edges:
             e_list = [e[node1_field], e[node2_field]]
             e_tuple = tuple([min(e_list), max(e_list)])
             if e_tuple not in outputs_dict:
+                # TODO this is just for debugging, terrible style
+                u_idx = np.where(orig_node_attrs[id_field] == [e_tuple[0]])[0][0]
+                u_pos = (orig_node_attrs['center_z'][u_idx],
+                         orig_node_attrs['center_y'][u_idx],
+                         orig_node_attrs['center_x'][u_idx])
+                v_idx = np.where(orig_node_attrs[id_field] == [e_tuple[1]])[0][0]
+                v_pos = (orig_node_attrs['center_z'][v_idx],
+                         orig_node_attrs['center_y'][v_idx],
+                         orig_node_attrs['center_x'][v_idx])
+                missing_edges_pos.append((u_pos, v_pos))
+
                 # TODO parametrize the dummy value 1
                 outputs_dict[e_tuple] = torch.tensor(
                     1, dtype=torch.float).item()
                 counter += 1
 
         logger.debug(f'added {counter} dummy values')
+        np.savez_compressed(
+            os.path.join(self.config.run_abs_path, "missing_edges_pos.npz"),
+            missing_edges_pos=np.array(missing_edges_pos))
 
         assert len(orig_edges) == len(outputs_dict),\
             f'num edges in ROI {len(orig_edges)}, num outputs including dummy values {len(outputs_dict)}'

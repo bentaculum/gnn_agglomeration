@@ -350,7 +350,7 @@ def main(_config, _run, _log):
                 comment = _run.meta_info['options']['--comment']
                 test_dataset.write_outputs_to_db(
                     outputs_dict=test_1d_outputs,
-                    collection_name=f'{_run.start_time}_{comment}'
+                    collection_name=f'{_run.start_time}_{comment}',
                 )
 
             if config.plot_targets_vs_predictions:
