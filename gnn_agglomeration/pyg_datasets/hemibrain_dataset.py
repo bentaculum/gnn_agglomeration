@@ -26,11 +26,13 @@ class HemibrainDataset(Dataset, ABC):
             self,
             root,
             config,
+            db_name,
             roi_offset,
             roi_shape,
             length=None,
             save_processed=False):
         self.config = config
+        self.db_name = db_name
         self.roi_offset_full = np.array(roi_offset)
         self.roi_shape_full = np.array(roi_shape)
         self.len = length
@@ -79,7 +81,7 @@ class HemibrainDataset(Dataset, ABC):
         # Graph provider
         # TODO fully parametrize once necessary
         self.graph_provider = daisy.persistence.MongoDbGraphProvider(
-            db_name=self.config.db_name,
+            db_name=self.db_name,
             host=pw_parser['DEFAULT']['db_host'],
             mode='r',
             nodes_collection=self.config.nodes_collection,
@@ -140,7 +142,7 @@ class HemibrainDataset(Dataset, ABC):
             pw_parser.read_file(f)
 
         client = pymongo.MongoClient(pw_parser['DEFAULT']['db_host'])
-        db = client[self.config.db_name]
+        db = client[self.db_name]
 
         # orig_collection = db[self.config.edges_collection]
 

@@ -122,7 +122,7 @@ class HemibrainDatasetBlockwise(HemibrainDataset):
         outer_offset, outer_shape = self.pad_block(
             inner_offset, self.block_shapes[idx])
 
-        graph = globals()[self.config.graph_type]()
+        graph = globals()[self.config.graph_type](config=self.config)
         try:
             graph.read_and_process(
                 graph_provider=self.graph_provider,

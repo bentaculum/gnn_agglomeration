@@ -12,8 +12,7 @@ logger.setLevel(logging.INFO)
 
 class HemibrainGraph(Data, ABC):
 
-    # can't overwrite __init__ using different args than base class
-    # TODO can I use kwargs for that?
+    # can't overwrite __init__ using different args than base class, but use kwargs
 
     @abstractmethod
     def read_and_process(
@@ -67,8 +66,8 @@ class HemibrainGraph(Data, ABC):
         node1_field = 'u'
         node2_field = 'v'
         merge_score_field = 'merge_score'
-        gt_merge_score_field = 'gt_merge_score'
-        merge_labeled_field = 'merge_labeled'
+        gt_merge_score_field = self.config.gt_merge_score_field
+        merge_labeled_field = self.config.merge_labeled_field
 
         # TODO remove duplicate code, this is also used in hemibrain_graph
         def to_np_arrays(inp):

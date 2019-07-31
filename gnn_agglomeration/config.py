@@ -588,7 +588,7 @@ class Config:
             type=positive_int,
             nargs=3,
             help='fixed block size for creating pyg graphs')
-        self.default['block_size'] = [800, 800, 800]
+        self.default['block_size'] = [3000, 3000, 3000]
 
         self.parser.add_argument(
             '--block_fit',
@@ -604,7 +604,7 @@ class Config:
             type=positive_int,
             nargs=3,
             help='padding to create an outer mask that guarantees context for all targets the contribute to the loss')
-        self.default['block_padding'] = [160, 160, 160]
+        self.default['block_padding'] = [3000, 3000, 3000]
 
         self.parser.add_argument(
             '--db_host',
@@ -613,10 +613,22 @@ class Config:
         self.default['db_host'] = 'db_host.ini'
 
         self.parser.add_argument(
-            '--db_name',
+            '--db_name_train',
             type=str,
-            help='name of the used mongodb')
-        self.default['db_name'] = 'gnn_agglomeration_hemi_vanilla_400k_roi_1'
+            help='name of the used mongodb for training')
+        self.default['db_name_train'] = 'gnn_agglomeration_hemi_vanilla_400k_roi_2'
+
+        self.parser.add_argument(
+            '--db_name_val',
+            type=str,
+            help='name of the used mongodb for validation')
+        self.default['db_name_val'] = 'gnn_agglomeration_hemi_vanilla_400k_roi_1'
+
+        self.parser.add_argument(
+            '--db_name_test',
+            type=str,
+            help='name of the used mongodb for test')
+        self.default['db_name_test'] = 'gnn_agglomeration_hemi_vanilla_400k_roi_3'
 
         self.parser.add_argument(
             '--nodes_collection',
@@ -704,6 +716,21 @@ class Config:
             type=str2bool,
             help='whether to write outputs for the test set back to the database')
         self.default['write_to_db'] = True
+
+        self.parser.add_argument(
+            '--gt_merge_score_field',
+            type=str,
+            help='DB field in edges collection that contains the ground truth score')
+        self.default['gt_merge_score_field'] = 'gt_merge_score'
+
+        self.parser.add_argument(
+            'merge_labeled_field',
+            type=str,
+            help='''DB field in edges collection that contains the gt masking
+            which accounts for edges with unknown ground truth''')
+        self.default['merge_labeled_field'] = 'merge_labeled'
+
+
 
     def localhost(self):
         return {

@@ -19,6 +19,9 @@ class HemibrainGraphUnmasked(HemibrainGraph):
             block_shape,
             inner_block_offset,
             inner_block_shape):
+
+        assert self.config is not None
+
         logger.debug(
             'read\n'
             f'\tblock offset: {block_offset}\n'

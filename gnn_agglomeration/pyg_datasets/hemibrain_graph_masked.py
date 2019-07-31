@@ -28,6 +28,8 @@ class HemibrainGraphMasked(HemibrainGraph):
         #     f'\tblock shape: {block_shape}'
         # )
 
+        assert self.config is not None
+
         start = time.time()
         roi = daisy.Roi(list(block_offset), list(block_shape))
         node_attrs = graph_provider.read_nodes(roi=roi)
