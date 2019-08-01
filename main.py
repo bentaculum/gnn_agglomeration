@@ -303,9 +303,9 @@ def main(_config, _run, _log):
                     edges = torch.transpose(data_fe.edge_index, 0, 1)[0::2]
 
                     # mask outputs
-                    edges = edges[data_fe.roi_mask].cpu(
+                    edges = edges[data_fe.roi_mask.byte()].cpu(
                     ).numpy().astype(np.int64)
-                    out_1d = out_1d[data_fe.roi_mask].cpu()
+                    out_1d = out_1d[data_fe.roi_mask.byte()].cpu()
 
                     edges_orig_labels = np.zeros_like(edges, dtype=np.int64)
                     edges_orig_labels = replace_values(
@@ -434,13 +434,14 @@ def main(_config, _run, _log):
         nr_nodes_train = 0
         _log.info('epoch {} ...'.format(epoch))
         for batch_i, data in enumerate(data_loader_train):
+            _log.info(
+                f'batch {batch_i}: num nodes {data.num_nodes}, num edges {data.num_edges}')
             data = data.to(device)
             # call the forward method
             out = model(data)
 
             loss = model.loss(out, data.y, data.mask)
             model.print_current_loss(epoch, batch_i, _log)
-            _log.debug(f'total num nodes: {data.num_nodes}')
 
             epoch_loss += loss.item() * data.num_nodes
             epoch_metric_train += model.out_to_metric(

@@ -245,13 +245,13 @@ class Config:
             '--batch_size_train',
             type=positive_int,
             help='batch size for training')
-        self.default['batch_size_train'] = 4
+        self.default['batch_size_train'] = 1
 
         self.parser.add_argument(
             '--batch_size_eval',
             type=positive_int,
             help='batch size for evaluation')
-        self.default['batch_size_eval'] = 4
+        self.default['batch_size_eval'] = 1
 
         self.parser.add_argument(
             '--hidden_layers',
@@ -739,8 +739,6 @@ class Config:
             help='''DB field in edges collection that contains the gt masking
             which accounts for edges with unknown ground truth''')
         self.default['merge_labeled_field'] = 'merge_labeled_vanilla'
-
-
 
     def localhost(self):
         return {
