@@ -7,7 +7,7 @@ import time
 from funlib.segment.arrays import replace_values
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class HemibrainGraph(Data, ABC):
@@ -58,8 +58,6 @@ class HemibrainGraph(Data, ABC):
         vu = torch.flip(self.edge_index, dims=[0])[:, 1::2]
 
         assert torch.equal(uv, vu)
-        # remove config property so Data object can be saved with torch
-        del self.config
 
     def parse_rag_excerpt(self, nodes_list, edges_list):
 
@@ -82,24 +80,22 @@ class HemibrainGraph(Data, ABC):
             return d
 
         node_attrs = to_np_arrays(nodes_list)
-        edges_attrs = to_np_arrays(edges_list)
-
-        # drop edges for which one of the incident nodes is not in the
+        # TODO maybe port to numpy, but generally fast
+        # Drop edges for which one of the incident nodes is not in the
         # extracted node set
         start = time.time()
-        u_in = np.isin(edges_attrs[node1_field], node_attrs[id_field])
-        v_in = np.isin(edges_attrs[node2_field], node_attrs[id_field])
-        edge_in = np.logical_and(u_in, v_in)
-        for attr, vals in edges_attrs.items():
-            edges_attrs[attr] = vals[edge_in]
-
+        for e in reversed(edges_list):
+            if e[node1_field] not in node_attrs[id_field] or e[node2_field] not in node_attrs[id_field]:
+                edges_list.remove(e)
         logger.debug(f'drop edges at the border in {time.time() - start}s')
 
         # If all edges were removed in the step above, raise a ValueError
         # that is caught later on
-        if np.any(edge_in) is False:
+        if len(edges_list) == 0:
             raise ValueError(
                 f'Removed all edges in ROI, as one node is outside of ROI for each edge')
+
+        edges_attrs = to_np_arrays(edges_list)
 
         node_ids_np = node_attrs[id_field].astype(np.int64)
         node_ids = torch.tensor(node_ids_np, dtype=torch.long)

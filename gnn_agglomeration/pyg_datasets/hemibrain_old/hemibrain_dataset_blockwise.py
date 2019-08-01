@@ -22,7 +22,7 @@ class HemibrainDatasetBlockwise(HemibrainDataset):
         """
 
         logger.debug(f'block size: {self.config.block_size}')
-        logger.debug(f'max padding: {self.config.block_padding}')
+        logger.debug(f'padding: {self.config.block_padding}')
 
         # Blockwise dataset should cover the entire dataset
         # Therefore the last block in each dimension will be

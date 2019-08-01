@@ -3,6 +3,7 @@ from sacred.observers import MongoObserver, TelegramObserver
 from sacred.stflow import LogFileWriter
 
 import torch
+
 torch.multiprocessing.set_sharing_strategy('file_system')
 import os  # noqa
 import shutil  # noqa
@@ -296,11 +297,15 @@ def main(_config, _run, _log):
 
                 if config.write_to_db:
                     start = time.time()
-                    out_1d = model.out_to_one_dim(out_fe).cpu()
+                    out_1d = model.out_to_one_dim(out_fe)
                     # TODO this assumes again that every pairs of directed edges are next to each other
+                    # and we grab the original representation (u,v) from the DB
                     edges = torch.transpose(data_fe.edge_index, 0, 1)[0::2]
+
+                    # mask outputs
                     edges = edges[data_fe.roi_mask].cpu(
                     ).numpy().astype(np.int64)
+                    out_1d = out_1d[data_fe.roi_mask].cpu()
 
                     edges_orig_labels = np.zeros_like(edges, dtype=np.int64)
                     edges_orig_labels = replace_values(
@@ -312,9 +317,7 @@ def main(_config, _run, _log):
                         inplace=False
                     )
 
-                    # TODO min max might be unnecessary here
-                    # convert to tuples, make sure that directedness is not a problem
-                    edges_list = [tuple([np.min(i), np.max(i)])
+                    edges_list = [tuple(i)
                                   for i in edges_orig_labels]
 
                     for k, v in zip(edges_list, out_1d):
@@ -322,7 +325,11 @@ def main(_config, _run, _log):
                             test_1d_outputs[k] = v
                         else:
                             # TODO adapt strategy here if desired
-                            test_1d_outputs[k] = max(test_1d_outputs[k], v)
+                            if config.graph_type == 'HemibrainGraphMasked':
+                                raise ValueError(
+                                    'Masking should lead to a single prediction per edge in blockwise dataset')
+                            else:
+                                test_1d_outputs[k] = max(test_1d_outputs[k], v)
 
                     _log.info(
                         f'writing outputs to dict in {time.time() - start}s')

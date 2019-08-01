@@ -544,42 +544,48 @@ class Config:
             type=positive_int,
             nargs=3,
             help='ROI absolute position of lower vertex')
-        self.default['train_roi_offset'] = [140800, 205120, 198400]
+        self.default['train_roi_offset'] = [150400, 192000, 214400]
+        # self.default['train_roi_offset'] = [140800, 205120, 198400]
 
         self.parser.add_argument(
             '--train_roi_shape',
             type=positive_int,
             nargs=3,
             help='ROI size, starting at roi_offset')
-        self.default['train_roi_shape'] = [11800 - 2 * 1180, 11800, 11800]
+        # self.default['train_roi_shape'] = [11800 - 2 * 1180, 11800, 11800]
+        self.default['train_roi_shape'] = [21800, 21800, 21800]
 
         self.parser.add_argument(
             '--val_roi_offset',
             type=positive_int,
             nargs=3,
             help='ROI absolute position of lower vertex')
-        self.default['val_roi_offset'] = [140800 + 8 * 1180, 205120, 198400]
+        # self.default['val_roi_offset'] = [140800 + 8 * 1180, 205120, 198400]
+        self.default['val_roi_offset'] = [140800, 205120, 198400]
 
         self.parser.add_argument(
             '--val_roi_shape',
             type=positive_int,
             nargs=3,
             help='ROI size, starting at roi_offset')
-        self.default['val_roi_shape'] = [1180, 11800, 11800]
+        # self.default['val_roi_shape'] = [1180, 11800, 11800]
+        self.default['val_roi_shape'] = [11800, 11800, 11800]
 
         self.parser.add_argument(
             '--test_roi_offset',
             type=positive_int,
             nargs=3,
             help='ROI absolute position of lower vertex')
-        self.default['test_roi_offset'] = [140800 + 9 * 1180, 205120, 198400]
+        # self.default['test_roi_offset'] = [140800 + 9 * 1180, 205120, 198400]
+        self.default['test_roi_offset'] = [153680, 200000, 179200]
 
         self.parser.add_argument(
             '--test_roi_shape',
             type=positive_int,
             nargs=3,
             help='ROI size, starting at roi_offset')
-        self.default['test_roi_shape'] = [1180, 11800, 11800]
+        # self.default['test_roi_shape'] = [1180, 11800, 11800]
+        self.default['test_roi_shape'] = [16800, 16800, 16800]
 
         #########################
 
@@ -721,14 +727,14 @@ class Config:
             '--gt_merge_score_field',
             type=str,
             help='DB field in edges collection that contains the ground truth score')
-        self.default['gt_merge_score_field'] = 'gt_merge_score'
+        self.default['gt_merge_score_field'] = 'gt_merge_score_vanilla'
 
         self.parser.add_argument(
-            'merge_labeled_field',
+            '--merge_labeled_field',
             type=str,
             help='''DB field in edges collection that contains the gt masking
             which accounts for edges with unknown ground truth''')
-        self.default['merge_labeled_field'] = 'merge_labeled'
+        self.default['merge_labeled_field'] = 'merge_labeled_vanilla'
 
 
 

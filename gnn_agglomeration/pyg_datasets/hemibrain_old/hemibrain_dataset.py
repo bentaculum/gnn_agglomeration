@@ -33,11 +33,12 @@ class HemibrainDataset(Dataset, ABC):
             save_processed=False):
         self.config = config
         self.db_name = db_name
-        self.roi_offset = np.array(roi_offset)
-        self.roi_shape = np.array(roi_shape)
+        self.roi_offset_full = np.array(roi_offset)
+        self.roi_shape_full = np.array(roi_shape)
         self.len = length
         self.save_processed = save_processed
 
+        self.pad_total_roi()
         self.connect_to_db()
         self.prepare()
 
@@ -48,43 +49,29 @@ class HemibrainDataset(Dataset, ABC):
         super(HemibrainDataset, self).__init__(
             root=root, transform=transform, pre_transform=None)
 
+        # TODO possible?
+        # self.check_dataset_vs_config()
+
     def prepare(self):
         pass
 
+    def pad_total_roi(self):
+        """
+        pad the entire volume, padded area not part of total roi any more
+        """
+        self.roi_offset = np.array(self.roi_offset_full) + \
+            np.array(self.config.block_padding)
+        self.roi_shape = np.array(self.roi_shape_full) - \
+            2 * np.array(self.config.block_padding)
+
     def pad_block(self, offset, shape):
         """
-        Enlarge the block with padding in all dimensions.
-        Crop the enlarged block if the new block is not contained in the ROI
+        enlarge the block with padding in all dimensions
         """
         offset_padded = np.array(offset) - np.array(self.config.block_padding)
         shape_padded = np.array(shape) + 2 * \
             np.array(self.config.block_padding)
-        logger.debug(f'offset padded: {offset_padded}, shape padded: {shape_padded}')
-        return self.crop_block(offset_padded, shape_padded)
-
-    def crop_block(self, offset, shape):
-        """
-
-        Args:
-            offset (numpy.array): padded offset
-            shape (numpy.array): padded shape
-
-        Returns:
-            cropped offset, cropped shape
-
-        """
-        # lower corner
-        cropped_offset = np.maximum(self.roi_offset, offset)
-        # correct shape for cropping
-        cropped_shape = shape - (cropped_offset - offset)
-
-        # upper corner
-        cropped_shape = np.minimum(
-            self.roi_offset + self.roi_shape,
-            cropped_offset + cropped_shape) - cropped_offset
-
-        logger.debug(f'offset cropped: {cropped_offset}, shape cropped: {cropped_shape}')
-        return cropped_offset, cropped_shape
+        return offset_padded, shape_padded
 
     def connect_to_db(self):
         with open(self.config.db_host, 'r') as f:
@@ -195,7 +182,7 @@ class HemibrainDataset(Dataset, ABC):
         missing_edges_pos = []
         for e in orig_edges:
             e_list = [e[node1_field], e[node2_field]]
-            e_tuple = tuple(e_list)
+            e_tuple = tuple([min(e_list), max(e_list)])
             if e_tuple not in outputs_dict:
                 # TODO this is just for debugging, terrible style
                 u_idx = np.where(orig_node_attrs[id_field] == [e_tuple[0]])[0][0]
