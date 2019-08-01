@@ -15,7 +15,7 @@ import bson
 from ..data_transforms import *
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 # hack to make daisy logging indep from from sacred logging
 logging.getLogger(
     'daisy.persistence.mongodb_graph_provider').setLevel(logging.INFO)

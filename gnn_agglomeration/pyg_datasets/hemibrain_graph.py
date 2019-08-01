@@ -7,7 +7,7 @@ import time
 from funlib.segment.arrays import replace_values
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class HemibrainGraph(Data, ABC):
