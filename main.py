@@ -158,7 +158,6 @@ def main(_config, _run, _log):
         model = model.to(device)
     else:
         _log.info('Loading model {} ...'.format(config.load_model))
-        # TODO allow to load previous models
         # find latest state of model
         load_model_dir = os.path.join(
             config.root_dir, config.run_abs_path, config.model_dir)

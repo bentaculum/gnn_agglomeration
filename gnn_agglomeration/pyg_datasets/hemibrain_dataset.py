@@ -11,6 +11,7 @@ import os
 import pymongo
 import time
 import bson
+import multiprocessing
 
 from ..data_transforms import *
 
@@ -103,13 +104,26 @@ class HemibrainDataset(Dataset, ABC):
     def processed_file_names(self):
         return [f'processed_data_{i}.pt' for i in range(self.len)]
 
+    def process_one(self, idx):
+        if not os.path.isfile(self.processed_paths[idx]):
+            data = self.get_from_db(idx)
+            torch.save(data, self.processed_paths[idx])
+
     def process(self):
         logger.info(f'Trying to load data from {self.root} ...')
-        # TODO use multiprocessing here to speed it up
-        for i in tqdm(range(self.len)):
-            if not os.path.isfile(self.processed_paths[i]):
-                data = self.get_from_db(i)
-                torch.save(data, self.processed_paths[i])
+        start = time.time()
+
+        pool = multiprocessing.Pool(
+            processes=self.config.num_workers,
+            initializer=np.random.seed,
+            initargs=())
+        pool.map_async(
+            func=self.process_one,
+            iterable=range(self.len))
+        pool.close()
+        pool.join()
+
+        logger.info(f'processed {self.len} in {time.time() - start}s')
 
         # with open(
             # os.path.join(
