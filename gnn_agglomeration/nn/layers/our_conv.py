@@ -4,8 +4,6 @@ import torch.nn.functional as F
 from torch_geometric.nn.conv import MessagePassing
 from torch_geometric.utils import softmax
 
-from torch_geometric.nn.inits import glorot, zeros
-
 from .attention_mlp import AttentionMLP
 
 
@@ -113,10 +111,9 @@ class OurConv(MessagePassing):
         self.reset_parameters()
 
     def reset_parameters(self):
-        # TODO adapt to Kaiming He init
-        for i in range(self.local_layers):
-            glorot(self.weight_list[i])
-        zeros(self.bias)
+        for w in self.weight_list:
+            torch.nn.init.kaiming_uniform_(w, nonlinearity='leaky_relu')
+        torch_geometric.nn.inits.zeros(self.bias)
         self.att.reset_parameters()
 
     def forward(self, x, edge_index, pseudo):
