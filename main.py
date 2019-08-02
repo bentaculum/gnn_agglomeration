@@ -115,7 +115,7 @@ def main(_config, _run, _log):
         validation_dataset = dataset[split_train_idx:split_validation_idx]
         test_dataset = dataset[split_validation_idx:]
 
-        # TODO if model is loaded, use the same train val test split.
+        # new feature: if model is loaded, use the same train val test split.
         # shuffle can return the permutation of the dataset, which can then be used to permute the same way
         # dataset, perm = dataset.shuffle(return_perm=True)
         # when loading a model:
@@ -164,12 +164,15 @@ def main(_config, _run, _log):
             config.root_dir, config.run_abs_path, config.model_dir)
         checkpoint_versions = [name for name in os.listdir(
             load_model_dir) if name.endswith('.tar')]
-        if 'final.tar' in checkpoint_versions:
-            checkpoint_to_load = 'final.tar'
+        if config.load_model_version == 'latest':
+            if 'final.tar' in checkpoint_versions:
+                checkpoint_to_load = 'final.tar'
+            else:
+                checkpoint_versions = sorted([
+                    x for x in checkpoint_versions if x.startswith('epoch')])
+                checkpoint_to_load = checkpoint_versions[-1]
         else:
-            checkpoint_versions = sorted([
-                x for x in checkpoint_versions if x.startswith('epoch')])
-            checkpoint_to_load = checkpoint_versions[-1]
+            checkpoint_to_load = f'{config.load_model_version}.tar'
 
         _log.info('Loading checkpoint {} ...'.format(
             os.path.join(load_model_dir, checkpoint_to_load)))

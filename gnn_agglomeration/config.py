@@ -449,6 +449,12 @@ class Config:
         self.default['load_model'] = None
 
         self.parser.add_argument(
+            '--load_model_version',
+            type=str,
+            help="which checkpoint to use. 'latest' | checkpoint_name, no extension")
+        self.default['load_model_version'] = 'latest'
+
+        self.parser.add_argument(
             '--telegram',
             type=str2bool,
             help='whether to have a Sacred Telegram Observer')
@@ -762,7 +768,6 @@ class Config:
         config_cmd, remaining_args = self.parser.parse_known_args()
         config_cmd = vars(config_cmd)
 
-        # TODO could also be dependent on the position of main.py
         # detect root path, one level up from the config file
         self.default['root_dir'] = os.path.dirname(
             os.path.dirname(os.path.realpath(__file__)))
