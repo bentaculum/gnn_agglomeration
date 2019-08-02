@@ -6,7 +6,6 @@ import daisy
 import configparser
 from abc import ABC, abstractmethod
 import logging
-from tqdm import tqdm
 import os
 import pymongo
 import time
