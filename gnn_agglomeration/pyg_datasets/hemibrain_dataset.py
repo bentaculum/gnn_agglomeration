@@ -13,6 +13,7 @@ import time
 import bson
 
 from ..data_transforms import *
+from gnn_agglomeration import utils
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -168,34 +169,27 @@ class HemibrainDataset(Dataset, ABC):
         node1_field = 'u'
         node2_field = 'v'
 
-        def to_np_arrays(inp):
-            d = {}
-            for i in inp:
-                for k, v in i.items():
-                    d.setdefault(k, []).append(v)
-            for k, v in d.items():
-                d[k] = np.array(v)
-            return d
+        orig_node_attrs = utils.to_np_arrays(orig_nodes)
+        orig_edge_attrs = utils.to_np_arrays(orig_edges)
 
-        orig_node_attrs = to_np_arrays(orig_nodes)
-
-        start = time.time()
-        for e in reversed(orig_edges):
-            if e[node1_field] not in orig_node_attrs[id_field] or e[node2_field] not in orig_node_attrs[id_field]:
-                orig_edges.remove(e)
-        logger.debug(f'drop edges at the border in {time.time() - start}s')
+        # drop edges at the border
+        utils.drop_outgoing_edges(
+            node_attrs=orig_node_attrs,
+            edge_attrs=orig_edge_attrs,
+            id_field=id_field,
+            node1_field=node1_field,
+            node2_field=node2_field
+        )
 
         logger.info(
-            f'num edges in ROI {len(orig_edges)}, num outputs {len(outputs_dict)}')
-        assert len(orig_edges) >= len(outputs_dict)
+            f'num edges in ROI {len(orig_edge_attrs[node1_field])}, num outputs {len(outputs_dict)}')
+        assert len(orig_edge_attrs[node1_field]) >= len(outputs_dict)
 
         # TODO insert dummy value 1 for all edges that are not in outputs_dict,
         # but part of full RAG
         counter = 0
         missing_edges_pos = []
-        for e in orig_edges:
-            e_list = [e[node1_field], e[node2_field]]
-            e_tuple = tuple(e_list)
+        for e_tuple in zip(orig_edge_attrs[node1_field], orig_edge_attrs[node2_field]):
             if e_tuple not in outputs_dict:
                 # TODO this is just for debugging, terrible style
                 u_idx = np.where(orig_node_attrs[id_field] == [e_tuple[0]])[0][0]
@@ -218,8 +212,8 @@ class HemibrainDataset(Dataset, ABC):
             os.path.join(self.config.run_abs_path, "missing_edges_pos.npz"),
             missing_edges_pos=np.array(missing_edges_pos))
 
-        assert len(orig_edges) == len(outputs_dict),\
-            f'num edges in ROI {len(orig_edges)}, num outputs including dummy values {len(outputs_dict)}'
+        assert len(orig_edge_attrs[node1_field]) == len(outputs_dict),\
+            f'num edges in ROI {len(orig_edge_attrs[node1_field])}, num outputs including dummy values {len(outputs_dict)}'
 
         collection = db[collection_name]
 

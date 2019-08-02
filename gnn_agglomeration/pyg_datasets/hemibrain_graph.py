@@ -6,6 +6,8 @@ from abc import ABC, abstractmethod
 import time
 from funlib.segment.arrays import replace_values
 
+from gnn_agglomeration import utils
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
@@ -71,29 +73,18 @@ class HemibrainGraph(Data, ABC):
         gt_merge_score_field = self.config.gt_merge_score_field
         merge_labeled_field = self.config.merge_labeled_field
 
-        # TODO remove duplicate code, this is also used in hemibrain_graph
-        def to_np_arrays(inp):
-            d = {}
-            for i in inp:
-                for k, v in i.items():
-                    d.setdefault(k, []).append(v)
-            for k, v in d.items():
-                d[k] = np.array(v)
-            return d
-
-        node_attrs = to_np_arrays(nodes_list)
-        edges_attrs = to_np_arrays(edges_list)
+        node_attrs = utils.to_np_arrays(nodes_list)
+        edges_attrs = utils.to_np_arrays(edges_list)
 
         # drop edges for which one of the incident nodes is not in the
         # extracted node set
-        start = time.time()
-        u_in = np.isin(edges_attrs[node1_field], node_attrs[id_field])
-        v_in = np.isin(edges_attrs[node2_field], node_attrs[id_field])
-        edge_in = np.logical_and(u_in, v_in)
-        for attr, vals in edges_attrs.items():
-            edges_attrs[attr] = vals[edge_in]
-
-        logger.debug(f'drop edges at the border in {time.time() - start}s')
+        edges_attrs = utils.drop_outgoing_edges(
+            node_attrs=node_attrs,
+            edge_attrs=edges_attrs,
+            id_field=id_field,
+            node1_field=node1_field,
+            node2_field=node2_field
+        )
 
         # If all edges were removed in the step above, raise a ValueError
         # that is caught later on
