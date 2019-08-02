@@ -5,6 +5,11 @@ from torch.nn.parameter import Parameter
 from torch.nn import init
 import torch.nn.functional as F
 
+import logging
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
 
 class AttentionMLP(torch.nn.Module):
     def __init__(
@@ -32,12 +37,12 @@ class AttentionMLP(torch.nn.Module):
         self.bias_list = torch.nn.ParameterList()
         self.batch_norm_list = torch.nn.ModuleList()
 
-        w_in = Parameter(torch.Tensor(1, heads, layer_dims[0], in_features))
+        w_in = Parameter(torch.Tensor(1, heads, in_features, layer_dims[0]))
         self.weight_list.append(w_in)
 
         for i in range(layers - 1):
             w = Parameter(torch.Tensor(
-                1, heads, layer_dims[i + 1], layer_dims[i]))
+                1, heads, layer_dims[i], layer_dims[i+1]))
             self.weight_list.append(w)
 
         if bias:
@@ -66,8 +71,13 @@ class AttentionMLP(torch.nn.Module):
 
     def forward(self, x):
         for i, w in enumerate(self.weight_list):
+            if torch.cuda.is_available():
+                logger.debug(f"GPU memory allocated: {torch.cuda.memory_allocated(device='cuda')} B")
+            # enable batched matrix multiplication with extra dim
             x = x.unsqueeze(-2)
-            x = (x * w).sum(dim=-1)
+            x = torch.matmul(x, w)
+            # remove extra dim
+            x = x.squeeze(-2)
             if self.bias:
                 x += self.bias_list[i]
             x = getattr(F, self.non_linearity)(x)

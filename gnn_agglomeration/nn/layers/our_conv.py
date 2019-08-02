@@ -148,7 +148,6 @@ class OurConv(MessagePassing):
 
     def message(self, edge_index_i, x_i, x_j, num_nodes, pseudo):
         # Compute attention coefficients.
-        # alpha = (torch.cat([x_i, x_j, pseudo], dim=-1) * self.att).sum(dim=-1)
         alpha = torch.cat([x_i, x_j, pseudo], dim=-1)
         alpha = self.att(alpha)
         alpha = F.leaky_relu(alpha, self.negative_slope)

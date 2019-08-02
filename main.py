@@ -132,6 +132,11 @@ def main(_config, _run, _log):
     _log.info('Datasets are ready')
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    _log.debug(f'num of gpus available: {torch.cuda.device_count()}')
+    if torch.cuda.is_available():
+        _log.debug(f'current device: {torch.cuda.current_device()}')
+    else:
+        _log.debug(f'current device: cpu')
 
     data_loader_train = DataLoader(
         train_dataset,
@@ -197,6 +202,8 @@ def main(_config, _run, _log):
                        for p in model.parameters() if p.requires_grad)
     _run.log_scalar('nr_params', total_params, config.training_epochs)
     _log.info('Model is ready')
+    if torch.cuda.is_available():
+        _log.debug(f'GPU memory allocated so far: {torch.cuda.memory_allocated(device=device)}B')
 
     # save config to file and store in DB
     config_filepath = os.path.join(config.run_abs_path, 'config.json')
@@ -437,6 +444,8 @@ def main(_config, _run, _log):
             _log.info(
                 f'batch {batch_i}: num nodes {data.num_nodes}, num edges {data.num_edges}')
             data = data.to(device)
+            if torch.cuda.is_available():
+                _log.debug(f'GPU memory allocated: {torch.cuda.memory_allocated(device=device)}B')
             # call the forward method
             out = model(data)
 
