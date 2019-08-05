@@ -15,145 +15,159 @@ from tqdm import tqdm
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-parser = configargparse.ArgumentParser()
-parser.add_argument(
-    '--file',
-    '-f',
-    type=str,
-    action='append',
-    required=True,
-    help="The path to the container to show")
-parser.add_argument(
-    '--datasets',
-    '-d',
-    type=str,
-    nargs='+',
-    action='append',
-    required=True,
-    help="The datasets in the container to show")
+def parse_args():
+    parser = configargparse.ArgumentParser()
+    parser.add_argument(
+        '--file',
+        '-f',
+        type=str,
+        action='append',
+        required=True,
+        help="The path to the container to show")
+    parser.add_argument(
+        '--datasets',
+        '-d',
+        type=str,
+        nargs='+',
+        action='append',
+        required=True,
+        help="The datasets in the container to show")
 
 
-args, remaining_argv = parser.parse_known_args()
-sys.argv = [sys.argv[0], *remaining_argv]
-from config import config  # noqa
+    args, remaining_argv = parser.parse_known_args()
+    sys.argv = [sys.argv[0], *remaining_argv]
+    from config import config  # noqa
+    return args, config
 
 
-neuroglancer.set_server_bind_address('0.0.0.0')
-viewer = neuroglancer.Viewer()
+def load_volumes(args):
+    neuroglancer.set_server_bind_address('0.0.0.0')
+    viewer = neuroglancer.Viewer()
 
-for f, datasets in zip(args.file, args.datasets):
+    for f, datasets in zip(args.file, args.datasets):
 
-    arrays = []
-    for ds in datasets:
+        arrays = []
+        for ds in datasets:
+            try:
+
+                print("Adding %s, %s" % (f, ds))
+                a = daisy.open_ds(f, ds)
+
+            except BaseException:
+
+                print("Didn't work, checking if this is multi-res...")
+
+                scales = glob.glob(os.path.join(f, ds, 's*'))
+                print("Found scales %s" % ([
+                    os.path.relpath(s, f)
+                    for s in scales
+                ],))
+                a = [
+                    daisy.open_ds(f, os.path.relpath(scale_ds, f))
+                    for scale_ds in scales
+                ]
+            arrays.append(a)
+
+        with viewer.txn() as s:
+            for array, dataset in zip(arrays, datasets):
+                add_layer(s, array, dataset)
+
+    return viewer
+
+
+def load_rag(viewer, config):
+    start = time.time()
+    graph_provider = daisy.persistence.MongoDbGraphProvider(
+        config.db_name,
+        config.db_host,
+        mode='r',
+        nodes_collection=config.nodes_collection,
+        edges_collection=config.edges_collection,
+        endpoint_names=['u', 'v'],
+        position_attribute=[
+            'center_z',
+            'center_y',
+            'center_x']
+    )
+    logger.info(f'set up graph provider in {time.time() - start}s')
+
+    roi = daisy.Roi(list(config.roi_offset), list(np.array(config.roi_shape)))
+    logger.debug(roi)
+
+    start = time.time()
+    nonb_nodes = graph_provider.read_nodes(roi=roi)
+    nonb_edges = graph_provider.read_edges(roi=roi, nodes=nonb_nodes)
+    logger.info(f'read whole graph in {time.time() - start}s')
+
+    start = time.time()
+    nodes = {n['id']: (n['center_z'], n['center_y'], n['center_x'])
+             for n in nonb_nodes}
+
+    edges = {(e['u'], e['v']): e[config.new_edge_attr_trinary] for e in nonb_edges}
+    logger.info(f'write nodes and edges to dicts in {time.time() - start}s')
+
+    # blockwise loading
+    # start = time.time()
+    # nodes_attrs, edges_attrs = graph_provider.read_blockwise(
+    # roi=roi,
+    # block_size=daisy.Coordinate((3000, 3000, 3000)),
+    # num_workers=5
+    # )
+    # logger.info(f'read graph blockwise in {time.time() - start}s')
+
+    # start = time.time()
+    # nodes = {node_id: (z, y, x) for z, y, x, node_id in zip(
+    # nodes_attrs["center_z"],
+    # nodes_attrs["center_y"],
+    # nodes_attrs["center_x"],
+    # nodes_attrs['id']
+    # )
+    # }
+
+    # edges = {(u, v): score for u, v, score in zip(
+    # edges_attrs["u"], edges_attrs["v"], edges_attrs[config.new_edge_attr_trinary])}
+    # logger.info(f'write nodes and edges to dicts in {time.time() - start}s')
+
+    start = time.time()
+    lines = {}
+    for i, ((u, v), score) in tqdm(enumerate(edges.items())):
         try:
+            l = neuroglancer.LineAnnotation(
+                point_a=np.array(nodes[u])[::-1],
+                point_b=np.array(nodes[v])[::-1],
+                id=i
+            )
+            lines.setdefault(score, []).append(l)
+        except KeyError:
+            pass
+    logger.info(f'create LineAnnotations in {time.time() - start}s')
+    for k, v in lines.items():
+        logger.info(f'layer {k} with {len(v)} edges')
 
-            print("Adding %s, %s" % (f, ds))
-            a = daisy.open_ds(f, ds)
-
-        except BaseException:
-
-            print("Didn't work, checking if this is multi-res...")
-
-            scales = glob.glob(os.path.join(f, ds, 's*'))
-            print("Found scales %s" % ([
-                os.path.relpath(s, f)
-                for s in scales
-            ],))
-            a = [
-                daisy.open_ds(f, os.path.relpath(scale_ds, f))
-                for scale_ds in scales
-            ]
-        arrays.append(a)
-
+    lines = {0: lines[0]}
+    start = time.time()
+    # colors_list = list(colors.CSS4_COLORS.values())
+    colors_list = ['#ffff00', '#00ff00', '#ff00ff']
     with viewer.txn() as s:
-        for array, dataset in zip(arrays, datasets):
-            add_layer(s, array, dataset)
+        for i, (k, v) in tqdm(enumerate(lines.items())):
+            # TODO adapt parameters
+            s.layers[str(k)] = neuroglancer.AnnotationLayer(
+                voxel_size=(1, 1, 1),
+                filter_by_segmentation=False,
+                # annotation_color=random.choice(colors_list),
+                annotation_color=colors_list[i],
+                annotations=v)
+    logger.info(f'add annotation layers in {time.time() - start}s')
 
-start = time.time()
-graph_provider = daisy.persistence.MongoDbGraphProvider(
-    config.db_name,
-    config.db_host,
-    mode='r',
-    nodes_collection=config.nodes_collection,
-    edges_collection=config.edges_collection,
-    endpoint_names=['u', 'v'],
-    position_attribute=[
-        'center_z',
-        'center_y',
-        'center_x']
-)
-logger.info(f'set up graph provider in {time.time() - start}s')
+    return viewer
 
-roi = daisy.Roi(list(config.roi_offset), list(np.array(config.roi_shape)))
-logger.debug(roi)
 
-start = time.time()
-nonb_nodes = graph_provider.read_nodes(roi=roi)
-nonb_edges = graph_provider.read_edges(roi=roi, nodes=nonb_nodes)
-logger.info(f'read whole graph in {time.time() - start}s')
+if __name__ == "__main__":
+    args, config = parse_args()
+    viewer = load_volumes(args=args)
+    viewer = load_rag(viewer=viewer, config=config)
+    url = str(viewer)
+    print(url)
 
-start = time.time()
-nodes = {n['id']: (n['center_z'], n['center_y'], n['center_x'])
-         for n in nonb_nodes}
-
-edges = {(e['u'], e['v']): e[config.new_edge_attr_trinary] for e in nonb_edges}
-logger.info(f'write nodes and edges to dicts in {time.time() - start}s')
-
-# blockwise loading
-# start = time.time()
-# nodes_attrs, edges_attrs = graph_provider.read_blockwise(
-# roi=roi,
-# block_size=daisy.Coordinate((3000, 3000, 3000)),
-# num_workers=5
-# )
-# logger.info(f'read graph blockwise in {time.time() - start}s')
-
-# start = time.time()
-# nodes = {node_id: (z, y, x) for z, y, x, node_id in zip(
-# nodes_attrs["center_z"],
-# nodes_attrs["center_y"],
-# nodes_attrs["center_x"],
-# nodes_attrs['id']
-# )
-# }
-
-# edges = {(u, v): score for u, v, score in zip(
-# edges_attrs["u"], edges_attrs["v"], edges_attrs[config.new_edge_attr_trinary])}
-# logger.info(f'write nodes and edges to dicts in {time.time() - start}s')
-
-start = time.time()
-lines = {}
-for i, ((u, v), score) in tqdm(enumerate(edges.items())):
-    try:
-        l = neuroglancer.LineAnnotation(
-            point_a=np.array(nodes[u])[::-1],
-            point_b=np.array(nodes[v])[::-1],
-            id=i
-        )
-        lines.setdefault(score, []).append(l)
-    except KeyError:
-        pass
-logger.info(f'create LineAnnotations in {time.time() - start}s')
-for k, v in lines.items():
-    logger.info(f'layer {k} with {len(v)} edges')
-
-lines = {0: lines[0]}
-start = time.time()
-# colors_list = list(colors.CSS4_COLORS.values())
-colors_list = ['#ffff00', '#00ff00', '#ff00ff']
-with viewer.txn() as s:
-    for i, (k, v) in tqdm(enumerate(lines.items())):
-        # TODO adapt parameters
-        s.layers[str(k)] = neuroglancer.AnnotationLayer(
-            voxel_size=(1, 1, 1),
-            filter_by_segmentation=False,
-            # annotation_color=random.choice(colors_list),
-            annotation_color=colors_list[i],
-            annotations=v)
-logger.info(f'add annotation layers in {time.time() - start}s')
-
-url = str(viewer)
-print(url)
-
-print("Press ENTER to quit")
-input()
+    print("Press ENTER to quit")
+    input()

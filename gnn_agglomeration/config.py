@@ -126,24 +126,6 @@ class Config:
         self.default['dataset_type_test'] = 'HemibrainDatasetBlockwiseInMemory'
 
         self.parser.add_argument(
-            '--dataset_path_train',
-            type=str,
-            help='the directory to read the training dataset from')
-        self.default['dataset_path_train'] = 'data/hemi/12_micron_cube/default_train'
-
-        self.parser.add_argument(
-            '--dataset_path_val',
-            type=str,
-            help='the directory to read the validation dataset from')
-        self.default['dataset_path_val'] = 'data/hemi/12_micron_cube/default_val'
-
-        self.parser.add_argument(
-            '--dataset_path_test',
-            type=str,
-            help='the directory to read the test dataset from')
-        self.default['dataset_path_test'] = 'data/hemi/12_micron_cube/default_test'
-
-        self.parser.add_argument(
             '--run_path',
             type=str,
             help='directory to save temporary outputs')
@@ -263,13 +245,13 @@ class Config:
             '--batch_size_train',
             type=positive_int,
             help='batch size for training')
-        self.default['batch_size_train'] = 4
+        self.default['batch_size_train'] = 1
 
         self.parser.add_argument(
             '--batch_size_eval',
             type=positive_int,
             help='batch size for evaluation')
-        self.default['batch_size_eval'] = 4
+        self.default['batch_size_eval'] = 1
 
         self.parser.add_argument(
             '--hidden_layers',
@@ -546,46 +528,92 @@ class Config:
         #########################
 
         self.parser.add_argument(
+            '--db_name_train',
+            type=str,
+            help='name of the used mongodb for training')
+        self.default['db_name_train'] = 'gnn_agglomeration_hemi_vanilla_400k_roi_2'
+
+        self.parser.add_argument(
+            '--db_name_val',
+            type=str,
+            help='name of the used mongodb for validation')
+        self.default['db_name_val'] = 'gnn_agglomeration_hemi_vanilla_400k_roi_1'
+
+        self.parser.add_argument(
+            '--db_name_test',
+            type=str,
+            help='name of the used mongodb for test')
+        # self.default['db_name_test'] = 'gnn_agglomeration_hemi_vanilla_400k_roi_3'
+        self.default['db_name_test'] = 'gnn_agglomeration_hemi_vanilla_400k_roi_1'
+
+        self.parser.add_argument(
+            '--dataset_path_train',
+            type=str,
+            help='the directory to read the training dataset from')
+        self.default['dataset_path_train'] = 'data/hemi/12_micron_cube/default_train'
+
+        self.parser.add_argument(
+            '--dataset_path_val',
+            type=str,
+            help='the directory to read the validation dataset from')
+        self.default['dataset_path_val'] = 'data/hemi/12_micron_cube/default_val'
+
+        self.parser.add_argument(
+            '--dataset_path_test',
+            type=str,
+            help='the directory to read the test dataset from')
+        self.default['dataset_path_test'] = 'data/hemi/12_micron_cube/default_test'
+
+        self.parser.add_argument(
             '--train_roi_offset',
             type=positive_int,
             nargs=3,
             help='ROI absolute position of lower vertex')
-        self.default['train_roi_offset'] = [140800, 205120, 198400]
+        self.default['train_roi_offset'] = [150400, 192000, 214400]
+        # self.default['train_roi_offset'] = [140800, 205120, 198400]
 
         self.parser.add_argument(
             '--train_roi_shape',
             type=positive_int,
             nargs=3,
             help='ROI size, starting at roi_offset')
-        self.default['train_roi_shape'] = [11800 - 2 * 1180, 11800, 11800]
+        # self.default['train_roi_shape'] = [11800 - 2 * 1180, 11800, 11800]
+        self.default['train_roi_shape'] = [21800, 21800, 21800]
 
         self.parser.add_argument(
             '--val_roi_offset',
             type=positive_int,
             nargs=3,
             help='ROI absolute position of lower vertex')
-        self.default['val_roi_offset'] = [140800 + 8 * 1180, 205120, 198400]
+        # self.default['val_roi_offset'] = [140800 + 8 * 1180, 205120, 198400]
+        self.default['val_roi_offset'] = [140800, 205120, 198400]
 
         self.parser.add_argument(
             '--val_roi_shape',
             type=positive_int,
             nargs=3,
             help='ROI size, starting at roi_offset')
-        self.default['val_roi_shape'] = [1180, 11800, 11800]
+        # self.default['val_roi_shape'] = [1180, 11800, 11800]
+        # self.default['val_roi_shape'] = [11800, 11800, 11800]
+        self.default['val_roi_shape'] = [3000, 3000, 3000]
 
         self.parser.add_argument(
             '--test_roi_offset',
             type=positive_int,
             nargs=3,
             help='ROI absolute position of lower vertex')
-        self.default['test_roi_offset'] = [140800 + 9 * 1180, 205120, 198400]
+        # self.default['test_roi_offset'] = [140800 + 9 * 1180, 205120, 198400]
+        # self.default['test_roi_offset'] = [153680, 200000, 179200]
+        self.default['test_roi_offset'] = [140800, 205120, 198400]
 
         self.parser.add_argument(
             '--test_roi_shape',
             type=positive_int,
             nargs=3,
             help='ROI size, starting at roi_offset')
-        self.default['test_roi_shape'] = [1180, 11800, 11800]
+        # self.default['test_roi_shape'] = [1180, 11800, 11800]
+        # self.default['test_roi_shape'] = [16800, 16800, 16800]
+        self.default['test_roi_shape'] = [11800, 11800, 11800]
 
         #########################
 
@@ -617,24 +645,6 @@ class Config:
             type=str,
             help='path to mongoDB connection file')
         self.default['db_host'] = 'db_host.ini'
-
-        self.parser.add_argument(
-            '--db_name_train',
-            type=str,
-            help='name of the used mongodb for training')
-        self.default['db_name_train'] = 'gnn_agglomeration_hemi_vanilla_400k_roi_2'
-
-        self.parser.add_argument(
-            '--db_name_val',
-            type=str,
-            help='name of the used mongodb for validation')
-        self.default['db_name_val'] = 'gnn_agglomeration_hemi_vanilla_400k_roi_1'
-
-        self.parser.add_argument(
-            '--db_name_test',
-            type=str,
-            help='name of the used mongodb for test')
-        self.default['db_name_test'] = 'gnn_agglomeration_hemi_vanilla_400k_roi_3'
 
         self.parser.add_argument(
             '--nodes_collection',
@@ -727,16 +737,14 @@ class Config:
             '--gt_merge_score_field',
             type=str,
             help='DB field in edges collection that contains the ground truth score')
-        self.default['gt_merge_score_field'] = 'gt_merge_score'
+        self.default['gt_merge_score_field'] = 'gt_merge_score_vanilla'
 
         self.parser.add_argument(
-            'merge_labeled_field',
+            '--merge_labeled_field',
             type=str,
             help='''DB field in edges collection that contains the gt masking
             which accounts for edges with unknown ground truth''')
-        self.default['merge_labeled_field'] = 'merge_labeled'
-
-
+        self.default['merge_labeled_field'] = 'merge_labeled_vanilla'
 
     def localhost(self):
         return {

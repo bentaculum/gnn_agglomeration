@@ -22,11 +22,11 @@ class HemibrainGraphMasked(HemibrainGraph):
             inner_block_shape):
 
         # TODO remove duplicate code
-        logger.debug(
-            'read\n'
-            f'\tblock offset: {block_offset}\n'
-            f'\tblock shape: {block_shape}'
-        )
+        # logger.debug(
+        #     'read\n'
+        #     f'\tblock offset: {block_offset}\n'
+        #     f'\tblock shape: {block_shape}'
+        # )
 
         assert self.config is not None
 
@@ -71,10 +71,10 @@ class HemibrainGraphMasked(HemibrainGraph):
             dim=1) & torch.all(
             self.pos < upper_limit,
             dim=1)
+        edge_index_flat = torch.transpose(self.edge_index, 0, 1).flatten()
+        edge_index_bool = nodes_in[edge_index_flat].reshape(-1, 2)
 
-        # only check u (the first node, first direction), as each edge should be
-        # unmasked exactly once if we go blockwise
-        edge_index_u = self.edge_index[0, 0::2]
-        inner_mask = nodes_in[edge_index_u]
+        edge_valid_directed = torch.all(edge_index_bool, dim=1)
+        inner_mask = edge_valid_directed[0::2]
 
-        return (inner_mask & mask.byte()).float(), inner_mask.byte()
+        return (inner_mask & mask.byte()).float(), inner_mask

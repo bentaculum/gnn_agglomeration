@@ -3,6 +3,7 @@ from sacred.observers import MongoObserver, TelegramObserver
 from sacred.stflow import LogFileWriter
 
 import torch
+
 torch.multiprocessing.set_sharing_strategy('file_system')
 import os  # noqa
 import shutil  # noqa
@@ -131,6 +132,11 @@ def main(_config, _run, _log):
     _log.info('Datasets are ready')
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    _log.debug(f'num of gpus available: {torch.cuda.device_count()}')
+    if torch.cuda.is_available():
+        _log.debug(f'current device: {torch.cuda.current_device()}')
+    else:
+        _log.debug(f'current device: cpu')
 
     data_loader_train = DataLoader(
         train_dataset,
@@ -198,6 +204,8 @@ def main(_config, _run, _log):
                        for p in model.parameters() if p.requires_grad)
     _run.log_scalar('nr_params', total_params, config.training_epochs)
     _log.info('Model is ready')
+    if torch.cuda.is_available():
+        _log.debug(f'GPU memory allocated so far: {torch.cuda.memory_allocated(device=device)}B')
 
     # save config to file and store in DB
     config_filepath = os.path.join(config.run_abs_path, 'config.json')
@@ -298,11 +306,15 @@ def main(_config, _run, _log):
 
                 if config.write_to_db:
                     start = time.time()
-                    out_1d = model.out_to_one_dim(out_fe).cpu()
+                    out_1d = model.out_to_one_dim(out_fe)
                     # TODO this assumes again that every pairs of directed edges are next to each other
+                    # and we grab the original representation (u,v) from the DB
                     edges = torch.transpose(data_fe.edge_index, 0, 1)[0::2]
-                    edges = edges[data_fe.roi_mask].cpu(
+
+                    # mask outputs
+                    edges = edges[data_fe.roi_mask.byte()].cpu(
                     ).numpy().astype(np.int64)
+                    out_1d = out_1d[data_fe.roi_mask.byte()].cpu()
 
                     edges_orig_labels = np.zeros_like(edges, dtype=np.int64)
                     edges_orig_labels = replace_values(
@@ -314,9 +326,7 @@ def main(_config, _run, _log):
                         inplace=False
                     )
 
-                    # TODO min max might be unnecessary here
-                    # convert to tuples, make sure that directedness is not a problem
-                    edges_list = [tuple([np.min(i), np.max(i)])
+                    edges_list = [tuple(i)
                                   for i in edges_orig_labels]
 
                     for k, v in zip(edges_list, out_1d):
@@ -324,7 +334,11 @@ def main(_config, _run, _log):
                             test_1d_outputs[k] = v
                         else:
                             # TODO adapt strategy here if desired
-                            test_1d_outputs[k] = max(test_1d_outputs[k], v)
+                            if config.graph_type == 'HemibrainGraphMasked':
+                                raise ValueError(
+                                    'Masking should lead to a single prediction per edge in blockwise dataset')
+                            else:
+                                test_1d_outputs[k] = max(test_1d_outputs[k], v)
 
                     _log.info(
                         f'writing outputs to dict in {time.time() - start}s')
@@ -429,13 +443,16 @@ def main(_config, _run, _log):
         nr_nodes_train = 0
         _log.info('epoch {} ...'.format(epoch))
         for batch_i, data in enumerate(data_loader_train):
+            _log.info(
+                f'batch {batch_i}: num nodes {data.num_nodes}, num edges {data.num_edges}')
             data = data.to(device)
+            if torch.cuda.is_available():
+                _log.debug(f'GPU memory allocated: {torch.cuda.memory_allocated(device=device)}B')
             # call the forward method
             out = model(data)
 
             loss = model.loss(out, data.y, data.mask)
             model.print_current_loss(epoch, batch_i, _log)
-            _log.debug(f'total num nodes: {data.num_nodes}')
 
             epoch_loss += loss.item() * data.num_nodes
             epoch_metric_train += model.out_to_metric(

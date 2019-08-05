@@ -6,8 +6,6 @@ from abc import ABC, abstractmethod
 import time
 from funlib.segment.arrays import replace_values
 
-from gnn_agglomeration import utils
-
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
@@ -60,8 +58,6 @@ class HemibrainGraph(Data, ABC):
         vu = torch.flip(self.edge_index, dims=[0])[:, 1::2]
 
         assert torch.equal(uv, vu)
-        # remove config property so Data object can be saved with torch
-        del self.config
 
     def parse_rag_excerpt(self, nodes_list, edges_list):
 
@@ -73,24 +69,33 @@ class HemibrainGraph(Data, ABC):
         gt_merge_score_field = self.config.gt_merge_score_field
         merge_labeled_field = self.config.merge_labeled_field
 
-        node_attrs = utils.to_np_arrays(nodes_list)
-        edges_attrs = utils.to_np_arrays(edges_list)
+        # TODO remove duplicate code, this is also used in hemibrain_graph
+        def to_np_arrays(inp):
+            d = {}
+            for i in inp:
+                for k, v in i.items():
+                    d.setdefault(k, []).append(v)
+            for k, v in d.items():
+                d[k] = np.array(v)
+            return d
 
-        # drop edges for which one of the incident nodes is not in the
+        node_attrs = to_np_arrays(nodes_list)
+        # TODO maybe port to numpy, but generally fast
+        # Drop edges for which one of the incident nodes is not in the
         # extracted node set
-        edges_attrs = utils.drop_outgoing_edges(
-            node_attrs=node_attrs,
-            edge_attrs=edges_attrs,
-            id_field=id_field,
-            node1_field=node1_field,
-            node2_field=node2_field
-        )
+        start = time.time()
+        for e in reversed(edges_list):
+            if e[node1_field] not in node_attrs[id_field] or e[node2_field] not in node_attrs[id_field]:
+                edges_list.remove(e)
+        logger.debug(f'drop edges at the border in {time.time() - start}s')
 
         # If all edges were removed in the step above, raise a ValueError
         # that is caught later on
-        if np.any(edge_in) is False:
+        if len(edges_list) == 0:
             raise ValueError(
                 f'Removed all edges in ROI, as one node is outside of ROI for each edge')
+
+        edges_attrs = to_np_arrays(edges_list)
 
         node_ids_np = node_attrs[id_field].astype(np.int64)
         node_ids = torch.tensor(node_ids_np, dtype=torch.long)

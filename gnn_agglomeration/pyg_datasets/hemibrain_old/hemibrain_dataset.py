@@ -6,17 +6,16 @@ import daisy
 import configparser
 from abc import ABC, abstractmethod
 import logging
+from tqdm import tqdm
 import os
 import pymongo
 import time
 import bson
-import multiprocessing
 
 from ..data_transforms import *
-from gnn_agglomeration import utils
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 # hack to make daisy logging indep from from sacred logging
 logging.getLogger(
     'daisy.persistence.mongodb_graph_provider').setLevel(logging.INFO)
@@ -34,11 +33,12 @@ class HemibrainDataset(Dataset, ABC):
             save_processed=False):
         self.config = config
         self.db_name = db_name
-        self.roi_offset = np.array(roi_offset)
-        self.roi_shape = np.array(roi_shape)
+        self.roi_offset_full = np.array(roi_offset)
+        self.roi_shape_full = np.array(roi_shape)
         self.len = length
         self.save_processed = save_processed
 
+        self.pad_total_roi()
         self.connect_to_db()
         self.prepare()
 
@@ -49,43 +49,29 @@ class HemibrainDataset(Dataset, ABC):
         super(HemibrainDataset, self).__init__(
             root=root, transform=transform, pre_transform=None)
 
+        # TODO possible?
+        # self.check_dataset_vs_config()
+
     def prepare(self):
         pass
 
+    def pad_total_roi(self):
+        """
+        pad the entire volume, padded area not part of total roi any more
+        """
+        self.roi_offset = np.array(self.roi_offset_full) + \
+            np.array(self.config.block_padding)
+        self.roi_shape = np.array(self.roi_shape_full) - \
+            2 * np.array(self.config.block_padding)
+
     def pad_block(self, offset, shape):
         """
-        Enlarge the block with padding in all dimensions.
-        Crop the enlarged block if the new block is not contained in the ROI
+        enlarge the block with padding in all dimensions
         """
         offset_padded = np.array(offset) - np.array(self.config.block_padding)
         shape_padded = np.array(shape) + 2 * \
             np.array(self.config.block_padding)
-        logger.debug(f'offset padded: {offset_padded}, shape padded: {shape_padded}')
-        return self.crop_block(offset_padded, shape_padded)
-
-    def crop_block(self, offset, shape):
-        """
-
-        Args:
-            offset (numpy.array): padded offset
-            shape (numpy.array): padded shape
-
-        Returns:
-            cropped offset, cropped shape
-
-        """
-        # lower corner
-        cropped_offset = np.maximum(self.roi_offset, offset)
-        # correct shape for cropping
-        cropped_shape = shape - (cropped_offset - offset)
-
-        # upper corner
-        cropped_shape = np.minimum(
-            self.roi_offset + self.roi_shape,
-            cropped_offset + cropped_shape) - cropped_offset
-
-        logger.debug(f'offset cropped: {cropped_offset}, shape cropped: {cropped_shape}')
-        return cropped_offset, cropped_shape
+        return offset_padded, shape_padded
 
     def connect_to_db(self):
         with open(self.config.db_host, 'r') as f:
@@ -117,26 +103,13 @@ class HemibrainDataset(Dataset, ABC):
     def processed_file_names(self):
         return [f'processed_data_{i}.pt' for i in range(self.len)]
 
-    def process_one(self, idx):
-        if not os.path.isfile(self.processed_paths[idx]):
-            data = self.get_from_db(idx)
-            torch.save(data, self.processed_paths[idx])
-
     def process(self):
         logger.info(f'Trying to load data from {self.root} ...')
-        start = time.time()
-
-        pool = multiprocessing.Pool(
-            processes=self.config.num_workers,
-            initializer=np.random.seed,
-            initargs=())
-        pool.map_async(
-            func=self.process_one,
-            iterable=range(self.len))
-        pool.close()
-        pool.join()
-
-        logger.info(f'processed {self.len} in {time.time() - start}s')
+        # TODO use multiprocessing here to speed it up
+        for i in tqdm(range(self.len)):
+            if not os.path.isfile(self.processed_paths[i]):
+                data = self.get_from_db(i)
+                torch.save(data, self.processed_paths[i])
 
         # with open(
             # os.path.join(
@@ -182,27 +155,34 @@ class HemibrainDataset(Dataset, ABC):
         node1_field = 'u'
         node2_field = 'v'
 
-        orig_node_attrs = utils.to_np_arrays(orig_nodes)
-        orig_edge_attrs = utils.to_np_arrays(orig_edges)
+        def to_np_arrays(inp):
+            d = {}
+            for i in inp:
+                for k, v in i.items():
+                    d.setdefault(k, []).append(v)
+            for k, v in d.items():
+                d[k] = np.array(v)
+            return d
 
-        # drop edges at the border
-        utils.drop_outgoing_edges(
-            node_attrs=orig_node_attrs,
-            edge_attrs=orig_edge_attrs,
-            id_field=id_field,
-            node1_field=node1_field,
-            node2_field=node2_field
-        )
+        orig_node_attrs = to_np_arrays(orig_nodes)
+
+        start = time.time()
+        for e in reversed(orig_edges):
+            if e[node1_field] not in orig_node_attrs[id_field] or e[node2_field] not in orig_node_attrs[id_field]:
+                orig_edges.remove(e)
+        logger.debug(f'drop edges at the border in {time.time() - start}s')
 
         logger.info(
-            f'num edges in ROI {len(orig_edge_attrs[node1_field])}, num outputs {len(outputs_dict)}')
-        assert len(orig_edge_attrs[node1_field]) >= len(outputs_dict)
+            f'num edges in ROI {len(orig_edges)}, num outputs {len(outputs_dict)}')
+        assert len(orig_edges) >= len(outputs_dict)
 
         # TODO insert dummy value 1 for all edges that are not in outputs_dict,
         # but part of full RAG
         counter = 0
         missing_edges_pos = []
-        for e_tuple in zip(orig_edge_attrs[node1_field], orig_edge_attrs[node2_field]):
+        for e in orig_edges:
+            e_list = [e[node1_field], e[node2_field]]
+            e_tuple = tuple([min(e_list), max(e_list)])
             if e_tuple not in outputs_dict:
                 # TODO this is just for debugging, terrible style
                 u_idx = np.where(orig_node_attrs[id_field] == [e_tuple[0]])[0][0]
@@ -225,8 +205,8 @@ class HemibrainDataset(Dataset, ABC):
             os.path.join(self.config.run_abs_path, "missing_edges_pos.npz"),
             missing_edges_pos=np.array(missing_edges_pos))
 
-        assert len(orig_edge_attrs[node1_field]) == len(outputs_dict),\
-            f'num edges in ROI {len(orig_edge_attrs[node1_field])}, num outputs including dummy values {len(outputs_dict)}'
+        assert len(orig_edges) == len(outputs_dict),\
+            f'num edges in ROI {len(orig_edges)}, num outputs including dummy values {len(outputs_dict)}'
 
         collection = db[collection_name]
 
