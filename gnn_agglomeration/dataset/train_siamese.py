@@ -11,7 +11,7 @@ import configargparse
 
 
 from node_embeddings.config_siamese import config as config_siamese  # noqa
-from config import config  # noqa
+# from config import config  # noqa
 
 from node_embeddings.siamese_dataset import SiameseDataset  # noqa
 from node_embeddings.siamese_vgg_3d import SiameseVgg3d  # noqa
@@ -91,7 +91,7 @@ def train():
         length=config_siamese.samples,
         patch_size=config_siamese.patch_size,
         raw_channel=config_siamese.raw_channel,
-        mask_channel=config.mask_channel,
+        mask_channel=config_siamese.mask_channel,
         transform=data_augmentation_transform
     )
     logger.info(f'init dataset in {now() - start} s')

@@ -22,6 +22,7 @@ class SiameseVgg3d(torch.nn.Module):
         """
         super(SiameseVgg3d, self).__init__()
 
+        downsample_factors = np.array(downsample_factors)
         current_fmaps = input_fmaps
         current_size = np.array(input_size)
 
@@ -54,8 +55,8 @@ class SiameseVgg3d(torch.nn.Module):
             fmaps *= 2
 
             size = current_size / downsample_factors[i]
-            assert size * downsample_factors[i] == current_size, \
-                "Can not downsample %s by chosen downsample factor" % (current_size,)
+            assert np.all((size * downsample_factors[i]) == current_size), \
+                "Can not downsample %s by chosen downsample factor" % current_size
             current_size = size
 
             logging.info(
@@ -68,7 +69,7 @@ class SiameseVgg3d(torch.nn.Module):
 
         fully_connected = [
             torch.nn.Linear(
-                current_size[0] * current_size[1] * current_size[2] * current_fmaps,
+                int(current_size[0] * current_size[1] * current_size[2] * current_fmaps),
                 4096),
             torch.nn.ReLU(inplace=True),
             torch.nn.Dropout(),

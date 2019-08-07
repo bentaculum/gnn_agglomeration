@@ -3,16 +3,18 @@ import torch
 import daisy
 import time
 import numpy as np
+from time import time as now
 
 import sys
 sys.path.insert(1, '..')
 import utils  # noqa
 sys.path.remove('..')
+
 # dataset configs for many params
 from config import config  # noqa
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class SiameseDataset(torch.utils.data.Dataset):
@@ -55,13 +57,21 @@ class SiameseDataset(torch.utils.data.Dataset):
                 'center_x'])
 
         # get all edges, including gt_merge_score, as dict of numpy arrays
-        start = time.time()
+        start = now()
         roi = daisy.Roi(offset=config.roi_offset, shape=config.roi_shape)
         nodes = graph_provider.read_nodes(roi=roi)
         edges = graph_provider.read_edges(roi=roi, nodes=nodes)
-        self.nodes_attrs = utils.to_np_arrays(nodes)
-        self.edges_attrs = utils.to_np_arrays(edges)
-        logger.info(f'read whole graph in {time.time() - start}s')
+        logger.debug(f'read whole graph in {now() - start} s')
+
+        start = now()
+        nodes_attrs = utils.to_np_arrays(nodes)
+        nodes_cols = [self.id_field, 'center_z', 'center_y', 'center_x']
+        self.nodes_attrs = {k: nodes_attrs[k] for k in nodes_cols}
+
+        edges_attrs = utils.to_np_arrays(edges)
+        edges_cols = [self.node1_field, self.node2_field, config.new_edge_attr_trinary]
+        self.edges_attrs = {k: edges_attrs[k] for k in edges_cols}
+        logger.debug(f'convert graph to numpy arrays in {now() - start} s')
 
     def __len__(self):
         return self.len

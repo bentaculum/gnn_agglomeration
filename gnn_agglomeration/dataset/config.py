@@ -1,6 +1,7 @@
 import configargparse
 import configparser
 import logging
+import sys
 
 p = configargparse.ArgParser(
     default_config_files=['configs/config_hemi_vanilla_400k_roi_1.ini'])
@@ -97,8 +98,10 @@ p.add(
         'NOTSET'],
     help='basic logging level')
 
-config = p.parse_args()
-logging.info(f"\n{p.format_values()}")
+config, remaining_argv = p.parse_known_args()
+# TODO logging somehow does not work here
+sys.argv = [sys.argv[0], *remaining_argv]
+# print(f"\n{p.format_values()}")
 
 pw_parser = configparser.ConfigParser()
 pw_parser.read(config.db_host)

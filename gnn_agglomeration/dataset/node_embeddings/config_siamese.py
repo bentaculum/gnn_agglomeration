@@ -17,8 +17,12 @@ def str2bool(v):
         raise configargparse.ArgumentTypeError('Boolean value expected.')
 
 
+def list_of_ints(v):
+    return list(map(int, v.replace('[', '').replace(']', '').split(' ')))
+
+
 p = configargparse.ArgParser(
-    default_config_files=['config_siamese.ini'])
+    default_config_files=['node_embeddings/config_siamese.ini'])
 
 p.add('--config_file', is_config_file=True,
       help='file path to config that overwrites the default configs')
@@ -37,11 +41,12 @@ p.add('--mask_channel', type=str2bool, help='if set true, create a channel with 
 
 p.add('--fmaps', type=int, help='number of channels, to be doubled per layer')
 p.add('--output_features', type=int, help='dimensionality of embeddings before loss')
-p.add('--downsample_factors', type=tuple, nargs='+', help='tuple of 3D downsample factors for each pooling layer')
+p.add('--downsample_factors', type=list_of_ints, nargs='+', help='tuple of 3D downsample factors for each pooling layer')
 
 p.add('--adam_lr', type=float, help='learning rate for adam optimizer')
 p.add('--adam_weight_decay', type=float, help='weight decay for adam optimizer')
 
 config, remaining_argv = p.parse_known_args()
+# TODO logging somehow does not work here
 sys.argv = [sys.argv[0], *remaining_argv]
-logger.info(f"\n{p.format_values()}")
+# print(f"\n{p.format_values()}")
