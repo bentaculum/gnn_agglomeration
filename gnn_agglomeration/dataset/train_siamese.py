@@ -1,5 +1,6 @@
 import logging
 import torch
+from torch.utils import tensorboard
 import numpy as np
 import os
 import os.path as osp
@@ -7,11 +8,9 @@ from time import time as now
 import datetime
 import pytz
 import atexit
-import configargparse
 
-
-from node_embeddings.config_siamese import config as config_siamese  # noqa
-# from config import config  # noqa
+from node_embeddings.config_siamese import config as config_siamese, p as parser_siamese  # noqa
+from config import config  # noqa
 
 from node_embeddings.siamese_dataset import SiameseDataset  # noqa
 from node_embeddings.siamese_vgg_3d import SiameseVgg3d  # noqa
@@ -48,17 +47,18 @@ def save(model, optimizer, model_dir, iteration):
     }, osp.join(model_dir, f'iteration_{iteration}.tar'))
 
     # save config file
-    parser_writing = configargparse.ArgParser()
-    parser_writing.write_config_file(
+    parser_siamese.write_config_file(
         parsed_namespace=config_siamese,
         output_file_paths=[osp.join(model_dir, 'config.ini')],
         exit_after=False
     )
 
 
-def atexit_tasks(writer, loss):
+def atexit_tasks(loss, writer):
     # TODO check if that works
-    writer.close()
+    if writer:
+        writer.close()
+
     # summary_compressed = osp.join(
     #     config_siamese.runs_dir,
     #     timestamp,
@@ -111,17 +111,22 @@ def train():
 
     start = now()
     model = SiameseVgg3d(
-        input_size=config_siamese.patch_size,
+        input_size=np.array(config_siamese.patch_size) / np.array(config.voxel_size),
         input_fmaps=int(config_siamese.raw_channel) + int(config_siamese.mask_channel),
         fmaps=config_siamese.fmaps,
+        fmaps_max=config_siamese.fmaps_max,
         output_features=config_siamese.output_features,
         downsample_factors=config_siamese.downsample_factors
     )
+    total_params = sum(p.numel()
+                       for p in model.parameters() if p.requires_grad)
+    logger.info(f"number of diff'able params: {total_params}")
+
     model.to(device)
     logger.info(f'init model in {now() - start} s')
 
     optimizer = torch.optim.Adam(
-        params=model.parameters,
+        params=model.parameters(),
         lr=config_siamese.adam_lr,
         weight_decay=config_siamese.adam_weight_decay
     )
@@ -131,28 +136,40 @@ def train():
         reduction='mean'
     )
 
-    if config_siamese.write_summary:
+    if config_siamese.summary:
         writer = torch.utils.tensorboard.SummaryWriter(
-            logdir=osp.join(config_siamese.runs_dir, timestamp, 'summary')
+            log_dir=osp.join(config_siamese.runs_dir, timestamp, 'summary')
         )
+    else:
+        writer = None
 
     # register exit routines, in case there is an interrupt, e.g. via keyboard
     loss = np.inf
     atexit.register(
-        func=atexit_tasks,
-        writer=writer,
-        loss=loss
+        atexit_tasks,
+        loss=loss,
+        writer=writer
     )
 
     for i, data in enumerate(dataloader):
+        logger.info(f'iteration {i} ...')
         input0, input1, labels = data
-        input0 = input0.to(device)
-        input1 = input1.to(device)
-        labels = labels.to(device)
+
+        if dataloader.batch_size == 1:
+            input0 = input0.squeeze(0)
+            input1 = input1.squeeze(0)
+            labels = labels.squeeze(0)
+        else:
+           raise NotImplementedError(
+               'currently the dataset provides a batch of variable size per __getitem__ call')
 
         # make sure the dimensionality is ok
         assert input0.dim() == 5, input0.shape
         assert labels.dim() == 1, labels.shape
+
+        input0 = input0.to(device)
+        input1 = input1.to(device)
+        labels = labels.to(device)
 
         optimizer.zero_grad()
         out0, out1 = model(input0, input1)
@@ -163,7 +180,7 @@ def train():
         )
 
         # TODO move to subprocess for speed?
-        if config_siamese.write_summary:
+        if config_siamese.summary:
             if i % config_siamese.summary_interval == 0:
                 writer.add_scalar(
                     tag='loss',
@@ -177,7 +194,7 @@ def train():
         # save model
         if i % config_siamese.checkpoint_interval == 0:
             logger.info('Saving model ...')
-            model.save(
+            save(
                 model=model,
                 optimizer=optimizer,
                 model_dir=model_dir,

@@ -3,6 +3,9 @@ import configparser
 import logging
 import sys
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
 p = configargparse.ArgParser(
     default_config_files=['configs/config_hemi_vanilla_400k_roi_1.ini'])
 p.add('--config_file', is_config_file=True,
@@ -64,6 +67,8 @@ p.add('--block_size', type=int, nargs='+',
       help='block size used for processing fragments')
 p.add('--padding', type=int, nargs=3,
       help='padding used for fragment creation. Not used at the moment')
+p.add('--voxel_size', type=int, nargs=3,
+      help='voxel size in nanometers')
 
 # [DATA PROCESSING]
 p.add('--num_workers', type=int, help='number of daisy subprocesses')
@@ -99,9 +104,8 @@ p.add(
     help='basic logging level')
 
 config, remaining_argv = p.parse_known_args()
-# TODO logging somehow does not work here
 sys.argv = [sys.argv[0], *remaining_argv]
-# print(f"\n{p.format_values()}")
+logger.info(f"\n{p.format_values()}")
 
 pw_parser = configparser.ConfigParser()
 pw_parser.read(config.db_host)

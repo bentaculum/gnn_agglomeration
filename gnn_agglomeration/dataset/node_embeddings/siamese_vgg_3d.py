@@ -11,7 +11,7 @@ class SiameseVgg3d(torch.nn.Module):
     TODO
     """
 
-    def __init__(self, input_size, input_fmaps=1, fmaps=32, output_features=10, downsample_factors=[(2, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2)]):
+    def __init__(self, input_size, input_fmaps=1, fmaps=32, fmaps_max=512, output_features=10, downsample_factors=[(2, 2, 2), (2, 2, 2), (2, 2, 2), (2, 2, 2)]):
         """
         TODO
         Args:
@@ -48,25 +48,24 @@ class SiameseVgg3d(torch.nn.Module):
                 torch.nn.ReLU(
                     inplace=True),
                 torch.nn.MaxPool3d(
-                    kernel_size=downsample_factors[i])
+                    kernel_size=tuple(downsample_factors[i]))
             ]
 
             current_fmaps = fmaps
-            fmaps *= 2
+            fmaps = min(fmaps_max, fmaps * 2)
 
-            size = current_size / downsample_factors[i]
-            assert np.all((size * downsample_factors[i]) == current_size), \
-                "Can not downsample %s by chosen downsample factor" % current_size
+            size = np.floor(current_size / downsample_factors[i])
+            # TODO come up with a better rule
+            # assert np.all((size * downsample_factors[i]) == current_size), \
+            #     "Can not downsample %s by chosen downsample factor" % current_size
             current_size = size
 
-            logging.info(
-                "VGG level %d: (%s), %d fmaps",
-                i,
-                current_size,
-                current_fmaps)
+            logger.info(f'VGG level {i}: ({current_size}), {current_fmaps} fmaps')
 
         self.features = torch.nn.Sequential(*features)
 
+        num_features = int(current_size[0] * current_size[1] * current_size[2] * current_fmaps),
+        logger.info(f'inputs to fc layer: {num_features}')
         fully_connected = [
             torch.nn.Linear(
                 int(current_size[0] * current_size[1] * current_size[2] * current_fmaps),
@@ -75,11 +74,11 @@ class SiameseVgg3d(torch.nn.Module):
             torch.nn.Dropout(),
             torch.nn.Linear(
                 4096,
-                4096),
+                2048),
             torch.nn.ReLU(inplace=True),
             torch.nn.Dropout(),
             torch.nn.Linear(
-                4096,
+                2048,
                 output_features)
         ]
 

@@ -1,14 +1,14 @@
 import logging
 import torch
 import daisy
-import time
+from time import time as now
 import numpy as np
 from time import time as now
 
 import sys
-sys.path.insert(1, '..')
-import utils  # noqa
-sys.path.remove('..')
+# sys.path.insert(1, '..')
+from . import utils  # noqa
+# sys.path.remove('..')
 
 # dataset configs for many params
 from config import config  # noqa
@@ -44,6 +44,8 @@ class SiameseDataset(torch.utils.data.Dataset):
         self.node2_field = 'v'
 
         # connect to one RAG DB
+        logger.debug('ready to connect to RAG db')
+        start = now()
         graph_provider = daisy.persistence.MongoDbGraphProvider(
             db_name=config.db_name,
             host=config.db_host,
@@ -55,6 +57,7 @@ class SiameseDataset(torch.utils.data.Dataset):
                 'center_z',
                 'center_y',
                 'center_x'])
+        logger.debug(f'connect to RAG db in {now() - start} s')
 
         # get all edges, including gt_merge_score, as dict of numpy arrays
         start = now()
@@ -70,8 +73,18 @@ class SiameseDataset(torch.utils.data.Dataset):
 
         edges_attrs = utils.to_np_arrays(edges)
         edges_cols = [self.node1_field, self.node2_field, config.new_edge_attr_trinary]
-        self.edges_attrs = {k: edges_attrs[k] for k in edges_cols}
-        logger.debug(f'convert graph to numpy arrays in {now() - start} s')
+        edges_attrs = {k: edges_attrs[k] for k in edges_cols}
+
+        self.edges_attrs = utils.drop_outgoing_edges(
+            node_attrs=self.nodes_attrs,
+            edge_attrs=edges_attrs,
+            id_field=self.id_field,
+            node1_field=self.node1_field,
+            node2_field=self.node2_field,
+        )
+
+        logger.debug(
+            f'convert graph to numpy arrays and drop outgoing edges in {now() - start} s')
 
     def __len__(self):
         return self.len
@@ -79,12 +92,21 @@ class SiameseDataset(torch.utils.data.Dataset):
     def get_patch(self, center, node_id):
         offset = np.array(center) - np.array(self.patch_size) / 2
         roi = daisy.Roi(offset=offset, shape=self.patch_size)
+        # center might not be on the grid defined by the voxel_size
+        roi = roi.snap_to_grid(daisy.Coordinate(config.voxel_size), mode='closest')
+
+        if roi.get_shape()[0] != self.patch_size[0]:
+            logger.warning(
+                f'''correct roi shape {roi.get_shape()} to 
+                {self.patch_size} after snapping to grid''')
+            roi.set_shape(self.patch_size)
 
         channels = []
         if self.raw_channel:
             ds = daisy.open_ds(config.groundtruth_zarr, 'volumes/raw/s0')
             if not ds.roi.contains(roi):
                 logger.warning(f'location {center} is not fully contained in dataset')
+                return None
             patch = (ds[roi].to_ndarray() / 255.0).astype(np.float32)
             channels.append(patch)
 
@@ -92,6 +114,7 @@ class SiameseDataset(torch.utils.data.Dataset):
             ds = daisy.open_ds(config.fragments_zarr, config.fragments_ds)
             if not ds.roi.contains(roi):
                 logger.warning(f'location {center} is not fully contained in dataset')
+                return None
             patch = ds[roi].to_ndarray()
             mask = (patch == node_id).astype(np.float32)
             channels.append(mask)
@@ -115,14 +138,20 @@ class SiameseDataset(torch.utils.data.Dataset):
             a mini-batch of volume pairs
 
         """
-        # TODO timeit
+        start_getitem = now()
         # pick random node
         index = np.random.randint(0, len(self.nodes_attrs[self.id_field]))
         node_id = self.nodes_attrs[self.id_field][index]
         node_center = (
-        self.nodes_attrs['center_z'][index], self.nodes_attrs['center_y'][index], self.nodes_attrs['center_x'][index])
+            self.nodes_attrs['center_z'][index],
+            self.nodes_attrs['center_y'][index],
+            self.nodes_attrs['center_x'][index])
+
         # get raw data for the node
-        node_patch = self.get_patch(center=node_center)
+        node_patch = self.get_patch(center=node_center, node_id=node_id)
+        if node_patch is None:
+            logger.warning(f'patch for center node is not fully contained in ROI, try again')
+            return self.__getitem__(index=index)
 
         # get all neighbors of random node in RAG, considering edges in both `directions`
         neighbor_mask1 = self.edges_attrs[self.node1_field] == node_id
@@ -143,27 +172,42 @@ class SiameseDataset(torch.utils.data.Dataset):
         patches = []
         labels = []
         for c, i, idx in zip(centers, neighbor_ids, neighbor_indices):
-            if self.edges_attrs[config.new_edge_attr_trinary] is not 1 or \
-                    self.edges_attrs[config.new_edge_attr_trinary] is not 0:
+            if self.edges_attrs[config.new_edge_attr_trinary][idx] is not 1 and \
+                    self.edges_attrs[config.new_edge_attr_trinary][idx] is not 0:
                 continue
 
-            patches.append(self.get_patch(center=c, node_id=i))
+            neighbor_patch = self.get_patch(center=c, node_id=i)
+            if neighbor_patch is None:
+                continue
+            else:
+                patches.append(neighbor_patch)
+
             # assign labels: 1 if the two fragments belong to same neuron, -1 if not
             edge_score = self.edges_attrs[config.new_edge_attr_trinary][idx]
             if edge_score == 0:
-                labels.append(1)
+                labels.append(torch.tensor(1))
             elif edge_score == 1:
-                labels.append(-1)
+                labels.append(torch.tensor(-1))
             else:
                 raise ValueError(f'Value {edge_score} cannot be transformed into a valid label')
 
+        if len(patches) == 0:
+            logger.warning(f'all neighbor patches are not fully contained in ROI, try again')
+            return self.__getitem__(index=index)
+
         # make pairs of data, plus corresponding labels
-        input0 = torch.tensor(node_patch).float().expand(len(patches), -1, -1, -1, -1)
-        input1 = torch.tensor(patches).float()
-        labels = torch.tensor(labels).long()
+        # TODO check if torch.Tensor.expand(len_patches, -1, -1, -1, -1)
+        #  works as well, it should use less memory
+
+        input0 = torch.tensor(node_patch).float()
+        input0 = input0.repeat(len(patches), 1, 1, 1, 1)
+        # input0 = input0.expand(len(patches), 1, 1 ,1 ,1)
+        input1 = torch.stack(patches).float()
+        labels = torch.stack(labels).float()
 
         if self.transform is not None:
             input0 = self.transform(input0)
             input1 = self.transform(input1)
 
+        logger.debug(f'__getitem__ in {now() - start_getitem} s')
         return input0, input1, labels
