@@ -4,20 +4,23 @@ import daisy
 import time
 import numpy as np
 
-from gnn_agglomeration import utils
-# dataset configs for all many params
-from ..config import config
+import sys
+sys.path.insert(1, '..')
+import utils  # noqa
+sys.path.remove('..')
+# dataset configs for many params
+from config import config  # noqa
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-class SiameseDataset(torch.utils.data.Data):
+class SiameseDataset(torch.utils.data.Dataset):
     """
     Each data point is actually a mini-batch of volume pairs
     """
 
-    def __init__(self, length, patch_size, raw_channel, mask_channel):
+    def __init__(self, length, patch_size, raw_channel, mask_channel, transform=None):
         """
 
         Args:
@@ -30,6 +33,7 @@ class SiameseDataset(torch.utils.data.Data):
         self.patch_size = patch_size
         self.raw_channel = raw_channel
         self.mask_channel = mask_channel
+        self.transform = transform
         assert raw_channel or mask_channel
 
         # TODO parametrize the used names
@@ -63,7 +67,7 @@ class SiameseDataset(torch.utils.data.Data):
         return self.len
 
     def get_patch(self, center, node_id):
-        offset = np.array(center) - np.array(self.patch_size)/2
+        offset = np.array(center) - np.array(self.patch_size) / 2
         roi = daisy.Roi(offset=offset, shape=self.patch_size)
 
         channels = []
@@ -71,7 +75,7 @@ class SiameseDataset(torch.utils.data.Data):
             ds = daisy.open_ds(config.groundtruth_zarr, 'volumes/raw/s0')
             if not ds.roi.contains(roi):
                 logger.warning(f'location {center} is not fully contained in dataset')
-            patch = (ds[roi].to_ndarray()/255.0).astype(np.float32)
+            patch = (ds[roi].to_ndarray() / 255.0).astype(np.float32)
             channels.append(patch)
 
         if self.mask_channel:
@@ -82,7 +86,13 @@ class SiameseDataset(torch.utils.data.Data):
             mask = (patch == node_id).astype(np.float32)
             channels.append(mask)
 
-        return torch.tensor(channels, dtype=torch.float)
+        tensor = torch.tensor(channels, dtype=torch.float)
+
+        # Add the `channel`-dimension
+        if len(channels) == 1:
+            tensor = tensor.unsqueeze(0)
+
+        return tensor
 
     def __getitem__(self, index):
         """
@@ -95,10 +105,12 @@ class SiameseDataset(torch.utils.data.Data):
             a mini-batch of volume pairs
 
         """
+        # TODO timeit
         # pick random node
         index = np.random.randint(0, len(self.nodes_attrs[self.id_field]))
         node_id = self.nodes_attrs[self.id_field][index]
-        node_center = (self.nodes_attrs['center_z'][index], self.nodes_attrs['center_y'][index], self.nodes_attrs['center_x'][index])
+        node_center = (
+        self.nodes_attrs['center_z'][index], self.nodes_attrs['center_y'][index], self.nodes_attrs['center_x'][index])
         # get raw data for the node
         node_patch = self.get_patch(center=node_center)
 
@@ -117,11 +129,31 @@ class SiameseDataset(torch.utils.data.Data):
         ]
 
         # get the raw data for each neighbor, with daisy, using Nils's synful script
+        # handle edges with label unknown
         patches = []
-        for c, i in zip(centers, neighbor_ids):
+        labels = []
+        for c, i, idx in zip(centers, neighbor_ids, neighbor_indices):
+            if self.edges_attrs[config.new_edge_attr_trinary] is not 1 or \
+                    self.edges_attrs[config.new_edge_attr_trinary] is not 0:
+                continue
+
             patches.append(self.get_patch(center=c, node_id=i))
+            # assign labels: 1 if the two fragments belong to same neuron, -1 if not
+            edge_score = self.edges_attrs[config.new_edge_attr_trinary][idx]
+            if edge_score == 0:
+                labels.append(1)
+            elif edge_score == 1:
+                labels.append(-1)
+            else:
+                raise ValueError(f'Value {edge_score} cannot be transformed into a valid label')
 
-        # TODO make pairs of data, plus corresponding labels
-        # use torch Data class
+        # make pairs of data, plus corresponding labels
+        input0 = torch.tensor(node_patch).float().expand(len(patches), -1, -1, -1, -1)
+        input1 = torch.tensor(patches).float()
+        labels = torch.tensor(labels).long()
 
-        return None
+        if self.transform is not None:
+            input0 = self.transform(input0)
+            input1 = self.transform(input1)
+
+        return input0, input1, labels

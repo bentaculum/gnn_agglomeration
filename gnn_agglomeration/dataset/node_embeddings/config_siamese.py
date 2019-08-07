@@ -1,6 +1,6 @@
 import configargparse
-import configparser
 import logging
+import sys
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -18,21 +18,30 @@ def str2bool(v):
 
 
 p = configargparse.ArgParser(
-    default_config_files=['config.ini'])
+    default_config_files=['config_siamese.ini'])
 
 p.add('--config_file', is_config_file=True,
       help='file path to config that overwrites the default configs')
 
+p.add('--runs_dir', type=str)
+p.add('--summary', type=str2bool)
+p.add('--summary_interval', type=int)
+p.add('--checkpoint_interval', type=int)
+
+# TODO no redundant help messages
 p.add('--num_workers', type=int, help='number of workers for torch DataLoader')
 p.add('--samples', type=int, help='number of rag nodes to use for building dataset')
 p.add('--patch_size', type=int, nargs=3, help='3D size to use for creating samples in nanometers')
 p.add('--raw_channel', type=str2bool, help='if set true, create a channel with raw volumetric patches')
 p.add('--mask_channel', type=str2bool, help='if set true, create a channel with binary mask of the fragment in a patch')
 
-config = p.parse_args()
-logging.info(f"\n{p.format_values()}")
+p.add('--fmaps', type=int, help='number of channels, to be doubled per layer')
+p.add('--output_features', type=int, help='dimensionality of embeddings before loss')
+p.add('--downsample_factors', type=tuple, nargs='+', help='tuple of 3D downsample factors for each pooling layer')
 
-# TODO adapt
-pw_parser = configparser.ConfigParser()
-pw_parser.read(config.db_host)
-config.db_host = pw_parser['DEFAULT']['db_host']
+p.add('--adam_lr', type=float, help='learning rate for adam optimizer')
+p.add('--adam_weight_decay', type=float, help='weight decay for adam optimizer')
+
+config, remaining_argv = p.parse_known_args()
+sys.argv = [sys.argv[0], *remaining_argv]
+logger.info(f"\n{p.format_values()}")
