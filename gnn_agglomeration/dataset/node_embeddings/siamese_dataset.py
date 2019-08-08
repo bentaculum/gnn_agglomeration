@@ -1,7 +1,7 @@
 import logging
 import torch
+from gunpowder import *
 import daisy
-from time import time as now
 import numpy as np
 from time import time as now
 
@@ -22,7 +22,7 @@ class SiameseDataset(torch.utils.data.Dataset):
     Each data point is actually a mini-batch of volume pairs
     """
 
-    def __init__(self, length, patch_size, raw_channel, mask_channel, transform=None):
+    def __init__(self, length, patch_size, raw_channel, mask_channel, num_workers=5, transform=None):
         """
 
         Args:
@@ -62,16 +62,20 @@ class SiameseDataset(torch.utils.data.Dataset):
         # get all edges, including gt_merge_score, as dict of numpy arrays
         start = now()
         roi = daisy.Roi(offset=config.roi_offset, shape=config.roi_shape)
-        nodes = graph_provider.read_nodes(roi=roi)
-        edges = graph_provider.read_edges(roi=roi, nodes=nodes)
+        # TODO parametrize block size
+        block_size = (np.array(roi.get_shape())/2).astype(np.int_)
+
+        nodes_attrs, edges_attrs = graph_provider.read_blockwise(
+            roi=roi,
+            block_size=daisy.Coordinate(block_size),
+            num_workers=num_workers
+        )
         logger.debug(f'read whole graph in {now() - start} s')
 
         start = now()
-        nodes_attrs = utils.to_np_arrays(nodes)
         nodes_cols = [self.id_field, 'center_z', 'center_y', 'center_x']
         self.nodes_attrs = {k: nodes_attrs[k] for k in nodes_cols}
 
-        edges_attrs = utils.to_np_arrays(edges)
         edges_cols = [self.node1_field, self.node2_field, config.new_edge_attr_trinary]
         edges_attrs = {k: edges_attrs[k] for k in edges_cols}
 

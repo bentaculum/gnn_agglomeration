@@ -87,6 +87,7 @@ def train():
         patch_size=config_siamese.patch_size,
         raw_channel=config_siamese.raw_channel,
         mask_channel=config_siamese.mask_channel,
+        num_workers=config_siamese.num_workers,
         transform=data_augmentation_transform
     )
     logger.info(f'init dataset in {now() - start} s')
