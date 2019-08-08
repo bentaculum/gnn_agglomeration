@@ -17,6 +17,7 @@ from node_embeddings.siamese_vgg_3d import SiameseVgg3d  # noqa
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+logging.basicConfig(level=logging.INFO)
 
 
 def save(model, optimizer, model_dir, iteration):
@@ -34,7 +35,7 @@ def save(model, optimizer, model_dir, iteration):
     """
     # delete older models
     checkpoint_versions = [name for name in os.listdir(model_dir) if (
-            name.endswith('.tar') and name.startswith('iteration'))]
+        name.endswith('.tar') and name.startswith('iteration'))]
     if len(checkpoint_versions) >= 3:
         checkpoint_versions.sort()
         os.remove(os.path.join(model_dir, checkpoint_versions[0]))
@@ -111,8 +112,10 @@ def train():
 
     start = now()
     model = SiameseVgg3d(
-        input_size=np.array(config_siamese.patch_size) / np.array(config.voxel_size),
-        input_fmaps=int(config_siamese.raw_channel) + int(config_siamese.mask_channel),
+        input_size=np.array(config_siamese.patch_size) /
+        np.array(config.voxel_size),
+        input_fmaps=int(config_siamese.raw_channel) +
+        int(config_siamese.mask_channel),
         fmaps=config_siamese.fmaps,
         fmaps_max=config_siamese.fmaps_max,
         output_features=config_siamese.output_features,
@@ -160,8 +163,8 @@ def train():
             input1 = input1.squeeze(0)
             labels = labels.squeeze(0)
         else:
-           raise NotImplementedError(
-               'currently the dataset provides a batch of variable size per __getitem__ call')
+            raise NotImplementedError(
+                'currently the dataset provides a batch of variable size per __getitem__ call')
 
         # make sure the dimensionality is ok
         assert input0.dim() == 5, input0.shape
