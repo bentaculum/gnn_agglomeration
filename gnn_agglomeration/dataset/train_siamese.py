@@ -57,21 +57,11 @@ def save(model, optimizer, model_dir, iteration):
 
 
 def atexit_tasks(loss, writer, summary_dir):
-    # TODO does not work, adapt to gnn version
     if writer:
         writer.close()
-
+    # not needed
     with tarfile.open(f'{summary_dir}.tar.gz', mode='w:gz') as archive:
         archive.add(summary_dir, arcname='summary', recursive=True)
-
-    # summary_compressed = osp.join(
-    #     config_siamese.runs_dir,
-    #     timestamp,
-    #     'summary',
-    #     '.tar.gz'
-    #
-    # with tarfile.open(summary_compressed, mode='w:gz') as archive:
-    #     archive.add(summary_dir_exit, arcname='summary', recursive=True)
     logger.info(f'save tensorboard summaries')
 
     # report current loss
