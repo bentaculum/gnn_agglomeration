@@ -96,7 +96,7 @@ def train():
     dataloader = torch.utils.data.DataLoader(
         dataset=dataset,
         shuffle=False,
-        batch_size=1,
+        batch_size=config_siamese.batch_size,
         num_workers=config_siamese.num_workers,
         worker_init_fn=lambda idx: np.random.seed()
     )
@@ -154,13 +154,13 @@ def train():
         logger.info(f'iteration {i} ...')
         input0, input1, labels = data
 
-        if dataloader.batch_size == 1:
-            input0 = input0.squeeze(0)
-            input1 = input1.squeeze(0)
-            labels = labels.squeeze(0)
-        else:
-            raise NotImplementedError(
-                'currently the dataset provides a batch of variable size per __getitem__ call')
+        # if dataloader.batch_size == 1:
+        #     input0 = input0.squeeze(0)
+        #     input1 = input1.squeeze(0)
+        #     labels = labels.squeeze(0)
+        # else:
+        #     raise NotImplementedError(
+        #         'currently the dataset provides a batch of variable size per __getitem__ call')
 
         # make sure the dimensionality is ok
         assert input0.dim() == 5, input0.shape

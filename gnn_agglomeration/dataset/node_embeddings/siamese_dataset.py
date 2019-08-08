@@ -62,6 +62,8 @@ class SiameseDataset(torch.utils.data.Dataset):
         # get all edges, including gt_merge_score, as dict of numpy arrays
         start = now()
         roi = daisy.Roi(offset=config.roi_offset, shape=config.roi_shape)
+        logger.info(roi)
+
         # TODO parametrize block size
         block_size = (np.array(roi.get_shape())/2).astype(np.int_)
 
@@ -79,7 +81,10 @@ class SiameseDataset(torch.utils.data.Dataset):
         edges_cols = [self.node1_field, self.node2_field, config.new_edge_attr_trinary]
         edges_attrs = {k: edges_attrs[k] for k in edges_cols}
 
-        self.edges_attrs = utils.drop_outgoing_edges(
+        logger.debug(f'num nodes before dropping: {len(self.nodes_attrs[self.id_field])}')
+        logger.debug(f'num edges before dropping: {len(edges_attrs[self.node1_field])}')
+
+        edges_attrs = utils.drop_outgoing_edges(
             node_attrs=self.nodes_attrs,
             edge_attrs=edges_attrs,
             id_field=self.id_field,
@@ -87,8 +92,19 @@ class SiameseDataset(torch.utils.data.Dataset):
             node2_field=self.node2_field,
         )
 
+        # filter edges, we only want edges labeled 0 or 1
+        edge_filter = (edges_attrs[config.new_edge_attr_trinary] == 1) | \
+                      (edges_attrs[config.new_edge_attr_trinary] == 0)
+
+        for attr, vals in edges_attrs.items():
+            edges_attrs[attr] = vals[edge_filter]
+        self.edges_attrs = edges_attrs
+
+        logger.debug(f'num nodes: {len(self.nodes_attrs[self.id_field])}')
+        logger.debug(f'num edges: {len(self.edges_attrs[self.node1_field])}')
         logger.debug(
-            f'convert graph to numpy arrays and drop outgoing edges in {now() - start} s')
+            f'''convert graph to numpy arrays, drop outgoing edges 
+            and filter edges in {now() - start} s''')
 
     def __len__(self):
         return self.len
@@ -133,85 +149,47 @@ class SiameseDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
         """
-
+        TODO
         Args:
-            index(int): not used here, needed for inheritance
+            index:
 
         Returns:
 
-            a mini-batch of volume pairs
-
         """
         start_getitem = now()
-        # pick random node
-        index = np.random.randint(0, len(self.nodes_attrs[self.id_field]))
-        node_id = self.nodes_attrs[self.id_field][index]
-        node_center = (
-            self.nodes_attrs['center_z'][index],
-            self.nodes_attrs['center_y'][index],
-            self.nodes_attrs['center_x'][index])
+        # pick random edge
+        index = np.random.randint(0, len(self.edges_attrs[self.node1_field]))
 
-        # get raw data for the node
-        node_patch = self.get_patch(center=node_center, node_id=node_id)
-        if node_patch is None:
-            logger.warning(f'patch for center node is not fully contained in ROI, try again')
+        edge_score = self.edges_attrs[config.new_edge_attr_trinary][index]
+
+        # get two incident nodes
+        node1_id = self.edges_attrs[self.node1_field][index]
+        node2_id = self.edges_attrs[self.node2_field][index]
+        node1_index = np.where(self.nodes_attrs[self.id_field] == node1_id)[0]
+        node2_index = np.where(self.nodes_attrs[self.id_field] == node2_id)[0]
+
+        node1_center = (
+            self.nodes_attrs['center_z'][node1_index],
+            self.nodes_attrs['center_y'][node1_index],
+            self.nodes_attrs['center_x'][node1_index])
+        node2_center = (
+            self.nodes_attrs['center_z'][node2_index],
+            self.nodes_attrs['center_y'][node2_index],
+            self.nodes_attrs['center_x'][node2_index])
+
+        node1_patch = self.get_patch(center=node1_center, node_id=node1_id)
+        node2_patch = self.get_patch(center=node2_center, node_id=node2_id)
+        if node1_patch is None or node2_patch is None:
+            logger.warning(f'patch for one of the nodes is not fully contained in ROI, try again')
             return self.__getitem__(index=index)
 
-        # get all neighbors of random node in RAG, considering edges in both `directions`
-        neighbor_mask1 = self.edges_attrs[self.node1_field] == node_id
-        neighbors1 = self.edges_attrs[self.node2_field][neighbor_mask1]
-        neighbor_mask2 = self.edges_attrs[self.node2_field] == node_id
-        neighbors2 = self.edges_attrs[self.node1_field][neighbor_mask2]
-
-        neighbor_ids = np.unique(np.concatenate((neighbors1, neighbors2)))
-        neighbor_indices = np.in1d(self.nodes_attrs[self.id_field], neighbor_ids).nonzero()[0]
-        # TODO parametrize
-        centers = [
-            (self.nodes_attrs['center_z'][i], self.nodes_attrs['center_y'][i], self.nodes_attrs['center_x'][i])
-            for i in neighbor_indices
-        ]
-
-        # get the raw data for each neighbor, with daisy, using Nils's synful script
-        # handle edges with label unknown
-        patches = []
-        labels = []
-        for c, i, idx in zip(centers, neighbor_ids, neighbor_indices):
-            if self.edges_attrs[config.new_edge_attr_trinary][idx] is not 1 and \
-                    self.edges_attrs[config.new_edge_attr_trinary][idx] is not 0:
-                continue
-
-            neighbor_patch = self.get_patch(center=c, node_id=i)
-            if neighbor_patch is None:
-                continue
-            else:
-                patches.append(neighbor_patch)
-
-            # assign labels: 1 if the two fragments belong to same neuron, -1 if not
-            edge_score = self.edges_attrs[config.new_edge_attr_trinary][idx]
-            if edge_score == 0:
-                labels.append(torch.tensor(1))
-            elif edge_score == 1:
-                labels.append(torch.tensor(-1))
-            else:
-                raise ValueError(f'Value {edge_score} cannot be transformed into a valid label')
-
-        if len(patches) == 0:
-            logger.warning(f'all neighbor patches are not fully contained in ROI, try again')
-            return self.__getitem__(index=index)
-
-        # make pairs of data, plus corresponding labels
-        # TODO check if torch.Tensor.expand(len_patches, -1, -1, -1, -1)
-        #  works as well, it should use less memory
-
-        input0 = torch.tensor(node_patch).float()
-        input0 = input0.repeat(len(patches), 1, 1, 1, 1)
-        # input0 = input0.expand(len(patches), 1, 1 ,1 ,1)
-        input1 = torch.stack(patches).float()
-        labels = torch.stack(labels).float()
+        input0 = torch.tensor(node1_patch).float()
+        input1 = torch.tensor(node2_patch).float()
+        label = torch.tensor(edge_score).float()
 
         if self.transform is not None:
             input0 = self.transform(input0)
             input1 = self.transform(input1)
 
         logger.debug(f'__getitem__ in {now() - start_getitem} s')
-        return input0, input1, labels
+        return input0, input1, label

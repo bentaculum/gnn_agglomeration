@@ -38,6 +38,7 @@ p.add('--samples', type=int, help='number of rag nodes to use for building datas
 p.add('--patch_size', type=int, nargs=3, help='3D size to use for creating samples in nanometers')
 p.add('--raw_channel', type=str2bool, help='if set true, create a channel with raw volumetric patches')
 p.add('--mask_channel', type=str2bool, help='if set true, create a channel with binary mask of the fragment in a patch')
+p.add('--batch_size', type=int)
 
 p.add('--fmaps', type=int, help='number of channels, to be doubled per layer')
 p.add('--fmaps_max', type=int)
