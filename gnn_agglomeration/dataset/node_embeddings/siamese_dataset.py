@@ -4,11 +4,10 @@ from gunpowder import *
 import daisy
 import numpy as np
 from time import time as now
+import math
 
-import sys
-# sys.path.insert(1, '..')
+# TODO how to import from beyond top level path?
 from . import utils  # noqa
-# sys.path.remove('..')
 
 # dataset configs for many params
 from config import config  # noqa
@@ -119,48 +118,130 @@ class SiameseDataset(torch.utils.data.Dataset):
         self.samples_weights = torch.from_numpy(samples_weights).float()
         logger.debug(f'assign sample weights in {now() - start} s')
 
+        # gunpowder init
+        self.raw_key = ArrayKey('RAW')
+        self.labels_key = ArrayKey('LABELS')
+
+        self.source = (
+            ZarrSource(
+                config.groundtruth_zarr,
+                datasets={self.raw_key: config.groundtruth_ds},
+                array_specs={self.raw_key: ArraySpec(interpolatable=True)}) +
+            Normalize(self.raw_key) +
+            Pad(self.raw_key, None),
+            ZarrSource(
+                config.fragments_zarr,
+                datasets={self.labels_key: config.fragments_ds},
+                array_specs={self.labels_key: ArraySpec(interpolatable=True)}) +
+            Normalize(self.labels_key) +
+            Pad(self.labels_key, None),
+        )
+
+        self.pipeline = (
+            self.source +
+            ElasticAugment(
+                # TODO check all these params
+                control_point_spacing=[4, 40, 40],
+                jitter_sigma=[0, 2, 2],
+                rotation_interval=[0, math.pi / 2.0],
+                prob_slip=0.05,  # check if needed
+                prob_shift=0.05,  # check if needed
+                max_misalign=10,
+                subsample=8) +
+            SimpleAugment(transpose_only=[1, 2]) +
+            IntensityAugment(self.raw_key, 0.9, 1.1, -0.1, 0.1) +
+            IntensityScaleShift(self.raw_key, 2, -1) +  # check if needed here
+            # at least for debugging:
+            Snapshot({
+                self.raw_key: 'volumes/raw',
+                self.labels_key: 'volumes/labels'
+            },
+                every=100,
+                output_filename='batch_{iteration}.hdf')
+        )
+
     def __len__(self):
         return self.len
 
-    def get_patch(self, center, node_id):
+    def get_patch_gunpowder(self, center, node_id):
+        """
+        generator function
+        TODO
+        Args:
+            center:
+            node_id:
+
+        Returns:
+
+        """
         offset = np.array(center) - np.array(self.patch_size) / 2
         roi = daisy.Roi(offset=offset, shape=self.patch_size)
-        # center might not be on the grid defined by the voxel_size
         roi = roi.snap_to_grid(daisy.Coordinate(config.voxel_size), mode='closest')
+        with build(self.pipeline) as p:
 
-        if roi.get_shape()[0] != self.patch_size[0]:
-            logger.warning(
-                f'''correct roi shape {roi.get_shape()} to 
-                {self.patch_size} after snapping to grid''')
-            roi.set_shape(self.patch_size)
+            request = BatchRequest()
+            if self.raw_channel:
+                request.add(self.raw_key, roi)
+            if self.mask_channel:
+                request.add(self.labels_key, roi)
 
-        # TODO padding
-        channels = []
-        if self.raw_channel:
-            ds = daisy.open_ds(config.groundtruth_zarr, 'volumes/raw/s0')
-            # TODO this contains thing seems to not work
-            if not ds.roi.contains(roi):
-                logger.warning(f'location {center} is not fully contained in dataset')
-                return None
-            patch = (ds[roi].to_ndarray() / 255.0).astype(np.float32)
-            channels.append(patch)
+            batch = p.request_batch(request)
 
-        if self.mask_channel:
-            ds = daisy.open_ds(config.fragments_zarr, config.fragments_ds)
-            if not ds.roi.contains(roi):
-                logger.warning(f'location {center} is not fully contained in dataset')
-                return None
-            patch = ds[roi].to_ndarray()
-            mask = (patch == node_id).astype(np.float32)
-            channels.append(mask)
+            channels = []
+            if self.raw_channel:
+                raw_array = batch[self.raw_key].data
+                channels.append(raw_array)
+            if self.mask_channel:
+                labels_array = batch[self.labels_key].data
+                labels_array = (labels_array == node_id).astype(np.float32)
+                channels.append(labels_array)
 
-        tensor = torch.tensor(channels, dtype=torch.float)
+            tensor = torch.tensor(channels, dtype=torch.float)
+            # Add the `channel`-dimension
+            if len(channels) == 1:
+                tensor = tensor.unsqueeze(0)
 
-        # Add the `channel`-dimension
-        if len(channels) == 1:
-            tensor = tensor.unsqueeze(0)
+            yield tensor
 
-        return tensor
+    # def get_patch(self, center, node_id):
+    #     offset = np.array(center) - np.array(self.patch_size) / 2
+    #     roi = daisy.Roi(offset=offset, shape=self.patch_size)
+    #     # center might not be on the grid defined by the voxel_size
+    #     roi = roi.snap_to_grid(daisy.Coordinate(config.voxel_size), mode='closest')
+    #
+    #     if roi.get_shape()[0] != self.patch_size[0]:
+    #         logger.warning(
+    #             f'''correct roi shape {roi.get_shape()} to
+    #             {self.patch_size} after snapping to grid''')
+    #         roi.set_shape(self.patch_size)
+    #
+    #     # TODO padding
+    #     channels = []
+    #     if self.raw_channel:
+    #         ds = daisy.open_ds(config.groundtruth_zarr, config.groundtruth_ds)
+    #         # TODO this contains thing seems to not work
+    #         if not ds.roi.contains(roi):
+    #             logger.warning(f'location {center} is not fully contained in dataset')
+    #             return None
+    #         patch = (ds[roi].to_ndarray() / 255.0).astype(np.float32)
+    #         channels.append(patch)
+    #
+    #     if self.mask_channel:
+    #         ds = daisy.open_ds(config.fragments_zarr, config.fragments_ds)
+    #         if not ds.roi.contains(roi):
+    #             logger.warning(f'location {center} is not fully contained in dataset')
+    #             return None
+    #         patch = ds[roi].to_ndarray()
+    #         mask = (patch == node_id).astype(np.float32)
+    #         channels.append(mask)
+    #
+    #     tensor = torch.tensor(channels, dtype=torch.float)
+    #
+    #     # Add the `channel`-dimension
+    #     if len(channels) == 1:
+    #         tensor = tensor.unsqueeze(0)
+    #
+    #     return tensor
 
     def __getitem__(self, index):
         """
@@ -172,14 +253,11 @@ class SiameseDataset(torch.utils.data.Dataset):
 
         """
         start_getitem = now()
-        # random sampler does that now
-        # pick random edge
-        # index = np.random.randint(0, len(self.edges_attrs[self.node1_field]))
 
         # TODO this could be stored in memory
         edge_score = self.edges_attrs[config.new_edge_attr_trinary][index]
 
-        # get two incident nodes
+        # get the two incident nodes
         node1_id = self.edges_attrs[self.node1_field][index]
         node2_id = self.edges_attrs[self.node2_field][index]
         # weird numpy syntax
@@ -195,19 +273,21 @@ class SiameseDataset(torch.utils.data.Dataset):
             self.nodes_attrs['center_y'][node2_index],
             self.nodes_attrs['center_x'][node2_index])
 
-        node1_patch = self.get_patch(center=node1_center, node_id=node1_id)
-        node2_patch = self.get_patch(center=node2_center, node_id=node2_id)
-        if node1_patch is None or node2_patch is None:
-            logger.warning(f'patch for one of the nodes is not fully contained in ROI, try again')
-            return self.__getitem__(index=index)
+        node1_patch = self.get_patch_gunpowder(center=node1_center, node_id=node1_id)
+        node2_patch = self.get_patch_gunpowder(center=node2_center, node_id=node2_id)
+
+        # if node1_patch is None or node2_patch is None:
+        #     logger.warning(f'patch for one of the nodes is not fully contained in ROI, try again')
+        #     new_index = np.random.randint(0, len(self.edges_attrs[self.node1_field]))
+        #     return self.__getitem__(index=new_index)
 
         input0 = torch.tensor(node1_patch).float()
         input1 = torch.tensor(node2_patch).float()
         label = torch.tensor(edge_score).float()
 
-        if self.transform is not None:
-            input0 = self.transform(input0)
-            input1 = self.transform(input1)
+        # if self.transform is not None:
+        #     input0 = self.transform(input0)
+        #     input1 = self.transform(input1)
 
         logger.debug(f'__getitem__ in {now() - start_getitem} s')
         return input0, input1, label
