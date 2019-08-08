@@ -23,11 +23,13 @@ class SiameseDataset(torch.utils.data.Dataset):
 
     def __init__(self, patch_size, raw_channel, mask_channel, num_workers=5, transform=None):
         """
-
+        connect to db, load and weed out edges, define gunpowder pipeline
         Args:
             patch_size:
-            raw_channel:
-            mask_channel:
+            raw_channel (bool): if set true, load patch from raw volumetric data
+            mask_channel (bool): if set true, load patch from fragments volumetric data
+            num_workers (int): number of workers available, e.g. for loading RAG
+            transform (torchvision.transform): use for data augmentation
         """
         self.patch_size = patch_size
         self.raw_channel = raw_channel
@@ -203,6 +205,16 @@ class SiameseDataset(torch.utils.data.Dataset):
             yield tensor
 
     def get_patch(self, center, node_id):
+        """
+        get volumetric patch, simply using daisy
+        Args:
+            center(tuple of ints): center of mass for the node
+            node_id(int): node id from db
+
+        Returns:
+            patch as torch.Tensor, with one or more channels
+
+        """
         offset = np.array(center) - np.array(self.patch_size) / 2
         roi = daisy.Roi(offset=offset, shape=self.patch_size)
         # center might not be on the grid defined by the voxel_size
@@ -220,7 +232,8 @@ class SiameseDataset(torch.utils.data.Dataset):
             ds = daisy.open_ds(config.groundtruth_zarr, config.groundtruth_ds)
             if not ds.roi.contains(roi):
                 logger.warning(f'patch {roi} is not fully contained in {ds.roi}')
-                return None
+                #return None
+                yield None
             patch = (ds[roi].to_ndarray() / 255.0).astype(np.float32)
             channels.append(patch)
 
@@ -228,32 +241,34 @@ class SiameseDataset(torch.utils.data.Dataset):
             ds = daisy.open_ds(config.fragments_zarr, config.fragments_ds)
             if not ds.roi.contains(roi):
                 logger.warning(f'patch {roi} is not fully contained in {ds.roi}')
-                return None
+                #return None
+                yield None
             patch = ds[roi].to_ndarray()
             mask = (patch == node_id).astype(np.float32)
             channels.append(mask)
 
         tensor = torch.tensor(channels, dtype=torch.float)
 
-        # Add the `channel`-dimension
+        # Add the `channel`-dimension in case it is not there yet
         if len(channels) == 1:
             tensor = tensor.unsqueeze(0)
 
-        # try generator
-        return tensor
+        # return tensor
+        yield tensor
 
     def __getitem__(self, index):
         """
-        TODO
         Args:
-            index:
+
+            index(int): number of edge in dataset to load
 
         Returns:
+            a pair of volumetric patches for the two incident nodes,
+            plus the corresponding label
 
         """
         start_getitem = now()
 
-        # TODO this could be stored in memory
         edge_score = self.edges_attrs[config.new_edge_attr_trinary][index]
 
         # get the two incident nodes
@@ -272,28 +287,25 @@ class SiameseDataset(torch.utils.data.Dataset):
             self.nodes_attrs['center_y'][node2_index],
             self.nodes_attrs['center_x'][node2_index])
 
-        node1_patch = self.get_patch(center=node1_center, node_id=node1_id)
-        node2_patch = self.get_patch(center=node2_center, node_id=node2_id)
+        node1_patch = next(self.get_patch_gunpowder(center=node1_center, node_id=node1_id))
+        node2_patch = next(self.get_patch_gunpowder(center=node2_center, node_id=node2_id))
 
         if node1_patch is None or node2_patch is None:
             logger.warning(f'patch for one of the nodes is not fully contained in ROI, try again')
-            # new_index = np.random.randint(0, len(self.edges_attrs[self.node1_field]))
-            # Sample a new index
+            # Sample a new index, using the sample weights again
             new_index = torch.multinomial(
                 input=self.samples_weights,
                 num_samples=1,
                 replacement=True).item()
             return self.__getitem__(index=new_index)
 
-        # input0 = torch.tensor(node1_patch).float()
-        # input1 = torch.tensor(node2_patch).float()
         input0 = node1_patch.float()
         input1 = node2_patch.float()
         label = torch.tensor(edge_score).float()
 
-        # if self.transform is not None:
-        #     input0 = self.transform(input0)
-        #     input1 = self.transform(input1)
+        if self.transform is not None:
+            input0 = self.transform(input0)
+            input1 = self.transform(input1)
 
         logger.debug(f'__getitem__ in {now() - start_getitem} s')
         return input0, input1, label
