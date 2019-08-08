@@ -25,7 +25,6 @@ class SiameseDataset(torch.utils.data.Dataset):
         """
 
         Args:
-            length:
             patch_size:
             raw_channel:
             mask_channel:
@@ -203,45 +202,45 @@ class SiameseDataset(torch.utils.data.Dataset):
 
             yield tensor
 
-    # def get_patch(self, center, node_id):
-    #     offset = np.array(center) - np.array(self.patch_size) / 2
-    #     roi = daisy.Roi(offset=offset, shape=self.patch_size)
-    #     # center might not be on the grid defined by the voxel_size
-    #     roi = roi.snap_to_grid(daisy.Coordinate(config.voxel_size), mode='closest')
-    #
-    #     if roi.get_shape()[0] != self.patch_size[0]:
-    #         logger.warning(
-    #             f'''correct roi shape {roi.get_shape()} to
-    #             {self.patch_size} after snapping to grid''')
-    #         roi.set_shape(self.patch_size)
-    #
-    #     # TODO padding
-    #     channels = []
-    #     if self.raw_channel:
-    #         ds = daisy.open_ds(config.groundtruth_zarr, config.groundtruth_ds)
-    #         # TODO this contains thing seems to not work
-    #         if not ds.roi.contains(roi):
-    #             logger.warning(f'location {center} is not fully contained in dataset')
-    #             return None
-    #         patch = (ds[roi].to_ndarray() / 255.0).astype(np.float32)
-    #         channels.append(patch)
-    #
-    #     if self.mask_channel:
-    #         ds = daisy.open_ds(config.fragments_zarr, config.fragments_ds)
-    #         if not ds.roi.contains(roi):
-    #             logger.warning(f'location {center} is not fully contained in dataset')
-    #             return None
-    #         patch = ds[roi].to_ndarray()
-    #         mask = (patch == node_id).astype(np.float32)
-    #         channels.append(mask)
-    #
-    #     tensor = torch.tensor(channels, dtype=torch.float)
-    #
-    #     # Add the `channel`-dimension
-    #     if len(channels) == 1:
-    #         tensor = tensor.unsqueeze(0)
-    #
-    #     return tensor
+    def get_patch(self, center, node_id):
+        offset = np.array(center) - np.array(self.patch_size) / 2
+        roi = daisy.Roi(offset=offset, shape=self.patch_size)
+        # center might not be on the grid defined by the voxel_size
+        roi = roi.snap_to_grid(daisy.Coordinate(config.voxel_size), mode='closest')
+
+        if roi.get_shape()[0] != self.patch_size[0]:
+            logger.warning(
+                f'''correct roi shape {roi.get_shape()} to
+                {self.patch_size} after snapping to grid''')
+            roi.set_shape(self.patch_size)
+
+        # TODO padding
+        channels = []
+        if self.raw_channel:
+            ds = daisy.open_ds(config.groundtruth_zarr, config.groundtruth_ds)
+            if not ds.roi.contains(roi):
+                logger.warning(f'patch {roi} is not fully contained in {ds.roi}')
+                return None
+            patch = (ds[roi].to_ndarray() / 255.0).astype(np.float32)
+            channels.append(patch)
+
+        if self.mask_channel:
+            ds = daisy.open_ds(config.fragments_zarr, config.fragments_ds)
+            if not ds.roi.contains(roi):
+                logger.warning(f'patch {roi} is not fully contained in {ds.roi}')
+                return None
+            patch = ds[roi].to_ndarray()
+            mask = (patch == node_id).astype(np.float32)
+            channels.append(mask)
+
+        tensor = torch.tensor(channels, dtype=torch.float)
+
+        # Add the `channel`-dimension
+        if len(channels) == 1:
+            tensor = tensor.unsqueeze(0)
+
+        # try generator
+        return tensor
 
     def __getitem__(self, index):
         """
@@ -273,16 +272,23 @@ class SiameseDataset(torch.utils.data.Dataset):
             self.nodes_attrs['center_y'][node2_index],
             self.nodes_attrs['center_x'][node2_index])
 
-        node1_patch = self.get_patch_gunpowder(center=node1_center, node_id=node1_id)
-        node2_patch = self.get_patch_gunpowder(center=node2_center, node_id=node2_id)
+        node1_patch = self.get_patch(center=node1_center, node_id=node1_id)
+        node2_patch = self.get_patch(center=node2_center, node_id=node2_id)
 
-        # if node1_patch is None or node2_patch is None:
-        #     logger.warning(f'patch for one of the nodes is not fully contained in ROI, try again')
-        #     new_index = np.random.randint(0, len(self.edges_attrs[self.node1_field]))
-        #     return self.__getitem__(index=new_index)
+        if node1_patch is None or node2_patch is None:
+            logger.warning(f'patch for one of the nodes is not fully contained in ROI, try again')
+            # new_index = np.random.randint(0, len(self.edges_attrs[self.node1_field]))
+            # Sample a new index
+            new_index = torch.multinomial(
+                input=self.samples_weights,
+                num_samples=1,
+                replacement=True).item()
+            return self.__getitem__(index=new_index)
 
-        input0 = torch.tensor(node1_patch).float()
-        input1 = torch.tensor(node2_patch).float()
+        # input0 = torch.tensor(node1_patch).float()
+        # input1 = torch.tensor(node2_patch).float()
+        input0 = node1_patch.float()
+        input1 = node2_patch.float()
         label = torch.tensor(edge_score).float()
 
         # if self.transform is not None:

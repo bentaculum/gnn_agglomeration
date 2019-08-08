@@ -17,7 +17,7 @@ from node_embeddings.siamese_dataset import SiameseDataset  # noqa
 from node_embeddings.siamese_vgg_3d import SiameseVgg3d  # noqa
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 logging.basicConfig(level=logging.INFO)
 
 
@@ -147,23 +147,14 @@ def train():
     else:
         writer = None
 
-    # register exit routines, in case there is an interrupt, e.g. via keyboard
-    loss = np.inf
-    atexit.register(
-        atexit_tasks,
-        loss=loss,
-        writer=writer,
-        summary_dir=summary_dir
-    )
-
     # TODO what to do with epochs?
     for i, data in enumerate(dataloader):
         logger.info(f'batch {i} ...')
         input0, input1, labels = data
         unique_labels = labels.unique()
-        counts = [len(np.where(labels.numpy() == l.item())) for l in unique_labels]
+        counts = [len(np.where(labels.numpy() == l.item())[0]) for l in unique_labels]
         for l, c in zip(unique_labels.tolist(), counts):
-            logger.debug(f'# class {l}: {c}')
+            logger.debug(f'# class {int(l)}: {int(c)}')
 
         # if dataloader.batch_size == 1:
         #     input0 = input0.squeeze(0)
@@ -187,6 +178,16 @@ def train():
             input1=out0,
             input2=out1,
             target=labels
+        )
+
+        # TODO not sure if that's the intended use
+        # register exit routines, in case there is an interrupt, e.g. via keyboard
+        atexit.unregister(atexit_tasks)
+        atexit.register(
+            atexit_tasks,
+            loss=loss,
+            writer=writer,
+            summary_dir=summary_dir
         )
 
         # TODO move to subprocess for speed?
