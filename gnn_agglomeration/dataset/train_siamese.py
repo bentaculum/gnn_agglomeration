@@ -8,6 +8,7 @@ from time import time as now
 import datetime
 import pytz
 import atexit
+import tarfile
 
 from node_embeddings.config_siamese import config as config_siamese, p as parser_siamese  # noqa
 from config import config  # noqa
@@ -55,10 +56,13 @@ def save(model, optimizer, model_dir, iteration):
     )
 
 
-def atexit_tasks(loss, writer):
-    # TODO check if that works
+def atexit_tasks(loss, writer, summary_dir):
+    # TODO does not work, adapt to gnn version
     if writer:
         writer.close()
+
+    with tarfile.open(f'{summary_dir}.tar.gz', mode='w:gz') as archive:
+        archive.add(summary_dir, arcname='summary', recursive=True)
 
     # summary_compressed = osp.join(
     #     config_siamese.runs_dir,
@@ -151,7 +155,8 @@ def train():
     atexit.register(
         atexit_tasks,
         loss=loss,
-        writer=writer
+        writer=writer,
+        summary_dir=summary_dir
     )
 
     for i, data in enumerate(dataloader):
