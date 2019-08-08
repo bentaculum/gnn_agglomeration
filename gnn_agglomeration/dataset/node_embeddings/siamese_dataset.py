@@ -22,7 +22,7 @@ class SiameseDataset(torch.utils.data.Dataset):
     Each data point is actually a mini-batch of volume pairs
     """
 
-    def __init__(self, length, patch_size, raw_channel, mask_channel, num_workers=5, transform=None):
+    def __init__(self, patch_size, raw_channel, mask_channel, num_workers=5, transform=None):
         """
 
         Args:
@@ -31,7 +31,6 @@ class SiameseDataset(torch.utils.data.Dataset):
             raw_channel:
             mask_channel:
         """
-        self.len = length
         self.patch_size = patch_size
         self.raw_channel = raw_channel
         self.mask_channel = mask_channel
@@ -81,7 +80,6 @@ class SiameseDataset(torch.utils.data.Dataset):
         edges_cols = [self.node1_field, self.node2_field, config.new_edge_attr_trinary]
         edges_attrs = {k: edges_attrs[k] for k in edges_cols}
 
-        logger.debug(f'num nodes before dropping: {len(self.nodes_attrs[self.id_field])}')
         logger.debug(f'num edges before dropping: {len(edges_attrs[self.node1_field])}')
 
         edges_attrs = utils.drop_outgoing_edges(
@@ -100,11 +98,26 @@ class SiameseDataset(torch.utils.data.Dataset):
             edges_attrs[attr] = vals[edge_filter]
         self.edges_attrs = edges_attrs
 
+        # assign dataset length
+        self.len = len(self.edges_attrs[config.new_edge_attr_trinary])
+
         logger.debug(f'num nodes: {len(self.nodes_attrs[self.id_field])}')
         logger.debug(f'num edges: {len(self.edges_attrs[self.node1_field])}')
         logger.debug(
             f'''convert graph to numpy arrays, drop outgoing edges 
             and filter edges in {now() - start} s''')
+
+        # get weights
+        start = now()
+        targets = self.edges_attrs[config.new_edge_attr_trinary]
+        class_sample_count = np.array(
+            [len(np.where(targets == t)[0]) for t in np.unique(targets)]
+        )
+        logger.debug(f'class sample counts {class_sample_count}')
+        weights = 1.0 / class_sample_count
+        samples_weights = weights[targets.astype(np.int_)]
+        self.samples_weights = torch.from_numpy(samples_weights).float()
+        logger.debug(f'assign sample weights in {now() - start} s')
 
     def __len__(self):
         return self.len
@@ -121,9 +134,11 @@ class SiameseDataset(torch.utils.data.Dataset):
                 {self.patch_size} after snapping to grid''')
             roi.set_shape(self.patch_size)
 
+        # TODO padding
         channels = []
         if self.raw_channel:
             ds = daisy.open_ds(config.groundtruth_zarr, 'volumes/raw/s0')
+            # TODO this contains thing seems to not work
             if not ds.roi.contains(roi):
                 logger.warning(f'location {center} is not fully contained in dataset')
                 return None
@@ -157,16 +172,19 @@ class SiameseDataset(torch.utils.data.Dataset):
 
         """
         start_getitem = now()
+        # random sampler does that now
         # pick random edge
-        index = np.random.randint(0, len(self.edges_attrs[self.node1_field]))
+        # index = np.random.randint(0, len(self.edges_attrs[self.node1_field]))
 
+        # TODO this could be stored in memory
         edge_score = self.edges_attrs[config.new_edge_attr_trinary][index]
 
         # get two incident nodes
         node1_id = self.edges_attrs[self.node1_field][index]
         node2_id = self.edges_attrs[self.node2_field][index]
-        node1_index = np.where(self.nodes_attrs[self.id_field] == node1_id)[0]
-        node2_index = np.where(self.nodes_attrs[self.id_field] == node2_id)[0]
+        # weird numpy syntax
+        node1_index = np.where(self.nodes_attrs[self.id_field] == node1_id)[0][0]
+        node2_index = np.where(self.nodes_attrs[self.id_field] == node2_id)[0][0]
 
         node1_center = (
             self.nodes_attrs['center_z'][node1_index],

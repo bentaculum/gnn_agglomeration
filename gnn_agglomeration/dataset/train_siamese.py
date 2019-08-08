@@ -83,7 +83,6 @@ def train():
 
     start = now()
     dataset = SiameseDataset(
-        length=config_siamese.samples,
         patch_size=config_siamese.patch_size,
         raw_channel=config_siamese.raw_channel,
         mask_channel=config_siamese.mask_channel,
@@ -93,9 +92,16 @@ def train():
     logger.info(f'init dataset in {now() - start} s')
 
     start = now()
+    sampler = torch.utils.data.WeightedRandomSampler(
+        weights=dataset.samples_weights,
+        num_samples=dataset.__len__(),
+        replacement=True
+    )
+
     dataloader = torch.utils.data.DataLoader(
         dataset=dataset,
         shuffle=False,
+        sampler=sampler,
         batch_size=config_siamese.batch_size,
         num_workers=config_siamese.num_workers,
         worker_init_fn=lambda idx: np.random.seed()
@@ -150,9 +156,14 @@ def train():
         summary_dir=summary_dir
     )
 
+    # TODO what to do with epochs?
     for i, data in enumerate(dataloader):
-        logger.info(f'iteration {i} ...')
+        logger.info(f'batch {i} ...')
         input0, input1, labels = data
+        unique_labels = labels.unique()
+        counts = [len(np.where(labels.numpy() == l.item())) for l in unique_labels]
+        for l, c in zip(unique_labels.tolist(), counts):
+            logger.debug(f'# class {l}: {c}')
 
         # if dataloader.batch_size == 1:
         #     input0 = input0.squeeze(0)
