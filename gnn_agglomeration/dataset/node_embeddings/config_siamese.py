@@ -33,8 +33,8 @@ p.add('--summary_interval', type=int)
 p.add('--checkpoint_interval', type=int)
 
 # TODO no redundant help messages
-p.add('--num_workers', type=int, help='number of workers for torch DataLoader')
-p.add('--samples', type=int, help='number of rag nodes to use for building dataset')
+p.add('--num_workers_dataloader', type=int, help='number of workers for torch DataLoader')
+p.add('--training_samples', type=int, help='number of rag edges to used for training')
 p.add('--patch_size', type=int, nargs=3, help='3D size to use for creating samples in nanometers')
 p.add('--raw_channel', type=str2bool, help='if set true, create a channel with raw volumetric patches')
 p.add('--mask_channel', type=str2bool, help='if set true, create a channel with binary mask of the fragment in a patch')

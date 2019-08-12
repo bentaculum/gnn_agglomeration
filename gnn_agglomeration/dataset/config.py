@@ -28,6 +28,12 @@ p.add(
     '--groundtruth_ds',
     type=str,
     help='relative path to the ground truth in the .zarr file')
+p.add(
+    '--raw_ds',
+    type=str,
+    help='relative path to the raw image data in the groundtruth .zarr file')
+
+
 p.add('--temp_path', type=str, help='where to temp. store the blockwise outputs')
 p.add('--lut_fragments_to_overlap_gt', type=str,
       help='where to store the lookup table from overlapping')

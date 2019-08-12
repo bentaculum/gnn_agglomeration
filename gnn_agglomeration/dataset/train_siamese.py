@@ -78,16 +78,12 @@ def train():
     summary_dir = osp.join(config_siamese.runs_dir, timestamp, 'summary')
     os.makedirs(summary_dir)
 
-    # TODO
-    data_augmentation_transform = None
-
     start = now()
     dataset = SiameseDataset(
         patch_size=config_siamese.patch_size,
         raw_channel=config_siamese.raw_channel,
         mask_channel=config_siamese.mask_channel,
-        num_workers=config_siamese.num_workers,
-        transform=data_augmentation_transform
+        num_workers=config.num_workers,
     )
     logger.info(f'init dataset in {now() - start} s')
 
@@ -103,7 +99,9 @@ def train():
         shuffle=False,
         sampler=sampler,
         batch_size=config_siamese.batch_size,
-        num_workers=config_siamese.num_workers,
+        num_workers=config_siamese.num_workers_dataloader,
+        # TODO check whether pinning memory makes sense
+        pin_memory=True,
         worker_init_fn=lambda idx: np.random.seed()
     )
     logger.info(f'init dataloader in {now() - start} s')
@@ -147,22 +145,18 @@ def train():
     else:
         writer = None
 
-    # TODO what to do with epochs?
+    samples_count = 0
     for i, data in enumerate(dataloader):
+
+        if samples_count >= config_siamese.training_samples:
+            break
+
         logger.info(f'batch {i} ...')
         input0, input1, labels = data
         unique_labels = labels.unique()
         counts = [len(np.where(labels.numpy() == l.item())[0]) for l in unique_labels]
         for l, c in zip(unique_labels.tolist(), counts):
             logger.debug(f'# class {int(l)}: {int(c)}')
-
-        # if dataloader.batch_size == 1:
-        #     input0 = input0.squeeze(0)
-        #     input1 = input1.squeeze(0)
-        #     labels = labels.squeeze(0)
-        # else:
-        #     raise NotImplementedError(
-        #         'currently the dataset provides a batch of variable size per __getitem__ call')
 
         # make sure the dimensionality is ok
         assert input0.dim() == 5, input0.shape
@@ -201,6 +195,8 @@ def train():
 
         loss.backward()
         optimizer.step()
+
+        samples_count += config_siamese.batch_size
 
         # save model
         if i % config_siamese.checkpoint_interval == 0:

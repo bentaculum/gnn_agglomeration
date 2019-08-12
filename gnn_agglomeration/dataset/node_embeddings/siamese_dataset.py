@@ -14,6 +14,7 @@ from config import config  # noqa
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+# logging.getLogger('gunpowder.nodes.').setLevel(logging.DEBUG)
 
 
 class SiameseDataset(torch.utils.data.Dataset):
@@ -21,7 +22,7 @@ class SiameseDataset(torch.utils.data.Dataset):
     Each data point is actually a mini-batch of volume pairs
     """
 
-    def __init__(self, patch_size, raw_channel, mask_channel, num_workers=5, transform=None):
+    def __init__(self, patch_size, raw_channel, mask_channel, num_workers=5):
         """
         connect to db, load and weed out edges, define gunpowder pipeline
         Args:
@@ -29,12 +30,10 @@ class SiameseDataset(torch.utils.data.Dataset):
             raw_channel (bool): if set true, load patch from raw volumetric data
             mask_channel (bool): if set true, load patch from fragments volumetric data
             num_workers (int): number of workers available, e.g. for loading RAG
-            transform (torchvision.transform): use for data augmentation
         """
         self.patch_size = patch_size
         self.raw_channel = raw_channel
         self.mask_channel = mask_channel
-        self.transform = transform
         assert raw_channel or mask_channel
 
         # TODO parametrize the used names
@@ -123,90 +122,52 @@ class SiameseDataset(torch.utils.data.Dataset):
         self.raw_key = ArrayKey('RAW')
         self.labels_key = ArrayKey('LABELS')
 
-        self.source = (
+        self.sources = (
             ZarrSource(
                 config.groundtruth_zarr,
-                datasets={self.raw_key: config.groundtruth_ds},
+                datasets={self.raw_key: config.raw_ds},
                 array_specs={self.raw_key: ArraySpec(interpolatable=True)}) +
             Normalize(self.raw_key) +
-            Pad(self.raw_key, None),
+            Pad(self.raw_key, None, value=0),
             ZarrSource(
                 config.fragments_zarr,
                 datasets={self.labels_key: config.fragments_ds},
                 array_specs={self.labels_key: ArraySpec(interpolatable=True)}) +
-            Normalize(self.labels_key) +
-            Pad(self.labels_key, None),
+            Pad(self.labels_key, None, value=0),
         )
 
         self.pipeline = (
-            self.source +
+            self.sources +
+            MergeProvider() +
             ElasticAugment(
-                # TODO check all these params
-                control_point_spacing=[4, 40, 40],
-                jitter_sigma=[0, 2, 2],
+                control_point_spacing=[20, 20, 20],
+                jitter_sigma=[1, 1, 1],
                 rotation_interval=[0, math.pi / 2.0],
-                prob_slip=0.05,  # check if needed
-                prob_shift=0.05,  # check if needed
-                max_misalign=10,
-                subsample=8) +
-            SimpleAugment(transpose_only=[1, 2]) +
+                prob_slip=0.0,
+                prob_shift=0.0,
+                max_misalign=0,
+                # TODO adjust subsample value for speed
+                subsample=4) +
+            # TODO do not use transpose, currently buggy
+            SimpleAugment(transpose_only=[]) +
             IntensityAugment(self.raw_key, 0.9, 1.1, -0.1, 0.1) +
-            IntensityScaleShift(self.raw_key, 2, -1) +  # check if needed here
+            IntensityScaleShift(self.raw_key, 2, -1) +
             # at least for debugging:
             Snapshot({
-                self.raw_key: 'volumes/raw',
-                self.labels_key: 'volumes/labels'
-            },
+                    self.raw_key: 'volumes/raw',
+                    self.labels_key: 'volumes/labels'
+                },
                 every=100,
-                output_filename='batch_{iteration}.hdf')
+                output_dir='snapshots',
+                output_filename=f'sample_{now()}.hdf')
         )
 
     def __len__(self):
         return self.len
 
-    def get_patch_gunpowder(self, center, node_id):
-        """
-        generator function
-        TODO
-        Args:
-            center:
-            node_id:
-
-        Returns:
-
-        """
-        offset = np.array(center) - np.array(self.patch_size) / 2
-        roi = daisy.Roi(offset=offset, shape=self.patch_size)
-        roi = roi.snap_to_grid(daisy.Coordinate(config.voxel_size), mode='closest')
-        with build(self.pipeline) as p:
-
-            request = BatchRequest()
-            if self.raw_channel:
-                request.add(self.raw_key, roi)
-            if self.mask_channel:
-                request.add(self.labels_key, roi)
-
-            batch = p.request_batch(request)
-
-            channels = []
-            if self.raw_channel:
-                raw_array = batch[self.raw_key].data
-                channels.append(raw_array)
-            if self.mask_channel:
-                labels_array = batch[self.labels_key].data
-                labels_array = (labels_array == node_id).astype(np.float32)
-                channels.append(labels_array)
-
-            tensor = torch.tensor(channels, dtype=torch.float)
-            # Add the `channel`-dimension
-            if len(channels) == 1:
-                tensor = tensor.unsqueeze(0)
-
-            yield tensor
-
     def get_patch(self, center, node_id):
         """
-        get volumetric patch, simply using daisy
+        get volumetric patch using gunpowder
         Args:
             center(tuple of ints): center of mass for the node
             node_id(int): node id from db
@@ -216,45 +177,35 @@ class SiameseDataset(torch.utils.data.Dataset):
 
         """
         offset = np.array(center) - np.array(self.patch_size) / 2
-        roi = daisy.Roi(offset=offset, shape=self.patch_size)
-        # center might not be on the grid defined by the voxel_size
-        roi = roi.snap_to_grid(daisy.Coordinate(config.voxel_size), mode='closest')
+        roi = Roi(offset=offset, shape=self.patch_size)
+        roi = roi.snap_to_grid(Coordinate(config.voxel_size), mode='closest')
+        # logger.debug(f'ROI snapped to grid: {roi}')
+        with build(self.pipeline) as p:
+            request = BatchRequest()
+            if self.raw_channel:
+                request[self.raw_key] = ArraySpec(roi=roi)
+            if self.mask_channel:
+                request[self.labels_key] = ArraySpec(roi=roi)
 
-        if roi.get_shape()[0] != self.patch_size[0]:
-            logger.warning(
-                f'''correct roi shape {roi.get_shape()} to
-                {self.patch_size} after snapping to grid''')
-            roi.set_shape(self.patch_size)
+            batch = p.request_batch(request)
 
-        # TODO padding
-        channels = []
-        if self.raw_channel:
-            ds = daisy.open_ds(config.groundtruth_zarr, config.groundtruth_ds)
-            if not ds.roi.contains(roi):
-                logger.warning(f'patch {roi} is not fully contained in {ds.roi}')
-                #return None
-                yield None
-            patch = (ds[roi].to_ndarray() / 255.0).astype(np.float32)
-            channels.append(patch)
+            channels = []
+            if self.raw_channel:
+                raw_array = batch[self.raw_key].data
+                # logger.debug(f'raw_array shape {raw_array.shape}')
+                channels.append(raw_array)
+            if self.mask_channel:
+                labels_array = batch[self.labels_key].data
+                # logger.debug(f'labels_array shape {labels_array.shape}')
+                labels_array = (labels_array == node_id).astype(np.float32)
+                channels.append(labels_array)
 
-        if self.mask_channel:
-            ds = daisy.open_ds(config.fragments_zarr, config.fragments_ds)
-            if not ds.roi.contains(roi):
-                logger.warning(f'patch {roi} is not fully contained in {ds.roi}')
-                #return None
-                yield None
-            patch = ds[roi].to_ndarray()
-            mask = (patch == node_id).astype(np.float32)
-            channels.append(mask)
+            tensor = torch.tensor(channels, dtype=torch.float)
+            # Add the `channel`-dimension
+            if len(channels) == 1:
+                tensor = tensor.unsqueeze(0)
 
-        tensor = torch.tensor(channels, dtype=torch.float)
-
-        # Add the `channel`-dimension in case it is not there yet
-        if len(channels) == 1:
-            tensor = tensor.unsqueeze(0)
-
-        # return tensor
-        yield tensor
+            return tensor
 
     def __getitem__(self, index):
         """
@@ -287,8 +238,8 @@ class SiameseDataset(torch.utils.data.Dataset):
             self.nodes_attrs['center_y'][node2_index],
             self.nodes_attrs['center_x'][node2_index])
 
-        node1_patch = next(self.get_patch_gunpowder(center=node1_center, node_id=node1_id))
-        node2_patch = next(self.get_patch_gunpowder(center=node2_center, node_id=node2_id))
+        node1_patch = self.get_patch(center=node1_center, node_id=node1_id)
+        node2_patch = self.get_patch(center=node2_center, node_id=node2_id)
 
         if node1_patch is None or node2_patch is None:
             logger.warning(f'patch for one of the nodes is not fully contained in ROI, try again')
@@ -301,11 +252,13 @@ class SiameseDataset(torch.utils.data.Dataset):
 
         input0 = node1_patch.float()
         input1 = node2_patch.float()
-        label = torch.tensor(edge_score).float()
 
-        if self.transform is not None:
-            input0 = self.transform(input0)
-            input1 = self.transform(input1)
+        if edge_score == 0:
+            label = torch.tensor(1.0)
+        elif edge_score == 1:
+            label = torch.tensor(-1.0)
+        else:
+            raise ValueError(f'Value {edge_score} cannot be transformed into a valid label')
 
         logger.debug(f'__getitem__ in {now() - start_getitem} s')
         return input0, input1, label
