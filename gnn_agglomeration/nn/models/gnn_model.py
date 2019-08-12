@@ -63,7 +63,7 @@ class GnnModel(torch.nn.Module, ABC):
         return self.model_type.out_to_predictions(out=out)
 
     def out_to_one_dim(self, out):
-        return self.model_type.out_to_predictions(out=out)
+        return self.model_type.out_to_one_dim(out=out)
 
     def metric(self, predictions, targets):
         return self.model_type.metric(predictions=predictions, targets=targets)
