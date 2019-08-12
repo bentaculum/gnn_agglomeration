@@ -88,7 +88,7 @@ class HemibrainGraph(Data, ABC):
 
         # If all edges were removed in the step above, raise a ValueError
         # that is caught later on
-        if np.any(edge_in) is False:
+        if len(edges_attrs[node1_field]) == 0:
             raise ValueError(
                 f'Removed all edges in ROI, as one node is outside of ROI for each edge')
 
