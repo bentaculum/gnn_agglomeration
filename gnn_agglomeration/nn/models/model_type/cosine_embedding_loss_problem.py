@@ -39,8 +39,8 @@ class CosineEmbeddingLossProblem(ModelType):
 
     def out_to_predictions(self, out):
         # TODO parametrize embedding threshold
-        cosine_distance = F.cosine_similarity(out[0], out[1])
-        pred = (~(cosine_distance > 0)).float()
+        cosine_similarity = F.cosine_similarity(out[0], out[1], dim=1)
+        pred = (~(cosine_similarity > 0)).float()
         return pred
 
     def out_to_one_dim(self, out):
