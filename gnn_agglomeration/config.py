@@ -213,9 +213,8 @@ class Config:
         self.parser.add_argument(
             '--model_type',
             type=str,
-            choices=['ClassificationProblem', 'RegressionProblem'],
-            help='ClassificationProblem | RegressionProblem')
-        self.default['model_type'] = 'ClassificationProblem'
+            choices=['ClassificationProblem', 'RegressionProblem', 'CosineEmbeddingLossProblem'])
+        self.default['model_type'] = 'CosineEmbeddingLossProblem'
 
         self.parser.add_argument(
             '--training_epochs',
@@ -745,6 +744,12 @@ class Config:
             help='''DB field in edges collection that contains the gt masking
             which accounts for edges with unknown ground truth''')
         self.default['merge_labeled_field'] = 'merge_labeled_vanilla'
+
+        self.parser.add_argument(
+            '--out_dimensionality',
+            type=positive_int,
+            help='number of dimensions for output vector on each node')
+        self.default['out_dimensionality'] = 3
 
     def localhost(self):
         return {

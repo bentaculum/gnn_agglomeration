@@ -3,6 +3,7 @@ import torch.nn.functional as F
 
 from .gnn_model import GnnModel
 from ..layers.our_conv import OurConv
+from .model_type.cosine_embedding_loss_problem import CosineEmbeddingLossProblem
 
 
 class OurConvModel(GnnModel):
@@ -114,22 +115,26 @@ class OurConvModel(GnnModel):
         else:
             fc_in_features = self.config.hidden_units[-1]
 
-        if self.config.edge_labels:
-            if self.config.fc_use_edge:
-                fc_in_features = 2 * \
-                    (fc_in_features + self.config.pseudo_dimensionality)
-            else:
-                fc_in_features = 2 * fc_in_features
+        if isinstance(self.model_type, CosineEmbeddingLossProblem):
+            # TODO we could use a fully connected layer per node here
+            pass
+        else:
+            if self.config.edge_labels:
+                if self.config.fc_use_edge:
+                    fc_in_features = 2 * \
+                        (fc_in_features + self.config.pseudo_dimensionality)
+                else:
+                    fc_in_features = 2 * fc_in_features
 
-        self.fc_layers_list = torch.nn.ModuleList()
-        fc_layer_dims = self.config.fc_layer_dims.copy()
-        fc_layer_dims.insert(0, fc_in_features)
-        fc_layer_dims.append(self.model_type.out_channels)
-        for i in range(self.config.fc_layers):
-            fc = torch.nn.Linear(
-                in_features=fc_layer_dims[i],
-                out_features=fc_layer_dims[i + 1],
-                bias=self.config.fc_bias)
+            self.fc_layers_list = torch.nn.ModuleList()
+            fc_layer_dims = self.config.fc_layer_dims.copy()
+            fc_layer_dims.insert(0, fc_in_features)
+            fc_layer_dims.append(self.model_type.out_channels)
+            for i in range(self.config.fc_layers):
+                fc = torch.nn.Linear(
+                    in_features=fc_layer_dims[i],
+                    out_features=fc_layer_dims[i + 1],
+                    bias=self.config.fc_bias)
             self.fc_layers_list.append(fc)
 
     def forward(self, data):
@@ -169,38 +174,45 @@ class OurConvModel(GnnModel):
             x = getattr(F, self.config.dropout_type)(
                 x, p=self.config.dropout_probs[i], training=self.training)
 
-        # TODO this is a quick fix implementation, with the assumption that
-        # a pair of edges is next to each other in the edge index
-        if self.config.edge_labels:
+        if isinstance(self.model_type, CosineEmbeddingLossProblem):
+            # TODO this is a quick fix implementation, with the assumption that
+            #  a pair of edges is next to each other in the edge index
             x = x[edge_index[0]]
-            # might be computationally expensive
-            if self.config.fc_use_edge:
-                x = torch.cat([x, edge_attr], dim=-1)
-            # One entry per edge, not per directed edge
-            x = x.view(int(edge_index.size(1) / 2), -1)
+            x = (x[0::2], x[0::1])
 
-        for i, l in enumerate(self.fc_layers_list):
-            if self.training:
-                self.write_to_variable_summary(
-                    l.weight, 'out_layer', f'fc_{i}/weights')
-                if self.config.fc_bias:
+        else:
+            # TODO this is a quick fix implementation, with the assumption that
+            #  a pair of edges is next to each other in the edge index
+            if self.config.edge_labels:
+                x = x[edge_index[0]]
+                # might be computationally expensive
+                if self.config.fc_use_edge:
+                    x = torch.cat([x, edge_attr], dim=-1)
+                # One entry per edge, not per directed edge
+                x = x.view(int(edge_index.size(1) / 2), -1)
+
+            for i, l in enumerate(self.fc_layers_list):
+                if self.training:
                     self.write_to_variable_summary(
-                        l.bias, 'out_layer', f'fc_{i}/bias')
-            x = l(x)
-            self.write_to_variable_summary(
-                x, 'out_layer', f'fc_{i}/pre_activations')
-
-            if i == self.config.fc_layers - 1:
-                x = self.model_type.out_nonlinearity(x)
-            else:
-                x = getattr(F, self.config.non_linearity)(x)
+                        l.weight, 'out_layer', f'fc_{i}/weights')
+                    if self.config.fc_bias:
+                        self.write_to_variable_summary(
+                            l.bias, 'out_layer', f'fc_{i}/bias')
+                x = l(x)
                 self.write_to_variable_summary(
-                    x, 'out_layer_fc_{}'.format(i), 'outputs')
-                x = getattr(
-                    F,
-                    self.config.dropout_type)(
-                    x,
-                    p=self.config.fc_dropout_probs[i],
-                    training=self.training)
+                    x, 'out_layer', f'fc_{i}/pre_activations')
+
+                if i == self.config.fc_layers - 1:
+                    x = self.model_type.out_nonlinearity(x)
+                else:
+                    x = getattr(F, self.config.non_linearity)(x)
+                    self.write_to_variable_summary(
+                        x, 'out_layer_fc_{}'.format(i), 'outputs')
+                    x = getattr(
+                        F,
+                        self.config.dropout_type)(
+                        x,
+                        p=self.config.fc_dropout_probs[i],
+                        training=self.training)
 
         return x
