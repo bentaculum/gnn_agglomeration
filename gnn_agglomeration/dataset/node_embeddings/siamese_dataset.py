@@ -76,10 +76,12 @@ class SiameseDataset(torch.utils.data.Dataset):
         nodes_cols = [self.id_field, 'center_z', 'center_y', 'center_x']
         self.nodes_attrs = {k: nodes_attrs[k] for k in nodes_cols}
 
-        edges_cols = [self.node1_field, self.node2_field, config.new_edge_attr_trinary]
+        edges_cols = [self.node1_field, self.node2_field,
+                      config.new_edge_attr_trinary]
         edges_attrs = {k: edges_attrs[k] for k in edges_cols}
 
-        logger.debug(f'num edges before dropping: {len(edges_attrs[self.node1_field])}')
+        logger.debug(
+            f'num edges before dropping: {len(edges_attrs[self.node1_field])}')
 
         edges_attrs = utils.drop_outgoing_edges(
             node_attrs=self.nodes_attrs,
@@ -156,13 +158,13 @@ class SiameseDataset(torch.utils.data.Dataset):
             IntensityScaleShift(self.raw_key, 2, -1) +
             # at least for debugging:
             Snapshot({
-                    self.raw_key: 'volumes/raw',
-                    self.labels_key: 'volumes/labels'
-                },
+                self.raw_key: 'volumes/raw',
+                self.labels_key: 'volumes/labels'
+            },
                 every=100,
                 output_dir='snapshots',
-                output_filename=f'sample_{now()}.hdf') +
-            PrintProfilingStats(every=1)
+                output_filename=f'sample_{now()}.hdf')
+            # PrintProfilingStats(every=1)
         )
 
     def __len__(self):
@@ -229,8 +231,10 @@ class SiameseDataset(torch.utils.data.Dataset):
         node1_id = self.edges_attrs[self.node1_field][index]
         node2_id = self.edges_attrs[self.node2_field][index]
         # weird numpy syntax
-        node1_index = np.where(self.nodes_attrs[self.id_field] == node1_id)[0][0]
-        node2_index = np.where(self.nodes_attrs[self.id_field] == node2_id)[0][0]
+        node1_index = np.where(
+            self.nodes_attrs[self.id_field] == node1_id)[0][0]
+        node2_index = np.where(
+            self.nodes_attrs[self.id_field] == node2_id)[0][0]
 
         node1_center = (
             self.nodes_attrs['center_z'][node1_index],
@@ -245,7 +249,8 @@ class SiameseDataset(torch.utils.data.Dataset):
         node2_patch = self.get_patch(center=node2_center, node_id=node2_id)
 
         if node1_patch is None or node2_patch is None:
-            logger.warning(f'patch for one of the nodes is not fully contained in ROI, try again')
+            logger.warning(
+                f'patch for one of the nodes is not fully contained in ROI, try again')
             # Sample a new index, using the sample weights again
             new_index = torch.multinomial(
                 input=self.samples_weights,
@@ -261,7 +266,8 @@ class SiameseDataset(torch.utils.data.Dataset):
         elif edge_score == 1:
             label = torch.tensor(-1.0)
         else:
-            raise ValueError(f'Value {edge_score} cannot be transformed into a valid label')
+            raise ValueError(
+                f'Value {edge_score} cannot be transformed into a valid label')
 
         logger.debug(f'__getitem__ in {now() - start_getitem} s')
         return input0, input1, label
