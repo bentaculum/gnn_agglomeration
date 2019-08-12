@@ -1,6 +1,7 @@
 import torch
 from torch.nn import Parameter
 import torch.nn.functional as F
+import torch_geometric
 from torch_geometric.nn.conv import MessagePassing
 from torch_geometric.utils import softmax
 
