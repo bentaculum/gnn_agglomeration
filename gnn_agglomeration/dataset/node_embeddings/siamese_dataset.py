@@ -140,14 +140,16 @@ class SiameseDataset(torch.utils.data.Dataset):
             self.sources +
             MergeProvider() +
             ElasticAugment(
-                control_point_spacing=[20, 20, 20],
-                jitter_sigma=[1, 1, 1],
+                # copied from /groups/funke/funkelab/sheridana/lsd_experiments/hemi/02_train/setup01/train.py
+                control_point_spacing=[40, 40, 40],
+                # copied from /groups/funke/funkelab/sheridana/lsd_experiments/hemi/02_train/setup01/train.py
+                jitter_sigma=[2, 2, 2],
                 rotation_interval=[0, math.pi / 2.0],
                 prob_slip=0.0,
                 prob_shift=0.0,
                 max_misalign=0,
                 # TODO adjust subsample value for speed
-                subsample=4) +
+                subsample=8) +
             # TODO do not use transpose, currently buggy
             SimpleAugment(transpose_only=[]) +
             IntensityAugment(self.raw_key, 0.9, 1.1, -0.1, 0.1) +
@@ -159,7 +161,8 @@ class SiameseDataset(torch.utils.data.Dataset):
                 },
                 every=100,
                 output_dir='snapshots',
-                output_filename=f'sample_{now()}.hdf')
+                output_filename=f'sample_{now()}.hdf') +
+            PrintProfilingStats(every=1)
         )
 
     def __len__(self):
