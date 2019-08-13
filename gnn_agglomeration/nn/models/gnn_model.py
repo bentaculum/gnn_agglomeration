@@ -2,8 +2,13 @@ import torch
 from abc import ABC, abstractmethod
 import os
 import json
+import logging
 
 from .model_type import *
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
 
 
 class GnnModel(torch.nn.Module, ABC):
@@ -29,6 +34,8 @@ class GnnModel(torch.nn.Module, ABC):
 
         self.layers()
         self.init_optimizer()
+        # TODO this is a quick fix for optimizers with exactly 1 parameter group
+        self.trainable_parameters = self.optimizer.param_groups[0]['params']
 
         self.epoch = epoch
         self.train_writer = train_writer
@@ -55,7 +62,7 @@ class GnnModel(torch.nn.Module, ABC):
 
     def init_optimizer(self):
         self.optimizer = torch.optim.Adam(
-            self.parameters(),
+            filter(lambda p: p.requires_grad, self.parameters()),
             lr=self.config.adam_lr,
             weight_decay=self.config.adam_weight_decay)
 
@@ -94,13 +101,30 @@ class GnnModel(torch.nn.Module, ABC):
         return self.current_loss
 
     def train(self, mode=True):
-        ret = super(GnnModel, self).train(mode=mode)
-        self.current_writer = self.train_writer
-        return ret
+        """
+        switch between train (default) and eval mode.
+        Eval mode: remove randomness from all modules, set requires_grad=False for all params
 
-    def eval(self):
-        ret = super(GnnModel, self).eval()
-        self.current_writer = self.val_writer
+        Args:
+            mode (bool): whether to put model into train or eval mode
+
+        Returns:
+            self
+
+        """
+        ret = super(GnnModel, self).train(mode=mode)
+
+        if mode:
+            self.current_writer = self.train_writer
+            for param in self.trainable_parameters:
+                param.requires_grad = True
+            logger.info(f'activate train mode, make {sum(p.numel() for p in self.trainable_parameters)} params trainable')
+        else:
+            self.current_writer = self.val_writer
+            for param in self.trainable_parameters:
+                param.requires_grad = False
+            logger.info(f'activate eval mode, fix {sum(p.numel() for p in self.trainable_parameters)} params')
+
         return ret
 
     def write_to_variable_summary(self, var, namespace, var_name):

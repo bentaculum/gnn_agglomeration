@@ -306,7 +306,7 @@ def main(_config, _run, _log):
                     f'batch {i}: num nodes {data_fe.num_nodes}, num edges {data_fe.num_edges}')
                 data_fe = data_fe.to(device)
                 if torch.cuda.is_available():
-                    _log.info(
+                    _log.debug(
                         f'GPU memory allocated: {torch.cuda.memory_allocated(device=device)/(2**30)}GiB')
                 out_fe = model(data_fe)
 
@@ -321,6 +321,10 @@ def main(_config, _run, _log):
                     edges = edges[data_fe.roi_mask.byte()].cpu(
                     ).numpy().astype(np.int64)
                     out_1d = out_1d[data_fe.roi_mask.byte()].cpu()
+
+                    if len(edges) == 0:
+                        _log.warning(f'test pass: no edges in block after masking')
+                        continue
 
                     edges_orig_labels = np.zeros_like(edges, dtype=np.int64)
                     edges_orig_labels = replace_values(
@@ -475,12 +479,12 @@ def main(_config, _run, _log):
             if config.clip_grad:
                 if config.clip_method == 'value':
                     torch.nn.utils.clip_grad_value_(
-                        parameters=model.parameters(),
+                        parameters=filter(lambda p: p.requires_grad, model.parameters()),
                         clip_value=config.clip_value
                     )
                 else:
                     torch.nn.utils.clip_grad_norm_(
-                        parameters=model.parameters(),
+                        parameters=filter(lambda p: p.requires_grad, model.parameters()),
                         max_norm=config.clip_value,
                         norm_type=float(config.clip_method)
                     )

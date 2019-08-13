@@ -173,7 +173,7 @@ class HemibrainDataset(Dataset, ABC):
 
         # orig_collection = db[self.config.edges_collection]
 
-        roi = daisy.Roi(list(self.roi_offset_full), list(self.roi_shape_full))
+        roi = daisy.Roi(list(self.roi_offset), list(self.roi_shape))
         orig_nodes = self.graph_provider.read_nodes(roi=roi)
         orig_edges = self.graph_provider.read_edges(roi=roi, nodes=orig_nodes)
 
