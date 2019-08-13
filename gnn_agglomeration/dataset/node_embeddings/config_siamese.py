@@ -48,6 +48,10 @@ p.add('--downsample_factors', type=list_of_ints, nargs='+', help='tuple of 3D do
 p.add('--adam_lr', type=float, help='learning rate for adam optimizer')
 p.add('--adam_weight_decay', type=float, help='weight decay for adam optimizer')
 
+p.add('--load_model', type=str, help='latest | path/to/tarfile')
+p.add('--load_model_version', type=str, help='latest | checkpoint name, including extension')
+p.add('--inference_samples', type=str, help='`all` | threshold number')
+
 config, remaining_argv = p.parse_known_args()
 sys.argv = [sys.argv[0], *remaining_argv]
 logger.info(f"\n{p.format_values()}")

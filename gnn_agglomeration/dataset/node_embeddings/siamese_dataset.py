@@ -5,6 +5,7 @@ import daisy
 import numpy as np
 from time import time as now
 import math
+from abc import ABC, abstractmethod
 
 # TODO how to import from beyond top level path?
 from . import utils  # noqa
@@ -17,11 +18,7 @@ logger.setLevel(logging.DEBUG)
 # logging.getLogger('gunpowder.nodes.').setLevel(logging.DEBUG)
 
 
-class SiameseDataset(torch.utils.data.Dataset):
-    """
-    Each data point is actually a mini-batch of volume pairs
-    """
-
+class SiameseDataset(torch.utils.data.Dataset, ABC):
     def __init__(self, patch_size, raw_channel, mask_channel, num_workers=5):
         """
         connect to db, load and weed out edges, define gunpowder pipeline
@@ -34,8 +31,13 @@ class SiameseDataset(torch.utils.data.Dataset):
         self.patch_size = patch_size
         self.raw_channel = raw_channel
         self.mask_channel = mask_channel
+        self.num_workers = num_workers
         assert raw_channel or mask_channel
 
+        self.load_rag()
+        self.init_pipeline()
+
+    def load_rag(self):
         # TODO parametrize the used names
         self.id_field = 'id'
         self.node1_field = 'u'
@@ -68,7 +70,7 @@ class SiameseDataset(torch.utils.data.Dataset):
         nodes_attrs, edges_attrs = graph_provider.read_blockwise(
             roi=roi,
             block_size=daisy.Coordinate(block_size),
-            num_workers=num_workers
+            num_workers=self.num_workers
         )
         logger.debug(f'read whole graph in {now() - start} s')
 
@@ -99,73 +101,15 @@ class SiameseDataset(torch.utils.data.Dataset):
             edges_attrs[attr] = vals[edge_filter]
         self.edges_attrs = edges_attrs
 
-        # assign dataset length
-        self.len = len(self.edges_attrs[config.new_edge_attr_trinary])
-
         logger.debug(f'num nodes: {len(self.nodes_attrs[self.id_field])}')
         logger.debug(f'num edges: {len(self.edges_attrs[self.node1_field])}')
         logger.debug(
             f'''convert graph to numpy arrays, drop outgoing edges 
             and filter edges in {now() - start} s''')
 
-        # get weights
-        start = now()
-        targets = self.edges_attrs[config.new_edge_attr_trinary]
-        class_sample_count = np.array(
-            [len(np.where(targets == t)[0]) for t in np.unique(targets)]
-        )
-        logger.debug(f'class sample counts {class_sample_count}')
-        weights = 1.0 / class_sample_count
-        samples_weights = weights[targets.astype(np.int_)]
-        self.samples_weights = torch.from_numpy(samples_weights).float()
-        logger.debug(f'assign sample weights in {now() - start} s')
-
-        # gunpowder init
-        self.raw_key = ArrayKey('RAW')
-        self.labels_key = ArrayKey('LABELS')
-
-        self.sources = (
-            ZarrSource(
-                config.groundtruth_zarr,
-                datasets={self.raw_key: config.raw_ds},
-                array_specs={self.raw_key: ArraySpec(interpolatable=True)}) +
-            Normalize(self.raw_key) +
-            Pad(self.raw_key, None, value=0),
-            ZarrSource(
-                config.fragments_zarr,
-                datasets={self.labels_key: config.fragments_ds},
-                array_specs={self.labels_key: ArraySpec(interpolatable=True)}) +
-            Pad(self.labels_key, None, value=0),
-        )
-
-        self.pipeline = (
-            self.sources +
-            MergeProvider() +
-            ElasticAugment(
-                # copied from /groups/funke/funkelab/sheridana/lsd_experiments/hemi/02_train/setup01/train.py
-                control_point_spacing=[40, 40, 40],
-                # copied from /groups/funke/funkelab/sheridana/lsd_experiments/hemi/02_train/setup01/train.py
-                jitter_sigma=[2, 2, 2],
-                rotation_interval=[0, math.pi / 2.0],
-                prob_slip=0.0,
-                prob_shift=0.0,
-                max_misalign=0,
-                # TODO adjust subsample value for speed
-                subsample=8) +
-            # TODO do not use transpose, currently buggy
-            SimpleAugment(transpose_only=[]) +
-            IntensityAugment(self.raw_key, 0.9, 1.1, -0.1, 0.1) +
-            IntensityScaleShift(self.raw_key, 2, -1) +
-            # at least for debugging:
-            Snapshot({
-                self.raw_key: 'volumes/raw',
-                self.labels_key: 'volumes/labels'
-            },
-                every=100,
-                output_dir='snapshots',
-                output_filename=f'sample_{now()}.hdf')
-            # PrintProfilingStats(every=1)
-        )
+    @abstractmethod
+    def init_pipeline(self):
+        pass
 
     def __len__(self):
         return self.len
