@@ -300,7 +300,9 @@ def main(_config, _run, _log):
 
             _log.info('test pass ...')
             start_test_pass = time.time()
-            for data_fe in data_loader_test:
+            for i, data_fe in enumerate(data_loader_test):
+                _log.info(
+                    f'batch {i}: num nodes {data_fe.num_nodes}, num edges {data_fe.num_edges}')
                 data_fe = data_fe.to(device)
                 out_fe = model(data_fe)
 
