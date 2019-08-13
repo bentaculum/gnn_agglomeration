@@ -11,6 +11,7 @@ import pymongo
 import time
 import bson
 import multiprocessing
+from time import time as now
 
 from ..data_transforms import *
 from gnn_agglomeration import utils
@@ -173,17 +174,28 @@ class HemibrainDataset(Dataset, ABC):
 
         # orig_collection = db[self.config.edges_collection]
 
+        start = now()
         roi = daisy.Roi(list(self.roi_offset), list(self.roi_shape))
-        orig_nodes = self.graph_provider.read_nodes(roi=roi)
-        orig_edges = self.graph_provider.read_edges(roi=roi, nodes=orig_nodes)
+        # TODO parametrize block size
+        block_size = (np.array(roi.get_shape())/2).astype(np.int_)
+
+        orig_node_attrs, orig_edge_attrs = self.graph_provider.read_blockwise(
+            roi=roi,
+            block_size=daisy.Coordinate(block_size),
+            num_workers=self.config.num_workers
+        )
 
         # TODO parametrize the used names
         id_field = 'id'
         node1_field = 'u'
         node2_field = 'v'
 
-        orig_node_attrs = utils.to_np_arrays(orig_nodes)
-        orig_edge_attrs = utils.to_np_arrays(orig_edges)
+        # keep only needed columns
+        nodes_cols = [id_field, 'center_z', 'center_y', 'center_x']
+        orig_node_attrs = {k: orig_node_attrs[k] for k in nodes_cols}
+
+        edges_cols = [node1_field, node2_field]
+        orig_edge_attrs = {k: orig_edge_attrs[k] for k in edges_cols}
 
         # drop edges at the border
         utils.drop_outgoing_edges(
@@ -193,6 +205,7 @@ class HemibrainDataset(Dataset, ABC):
             node1_field=node1_field,
             node2_field=node2_field
         )
+        logger.info(f'load original RAG in {now() - start} s')
 
         logger.info(
             f'num edges in ROI {len(orig_edge_attrs[node1_field])}, num outputs {len(outputs_dict)}')
@@ -200,6 +213,7 @@ class HemibrainDataset(Dataset, ABC):
 
         # TODO insert dummy value 1 for all edges that are not in outputs_dict,
         # but part of full RAG
+        start = now()
         counter = 0
         missing_edges_pos = []
         for e_tuple in zip(orig_edge_attrs[node1_field], orig_edge_attrs[node2_field]):
@@ -220,25 +234,25 @@ class HemibrainDataset(Dataset, ABC):
                     1, dtype=torch.float).item()
                 counter += 1
 
-        logger.debug(f'added {counter} dummy values')
         np.savez_compressed(
             os.path.join(self.config.run_abs_path, "missing_edges_pos.npz"),
             missing_edges_pos=np.array(missing_edges_pos))
+        logger.info(f'added {counter} dummy values in {now() - start} s')
 
         assert len(orig_edge_attrs[node1_field]) == len(outputs_dict),\
             f'num edges in ROI {len(orig_edge_attrs[node1_field])}, num outputs including dummy values {len(outputs_dict)}'
 
         collection = db[collection_name]
 
-        start = time.time()
+        start = now()
         insertion_elems = []
         # TODO parametrize field names
         for (u, v), merge_score in outputs_dict.items():
             insertion_elems.append(
                 {'u': bson.Int64(u), 'v': bson.Int64(v), 'merge_score': float(merge_score)})
         collection.insert_many(insertion_elems, ordered=False)
-        logger.debug(
-            f'insert predicted merge_scores in {time.time() - start}s')
+        logger.info(
+            f'insert predicted merge_scores in {now() - start}s')
 
     def targets_mean_std(self):
         """
