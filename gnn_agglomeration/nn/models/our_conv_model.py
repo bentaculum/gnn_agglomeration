@@ -178,7 +178,7 @@ class OurConvModel(GnnModel):
             # TODO this is a quick fix implementation, with the assumption that
             #  a pair of edges is next to each other in the edge index
             x = x[edge_index[0]]
-            x = (x[0::2], x[0::1])
+            x = (x[0::2], x[1::2])
 
         else:
             # TODO this is a quick fix implementation, with the assumption that

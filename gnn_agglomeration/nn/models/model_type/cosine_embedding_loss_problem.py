@@ -50,6 +50,6 @@ class CosineEmbeddingLossProblem(ModelType):
         return predictions.tolist()
 
     def metric(self, predictions, targets):
-        correct = predictions.eq(targets).sum().item()
+        correct = predictions.eq(targets.float()).sum().item()
         acc = correct / targets.size(0)
         return acc
