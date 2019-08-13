@@ -621,7 +621,7 @@ class Config:
             type=positive_int,
             nargs=3,
             help='fixed block size for creating pyg graphs')
-        self.default['block_size'] = [3000, 3000, 3000]
+        self.default['block_size'] = [750, 750, 750]
 
         self.parser.add_argument(
             '--block_fit',
@@ -637,7 +637,7 @@ class Config:
             type=positive_int,
             nargs=3,
             help='padding to create an outer mask that guarantees context for all targets the contribute to the loss')
-        self.default['block_padding'] = [3000, 3000, 3000]
+        self.default['block_padding'] = [750, 750, 750]
 
         self.parser.add_argument(
             '--db_host',
