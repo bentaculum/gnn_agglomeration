@@ -165,14 +165,15 @@ class HemibrainDataset(Dataset, ABC):
         pass
 
     def write_outputs_to_db(self, outputs_dict, collection_name):
+        start = now()
+        outputs_dict = {(min(k), max(k)): v for k, v in outputs_dict.items()}
+        logger.info(f'lower id first in all edges in outputs_dict in {now() - start} s')
         with open(self.config.db_host, 'r') as f:
             pw_parser = configparser.ConfigParser()
             pw_parser.read_file(f)
 
         client = pymongo.MongoClient(pw_parser['DEFAULT']['db_host'])
         db = client[self.db_name]
-
-        # orig_collection = db[self.config.edges_collection]
 
         start = now()
         roi = daisy.Roi(list(self.roi_offset), list(self.roi_shape))
@@ -205,7 +206,14 @@ class HemibrainDataset(Dataset, ABC):
             node1_field=node1_field,
             node2_field=node2_field
         )
-        logger.info(f'load original RAG in {now() - start} s')
+        logger.info(f'load original RAG, drop edges in {now() - start} s')
+
+        # lower id in all edges first
+        start = now()
+        for i, t in enumerate(zip(orig_edge_attrs[node1_field], orig_edge_attrs[node2_field])):
+            orig_edge_attrs[node1_field][i] = min(t)
+            orig_edge_attrs[node2_field][i] = max(t)
+        logger.info(f'lower id first in all edges in orig_edge_attrs in {now() - start} s')
 
         logger.info(
             f'num edges in ROI {len(orig_edge_attrs[node1_field])}, num outputs {len(outputs_dict)}')

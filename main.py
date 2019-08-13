@@ -302,7 +302,7 @@ def main(_config, _run, _log):
             _log.info('test pass ...')
             start_test_pass = time.time()
             for i, data_fe in enumerate(data_loader_test):
-                _log.info(
+                _log.debug(
                     f'batch {i}: num nodes {data_fe.num_nodes}, num edges {data_fe.num_edges}')
                 data_fe = data_fe.to(device)
                 if torch.cuda.is_available():
@@ -314,7 +314,7 @@ def main(_config, _run, _log):
                     start = time.time()
                     out_1d = model.out_to_one_dim(out_fe)
                     # TODO this assumes again that every pairs of directed edges are next to each other
-                    # and we grab the original representation (u,v) from the DB
+                    # and we grab the original representation (u,v) from the DB? Does not seem to work
                     edges = torch.transpose(data_fe.edge_index, 0, 1)[0::2]
 
                     # mask outputs
@@ -350,7 +350,7 @@ def main(_config, _run, _log):
                             else:
                                 test_1d_outputs[k] = max(test_1d_outputs[k], v)
 
-                    _log.info(
+                    _log.debug(
                         f'writing outputs to dict in {time.time() - start}s')
 
                 test_loss += model.loss(out_fe, data_fe.y,
