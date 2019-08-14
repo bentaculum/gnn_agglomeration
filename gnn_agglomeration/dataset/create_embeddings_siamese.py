@@ -7,13 +7,11 @@ import os.path as osp
 from time import time as now
 import datetime
 import pytz
-import atexit
-import tarfile
 
 from node_embeddings.config_siamese import config as config_siamese, p as parser_siamese  # noqa
 from config import config  # noqa
 
-from node_embeddings.siamese_dataset import SiameseDataset  # noqa
+from node_embeddings.siamese_dataset_inference import SiameseDatasetInference  # noqa
 from node_embeddings.siamese_vgg_3d import SiameseVgg3d  # noqa
 
 logger = logging.getLogger(__name__)
@@ -21,59 +19,12 @@ logger.setLevel(logging.DEBUG)
 logging.basicConfig(level=logging.INFO)
 
 
-def save(model, optimizer, model_dir, iteration):
-    """
-    TODO
-    Should only be called after the end of a training+validation epoch
-    Args:
-        model:
-        optimizer:
-        model_dir:
-        iteration:
-
-    Returns:
-
-    """
-    # delete older models
-    checkpoint_versions = [name for name in os.listdir(model_dir) if (
-            name.endswith('.tar') and name.startswith('iteration'))]
-    if len(checkpoint_versions) >= 3:
-        checkpoint_versions.sort()
-        os.remove(os.path.join(model_dir, checkpoint_versions[0]))
-
-    # save the new one
-    torch.save({
-        'epoch': iteration,
-        'model_state_dict': model.state_dict(),
-        'optimizer_state_dict': optimizer.state_dict(),
-    }, osp.join(model_dir, f'iteration_{iteration}.tar'))
-
-    # save config file
-    parser_siamese.write_config_file(
-        parsed_namespace=config_siamese,
-        output_file_paths=[osp.join(model_dir, 'config.ini')],
-        exit_after=False
-    )
-
-
-def atexit_tasks(loss, writer, summary_dir):
-    if writer:
-        writer.close()
-    # not needed
-    with tarfile.open(f'{summary_dir}.tar.gz', mode='w:gz') as archive:
-        archive.add(summary_dir, arcname='summary', recursive=True)
-    logger.info(f'save tensorboard summaries')
-
-    # report current loss
-    logger.info(f'training loss: {loss}')
-
-
 def create_embeddings():
     timestamp = datetime.datetime.now(
         pytz.timezone('US/Eastern')).strftime('%Y%m%dT%H%M%S.%f%z')
 
     start = now()
-    dataset = SiameseDataset(
+    dataset = SiameseDatasetInference(
         patch_size=config_siamese.patch_size,
         raw_channel=config_siamese.raw_channel,
         mask_channel=config_siamese.mask_channel,
@@ -87,10 +38,7 @@ def create_embeddings():
         shuffle=False,
         batch_size=config_siamese.batch_size,
         num_workers=config_siamese.num_workers_dataloader,
-        # TODO check whether pinning memory makes sense
         pin_memory=True,
-        # TODO check whether this randomization really works for torch
-        worker_init_fn=lambda idx: np.random.seed()
     )
     logger.info(f'init dataloader in {now() - start} s')
 
@@ -151,50 +99,41 @@ def create_embeddings():
                        for p in model.parameters() if p.requires_grad)
     logger.info(f"number of diff'able params: {total_params}")
 
+    # limited number of samples
     samples_count = 0
     if config_siamese.inference_samples == 'all':
         samples_limit = np.iinfo(np.int_).max
     else:
         samples_limit = int(config_siamese.inference_samples)
 
+    # ----------- training loop -----------
+    node_ids = []
+    embeddings = []
+
     for i, data in enumerate(dataloader):
         if samples_count >= samples_limit:
             break
 
         logger.info(f'batch {i} ...')
-        input0, input1, _ = data
+        patches, node_ids_batch = data
 
         # make sure the dimensionality is ok
-        assert input0.dim() == 5, input0.shape
-        assert labels.dim() == 1, labels.shape
+        assert patches.dim() == 5, patches.shape
 
-        input0 = input0.to(device)
-        input1 = input1.to(device)
-        labels = labels.to(device)
+        patches = patches.to(device)
 
-        out0, out1 = model(input0, input1)
+        out = model.forward_once(patches)
 
-        # register exit routines, in case there is an interrupt, e.g. via keyboard
-        # TODO write to database
-        atexit.unregister(atexit_tasks)
-        atexit.register(
-            atexit_tasks,
-            loss=loss,
-            writer=writer,
-            summary_dir=summary_dir
-        )
+        node_ids.extend(node_ids_batch)
+        embeddings.extend(list(out.numpy()))
 
         samples_count += config_siamese.batch_size
 
-        # save model
-        if i % config_siamese.checkpoint_interval == 0:
-            logger.info('Saving model ...')
-            save(
-                model=model,
-                optimizer=optimizer,
-                model_dir=model_dir,
-                iteration=i
-            )
+    dataset.write_embeddings_to_db(
+        node_ids=node_ids,
+        embeddings=embeddings,
+        collection_name=f'nodes_embeddings_{timestamp}_{config_siamese.comment}',
+    )
 
 
 if __name__ == '__main__':

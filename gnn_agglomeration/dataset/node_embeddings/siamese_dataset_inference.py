@@ -3,6 +3,9 @@ import torch
 from gunpowder import *
 import numpy as np
 from time import time as now
+import pymongo
+import bson
+import pickle
 
 from .siamese_dataset import SiameseDataset  # noqa
 
@@ -77,7 +80,7 @@ class SiameseDatasetInference(SiameseDataset):
         """
         Args:
 
-            index(int): number of edge in dataset to load
+            index(int): number of node in dataset to load
 
         Returns:
             a volumetric patches for the node at position `index`
@@ -96,3 +99,25 @@ class SiameseDatasetInference(SiameseDataset):
 
         logger.debug(f'__getitem__ in {now() - start_getitem} s')
         return patch.float(), node_id
+
+    def write_embeddings_to_db(self, node_ids, embeddings, collection_name):
+        start = now()
+        client = pymongo.MongoClient(config.db_host)
+        db = client[config.db_name]
+
+        logger.info(
+            f'''num nodes in ROI {len(self.nodes_attrs[self.node1_field])}, 
+            num embeddings {len(embeddings)}''')
+        assert len(self.nodes_attrs[self.node1_field]) == len(embeddings)
+
+        collection = db[collection_name]
+
+        insertion_elems = []
+        # TODO parametrize field name
+        for i, e in zip(node_ids, embeddings):
+            insertion_elems.append(
+                {self.id_field: bson.Int64(i),
+                 'embedding': bson.Binary(pickle.dumps(e))})
+        collection.insert_many(insertion_elems, ordered=False)
+        logger.info(
+            f'write embeddings to db in {now() - start}s')

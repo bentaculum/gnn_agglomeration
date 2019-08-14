@@ -13,7 +13,7 @@ import tarfile
 from node_embeddings.config_siamese import config as config_siamese, p as parser_siamese  # noqa
 from config import config  # noqa
 
-from node_embeddings.siamese_dataset import SiameseDataset  # noqa
+from node_embeddings.siamese_dataset_train import SiameseDatasetTrain  # noqa
 from node_embeddings.siamese_vgg_3d import SiameseVgg3d  # noqa
 
 logger = logging.getLogger(__name__)
@@ -79,7 +79,7 @@ def train():
     os.makedirs(summary_dir)
 
     start = now()
-    dataset = SiameseDataset(
+    dataset = SiameseDatasetTrain(
         patch_size=config_siamese.patch_size,
         raw_channel=config_siamese.raw_channel,
         mask_channel=config_siamese.mask_channel,
