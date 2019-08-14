@@ -94,3 +94,18 @@ class SiameseVgg3d(torch.nn.Module):
         output1 = self.forward_once(input1)
         output2 = self.forward_once(input2)
         return output1, output2
+
+    def train(self, mode=True):
+        """
+        on top of pytorch's module mode, change the `requires_grad`
+        attribute of all module parameters
+        Args:
+            mode (bool): True = train, False = eval
+
+        Returns:
+
+        """
+        ret = super().train(mode=mode)
+        for param in self.parameters():
+            param.requires_grad = mode
+        return ret

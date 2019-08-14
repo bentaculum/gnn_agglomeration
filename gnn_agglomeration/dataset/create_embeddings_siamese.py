@@ -93,11 +93,16 @@ def create_embeddings():
     # dicts
     model.to(device)
     model.load_state_dict(checkpoint['model_state_dict'])
-    logger.info(f'load model in {now() - start} s')
 
     total_params = sum(p.numel()
-                       for p in model.parameters() if p.requires_grad)
-    logger.info(f"number of diff'able params: {total_params}")
+                       for p in model.parameters())
+    logger.info(f"number of params: {total_params}")
+
+    model.eval()
+    trainable_params = sum(p.numel()
+                           for p in model.parameters() if p.requires_grad)
+    logger.debug(f'number of trainable params: {trainable_params}')
+    logger.info(f'load model in {now() - start} s')
 
     # limited number of samples
     samples_count = 0
