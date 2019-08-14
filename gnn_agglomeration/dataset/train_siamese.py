@@ -71,6 +71,7 @@ def atexit_tasks(loss, writer, summary_dir):
 
 
 def train():
+    logger.info('start training function')
     timestamp = datetime.datetime.now(
         pytz.timezone('US/Eastern')).strftime('%Y%m%dT%H%M%S.%f%z')
 
@@ -146,6 +147,7 @@ def train():
     else:
         writer = None
 
+    logger.info('start training loop')
     samples_count = 0
     for i, data in enumerate(dataloader):
         start_batch = now()

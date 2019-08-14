@@ -14,7 +14,7 @@ from . import utils  # noqa
 from config import config  # noqa
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 # logging.getLogger('gunpowder.nodes.').setLevel(logging.DEBUG)
 
 
@@ -147,71 +147,19 @@ class SiameseDataset(torch.utils.data.Dataset, ABC):
                 labels_array = batch[self.labels_key].data
                 # logger.debug(f'labels_array shape {labels_array.shape}')
                 labels_array = (labels_array == node_id).astype(np.float32)
+                # sanity check: is there overlap?
+                # TODO request new pair if fragment not contained
+                logger.debug(f'overlap: {labels_array.sum()} voxels')
                 channels.append(labels_array)
 
             tensor = torch.tensor(channels, dtype=torch.float)
-            # Add the `channel`-dimension
-            if len(channels) == 1:
-                tensor = tensor.unsqueeze(0)
+
+            # Not necessary: Add the `channel`-dimension
+            # if len(channels) == 1:
+            # tensor = tensor.unsqueeze(0)
 
             return tensor
 
+    @abstractmethod
     def __getitem__(self, index):
-        """
-        Args:
-
-            index(int): number of edge in dataset to load
-
-        Returns:
-            a pair of volumetric patches for the two incident nodes,
-            plus the corresponding label
-
-        """
-        start_getitem = now()
-
-        edge_score = self.edges_attrs[config.new_edge_attr_trinary][index]
-
-        # get the two incident nodes
-        node1_id = self.edges_attrs[self.node1_field][index]
-        node2_id = self.edges_attrs[self.node2_field][index]
-        # weird numpy syntax
-        node1_index = np.where(
-            self.nodes_attrs[self.id_field] == node1_id)[0][0]
-        node2_index = np.where(
-            self.nodes_attrs[self.id_field] == node2_id)[0][0]
-
-        node1_center = (
-            self.nodes_attrs['center_z'][node1_index],
-            self.nodes_attrs['center_y'][node1_index],
-            self.nodes_attrs['center_x'][node1_index])
-        node2_center = (
-            self.nodes_attrs['center_z'][node2_index],
-            self.nodes_attrs['center_y'][node2_index],
-            self.nodes_attrs['center_x'][node2_index])
-
-        node1_patch = self.get_patch(center=node1_center, node_id=node1_id)
-        node2_patch = self.get_patch(center=node2_center, node_id=node2_id)
-
-        if node1_patch is None or node2_patch is None:
-            logger.warning(
-                f'patch for one of the nodes is not fully contained in ROI, try again')
-            # Sample a new index, using the sample weights again
-            new_index = torch.multinomial(
-                input=self.samples_weights,
-                num_samples=1,
-                replacement=True).item()
-            return self.__getitem__(index=new_index)
-
-        input0 = node1_patch.float()
-        input1 = node2_patch.float()
-
-        if edge_score == 0:
-            label = torch.tensor(1.0)
-        elif edge_score == 1:
-            label = torch.tensor(-1.0)
-        else:
-            raise ValueError(
-                f'Value {edge_score} cannot be transformed into a valid label')
-
-        logger.debug(f'__getitem__ in {now() - start_getitem} s')
-        return input0, input1, label
+        pass

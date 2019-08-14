@@ -86,19 +86,22 @@ class SiameseDatasetTrain(SiameseDataset):
                 # TODO adjust subsample value for speed
                 subsample=8) +
             # TODO do not use transpose, currently buggy
-            SimpleAugment(transpose_only=[]) +
-            IntensityAugment(self.raw_key, 0.9, 1.1, -0.1, 0.1) +
-            IntensityScaleShift(self.raw_key, 2, -1)  # +
-            # at least for debugging:
-            # Snapshot({
-            # self.raw_key: 'volumes/raw',
-            # self.labels_key: 'volumes/labels'
-            # },
-            # every=100,
-            # output_dir='snapshots',
-            # output_filename=f'sample_{now()}.hdf')
-            # PrintProfilingStats(every=1)
+            SimpleAugment(transpose_only=[])
         )
+        if self.raw_channel:
+            pipeline += (
+                IntensityAugment(self.raw_key, 0.9, 1.1, -0.1, 0.1) +
+                IntensityScaleShift(self.raw_key, 2, -1)  # +
+                # at least for debugging:
+                # Snapshot({
+                # self.raw_key: 'volumes/raw',
+                # self.labels_key: 'volumes/labels'
+                # },
+                # every=100,
+                # output_dir='snapshots',
+                # output_filename=f'sample_{now()}.hdf')
+                # PrintProfilingStats(every=1)
+            )
 
     def __getitem__(self, index):
         """
