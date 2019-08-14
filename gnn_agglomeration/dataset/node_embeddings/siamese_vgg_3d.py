@@ -66,6 +66,7 @@ class SiameseVgg3d(torch.nn.Module):
 
         num_features = int(current_size[0] * current_size[1] * current_size[2] * current_fmaps),
         logger.info(f'inputs to fc layer: {num_features}')
+
         fully_connected = [
             torch.nn.Linear(
                 int(current_size[0] * current_size[1] * current_size[2] * current_fmaps),
