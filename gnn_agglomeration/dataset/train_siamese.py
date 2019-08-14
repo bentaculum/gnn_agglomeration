@@ -17,13 +17,12 @@ from node_embeddings.siamese_dataset_train import SiameseDatasetTrain  # noqa
 from node_embeddings.siamese_vgg_3d import SiameseVgg3d  # noqa
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 logging.basicConfig(level=logging.INFO)
 
 
 def save(model, optimizer, model_dir, iteration):
     """
-    TODO
     Should only be called after the end of a training+validation epoch
     Args:
         model:
@@ -42,15 +41,18 @@ def save(model, optimizer, model_dir, iteration):
         os.remove(os.path.join(model_dir, checkpoint_versions[0]))
 
     # save the new one
+    model_tar = osp.join(model_dir, f'iteration_{iteration}.tar')
+    logger.info(f'saving model to {model_tar} ...')
     torch.save({
         'epoch': iteration,
         'model_state_dict': model.state_dict(),
         'optimizer_state_dict': optimizer.state_dict(),
-    }, osp.join(model_dir, f'iteration_{iteration}.tar'))
+    }, model_tar)
 
     # save config file
     parser_siamese.write_config_file(
         parsed_namespace=config_siamese,
+        # TODO write is reported three times, but seems to work fine
         output_file_paths=[osp.join(model_dir, 'config.ini')],
         exit_after=False
     )
@@ -100,7 +102,6 @@ def train():
         sampler=sampler,
         batch_size=config_siamese.batch_size,
         num_workers=config_siamese.num_workers_dataloader,
-        # TODO check whether pinning memory makes sense
         pin_memory=True,
         worker_init_fn=lambda idx: np.random.seed()
     )
@@ -147,14 +148,13 @@ def train():
 
     samples_count = 0
     for i, data in enumerate(dataloader):
-
-        if samples_count >= config_siamese.training_samples:
-            break
-
+        start_batch = now()
         logger.info(f'batch {i} ...')
+
         input0, input1, labels = data
         unique_labels = labels.unique()
-        counts = [len(np.where(labels.numpy() == l.item())[0]) for l in unique_labels]
+        counts = [len(np.where(labels.numpy() == l.item())[0])
+                  for l in unique_labels]
         for l, c in zip(unique_labels.tolist(), counts):
             logger.debug(f'# class {int(l)}: {int(c)}')
 
@@ -196,17 +196,20 @@ def train():
         loss.backward()
         optimizer.step()
 
-        samples_count += config_siamese.batch_size
+        logger.info(f'batch {i} done in {now() - start_batch} s')
 
         # save model
-        if i % config_siamese.checkpoint_interval == 0:
-            logger.info('Saving model ...')
+        if i % config_siamese.checkpoint_interval == 0 and i > 0:
             save(
                 model=model,
                 optimizer=optimizer,
                 model_dir=model_dir,
                 iteration=i
             )
+
+        samples_count += config_siamese.batch_size
+        if samples_count >= config_siamese.training_samples:
+            break
 
 
 if __name__ == '__main__':
