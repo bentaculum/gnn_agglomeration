@@ -7,6 +7,7 @@ import os.path as osp
 from time import time as now
 import datetime
 import pytz
+import re
 
 from node_embeddings.config_siamese import config as config_siamese, p as parser_siamese  # noqa
 from config import config  # noqa
@@ -29,6 +30,7 @@ def create_embeddings():
         raw_channel=config_siamese.raw_channel,
         mask_channel=config_siamese.mask_channel,
         num_workers=config.num_workers,
+        inference_samples=config_siamese.inference_samples
     )
     logger.info(f'init dataset in {now() - start} s')
 
@@ -49,18 +51,22 @@ def create_embeddings():
 
     start = now()
 
-    if config_siamese['load_model'] == 'latest':
+    if config_siamese.load_model == 'latest':
         # find latest model in the runs path
         # TODO filter for correct format of directory name, instead of
         # '2019'
         runs = sorted([name for name in os.listdir(
             config_siamese.runs_dir) if name.startswith('2019')])
 
-        run_path = runs[-1]
+        run_path = osp.join(config_siamese.runs_dir, runs[-1])
     else:
-        run_path = config_siamese['load_model']
+        run_path = config_siamese.load_model
 
-    # find latest state of model
+    # find latest state of the model
+    def extract_number(f):
+        s = re.findall("\d+", f)
+        return (int(s[0]) if s else -1, f)
+
     load_model_dir = os.path.join(run_path, 'model')
     checkpoint_versions = [name for name in os.listdir(
         load_model_dir) if name.endswith('.tar')]
@@ -68,11 +74,11 @@ def create_embeddings():
         if 'final.tar' in checkpoint_versions:
             checkpoint_to_load = 'final.tar'
         else:
-            checkpoint_versions = sorted([
-                x for x in checkpoint_versions if x.startswith('iteration')])
-            checkpoint_to_load = checkpoint_versions[-1]
+            checkpoint_versions = [
+                v for v in checkpoint_versions if v.startswith('iteration')]
+            checkpoint_to_load = max(checkpoint_versions, key=extract_number)
     else:
-        checkpoint_to_load = f'config.load_model_version'
+        checkpoint_to_load = config.load_model_version
 
     logger.info(f'Load model {run_path}, checkpoint {checkpoint_to_load}')
     checkpoint = torch.load(os.path.join(
@@ -111,13 +117,12 @@ def create_embeddings():
     else:
         samples_limit = int(config_siamese.inference_samples)
 
-    # ----------- training loop -----------
+    # ----------- inference loop -----------
     node_ids = []
     embeddings = []
 
+    logger.info('start inference loop')
     for i, data in enumerate(dataloader):
-        if samples_count >= samples_limit:
-            break
 
         logger.info(f'batch {i} ...')
         patches, node_ids_batch = data
@@ -129,10 +134,12 @@ def create_embeddings():
 
         out = model.forward_once(patches)
 
-        node_ids.extend(node_ids_batch)
-        embeddings.extend(list(out.numpy()))
+        node_ids.extend(list(node_ids_batch.numpy()))
+        embeddings.extend(list(out.cpu().numpy()))
 
         samples_count += config_siamese.batch_size
+        if samples_count >= samples_limit:
+            break
 
     dataset.write_embeddings_to_db(
         node_ids=node_ids,

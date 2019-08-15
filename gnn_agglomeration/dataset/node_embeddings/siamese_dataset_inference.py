@@ -13,7 +13,7 @@ from .siamese_dataset import SiameseDataset  # noqa
 from config import config  # noqa
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 # logging.getLogger('gunpowder.nodes').setLevel(logging.DEBUG)
 
 
@@ -22,7 +22,7 @@ class SiameseDatasetInference(SiameseDataset):
     Each data point is one patch + node id
     """
 
-    def __init__(self, patch_size, raw_channel, mask_channel, num_workers=5):
+    def __init__(self, patch_size, raw_channel, mask_channel, num_workers=5, inference_samples='all'):
         """
         connect to db, load and weed out edges, define gunpowder pipeline
         Args:
@@ -31,6 +31,7 @@ class SiameseDatasetInference(SiameseDataset):
             mask_channel (bool): if set true, load patch from fragments volumetric data
             num_workers (int): number of workers available, e.g. for loading RAG
         """
+        self.inference_samples = inference_samples
         super().__init__(
             patch_size=patch_size,
             raw_channel=raw_channel,
@@ -63,18 +64,20 @@ class SiameseDatasetInference(SiameseDataset):
 
         self.pipeline = (
             self.sources +
-            MergeProvider() +
-            IntensityScaleShift(self.raw_key, 2, -1) +
-            # at least for debugging:
-            Snapshot({
-                self.raw_key: 'volumes/raw',
-                self.labels_key: 'volumes/labels'
-            },
-                every=100,
-                output_dir='snapshots',
-                output_filename=f'sample_{now()}.hdf')
-            # PrintProfilingStats(every=1)
+            MergeProvider()
         )
+
+        if self.raw_channel:
+            self.pipeline + IntensityScaleShift(self.raw_key, 2, -1)  # +
+            # at least for debugging:
+            # Snapshot({
+            # self.raw_key: 'volumes/raw',
+            # self.labels_key: 'volumes/labels'
+            # },
+            # every=100,
+            # output_dir='snapshots',
+            # output_filename=f'sample_{now()}.hdf')
+            # PrintProfilingStats(every=1)
 
     def __getitem__(self, index):
         """
@@ -98,7 +101,7 @@ class SiameseDatasetInference(SiameseDataset):
         patch = self.get_patch(center=node_center, node_id=node_id)
 
         logger.debug(f'__getitem__ in {now() - start_getitem} s')
-        return patch.float(), node_id
+        return patch.float(), torch.tensor(node_id.astype(np.int64))
 
     def write_embeddings_to_db(self, node_ids, embeddings, collection_name):
         start = now()
@@ -106,9 +109,10 @@ class SiameseDatasetInference(SiameseDataset):
         db = client[config.db_name]
 
         logger.info(
-            f'''num nodes in ROI {len(self.nodes_attrs[self.node1_field])}, 
+            f'''num nodes in ROI {len(self.nodes_attrs[self.id_field])},
             num embeddings {len(embeddings)}''')
-        assert len(self.nodes_attrs[self.node1_field]) == len(embeddings)
+        if self.inference_samples == 'all':
+            assert len(self.nodes_attrs[self.id_field]) == len(embeddings)
 
         collection = db[collection_name]
 
