@@ -201,7 +201,8 @@ def train():
         loss.backward()
         optimizer.step()
 
-        logger.info(f'batch {i} done in {now() - start_batch} s')
+        # print(f'batch {i} done in {now() - start_batch} s', end='\r')
+        logging.info(f'batch {i} done in {now() - start_batch} s')
 
         # save model
         if i % config_siamese.checkpoint_interval == 0 and i > 0:
