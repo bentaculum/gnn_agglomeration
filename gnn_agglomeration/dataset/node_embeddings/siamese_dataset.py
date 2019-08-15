@@ -136,7 +136,7 @@ class SiameseDataset(torch.utils.data.Dataset, ABC):
         if self.mask_channel:
             request[self.labels_key] = ArraySpec(roi=roi)
 
-        batch = self.built_pipeline.request_batch(request)
+        batch = self.batch_provider.request_batch(request)
 
         channels = []
         if self.raw_channel:

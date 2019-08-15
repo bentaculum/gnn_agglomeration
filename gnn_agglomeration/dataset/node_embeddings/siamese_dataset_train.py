@@ -59,13 +59,13 @@ class SiameseDatasetTrain(SiameseDataset):
         self.labels_key = ArrayKey('LABELS')
 
         self.sources = (
-            ZarrSource(
+            InMemZarrSource(
                 config.groundtruth_zarr,
                 datasets={self.raw_key: config.raw_ds},
                 array_specs={self.raw_key: ArraySpec(interpolatable=True)}) +
             Normalize(self.raw_key) +
             Pad(self.raw_key, None, value=0),
-            ZarrSource(
+            InMemZarrSource(
                 config.fragments_zarr,
                 datasets={self.labels_key: config.fragments_ds},
                 array_specs={self.labels_key: ArraySpec(interpolatable=True)}) +
@@ -80,7 +80,8 @@ class SiameseDatasetTrain(SiameseDataset):
                 control_point_spacing=[40, 40, 40],
                 # copied from /groups/funke/funkelab/sheridana/lsd_experiments/hemi/02_train/setup01/train.py
                 jitter_sigma=[2, 2, 2],
-                rotation_interval=[0, 0],  # indep. rotation of two cropouts does not help
+                # indep. rotation of two cropouts does not help
+                rotation_interval=[0, 0],
                 prob_slip=0.0,
                 prob_shift=0.0,
                 max_misalign=0,
@@ -91,7 +92,6 @@ class SiameseDatasetTrain(SiameseDataset):
             PrintProfilingStats(every=1)
         )
 
-        # TODO this syntax does not work somehow
         if self.raw_channel:
             self.pipeline + \
                 IntensityAugment(self.raw_key, 0.9, 1.1, - 0.1, 0.1) + \
@@ -107,8 +107,11 @@ class SiameseDatasetTrain(SiameseDataset):
         # output_filename=f'sample_{now()}.hdf')
         # )
 
-        self.built_pipeline = build(self.pipeline)
-        self.built_pipeline.__enter__()
+        logger.info('start building pipeline')
+        start = now()
+        built_pipeline = build(self.pipeline)
+        self.batch_provider = built_pipeline.__enter__()
+        logger.info(f'built pipeline in {now() - start} s')
 
     def __getitem__(self, index):
         """

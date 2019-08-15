@@ -220,7 +220,7 @@ def train():
 
     logger.info(
         f'training {samples_count} samples took {now() - start_training} s')
-    dataset.built_pipeline.__exit__()
+    dataset.batch_provider.__exit__()
 
 
 if __name__ == '__main__':

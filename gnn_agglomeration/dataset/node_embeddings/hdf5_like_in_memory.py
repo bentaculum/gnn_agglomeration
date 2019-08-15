@@ -25,10 +25,19 @@ class Hdf5InMemory(Hdf5LikeSource):
             for (array_key, ds_name) in self.datasets.items():
 
                 if ds_name not in data_file:
-                    raise RuntimeError("%s not in %s" % (ds_name, self.filename))
+                    raise RuntimeError("%s not in %s" %
+                                       (ds_name, self.filename))
 
-                spec = self._Hdf5LikeSource__read_spec(array_key, data_file, ds_name)
+                spec = self._Hdf5LikeSource__read_spec(
+                    array_key, data_file, ds_name)
+                # logger.info(spec)
+                # logger.info(spec.roi)
+                # logger.info(spec.roi.get_offset())
+                # logger.info((spec.roi - spec.roi.get_offset()) /
+                # spec.voxel_size)
 
+                logger.info(
+                    f'start reading {data_file}, {ds_name} into memory')
                 self.in_mem_datasets[array_key] = self._Hdf5LikeSource__read(
                     data_file,
                     self.datasets[array_key],
@@ -50,7 +59,8 @@ class Hdf5InMemory(Hdf5LikeSource):
 
             # shift request roi into dataset
             dataset_roi = (
-                dataset_roi - self.spec[array_key].roi.get_offset() / voxel_size
+                dataset_roi -
+                self.spec[array_key].roi.get_offset() / voxel_size
             )
 
             # create array spec
@@ -74,11 +84,14 @@ class Hdf5InMemory(Hdf5LikeSource):
         c = len(in_mem_array.shape) - self.ndims
 
         if self.channels_first:
-            array = np.asarray(in_mem_array[(slice(None),) * c + roi.to_slices()])
+            array = np.asarray(
+                in_mem_array[(slice(None),) * c + roi.to_slices()])
         else:
-            array = np.asarray(in_mem_array[roi.to_slices() + (slice(None),) * c])
+            array = np.asarray(
+                in_mem_array[roi.to_slices() + (slice(None),) * c])
             array = np.transpose(
-                array, axes=[i + self.ndims for i in range(c)] + list(range(self.ndims))
+                array, axes=[
+                    i + self.ndims for i in range(c)] + list(range(self.ndims))
             )
 
         return array
