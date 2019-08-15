@@ -19,7 +19,7 @@ logger.setLevel(logging.INFO)
 
 
 class SiameseDataset(torch.utils.data.Dataset, ABC):
-    def __init__(self, patch_size, raw_channel, mask_channel, num_workers=5):
+    def __init__(self, patch_size, raw_channel, mask_channel, num_workers=5, in_memory=True):
         """
         connect to db, load and weed out edges, define gunpowder pipeline
         Args:
@@ -32,6 +32,7 @@ class SiameseDataset(torch.utils.data.Dataset, ABC):
         self.raw_channel = raw_channel
         self.mask_channel = mask_channel
         self.num_workers = num_workers
+        self.in_memory = in_memory
         assert raw_channel or mask_channel
 
         self.load_rag()

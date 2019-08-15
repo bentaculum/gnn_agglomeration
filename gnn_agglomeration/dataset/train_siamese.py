@@ -35,7 +35,7 @@ def save(model, optimizer, model_dir, iteration):
     """
     # delete older models
     checkpoint_versions = [name for name in os.listdir(model_dir) if (
-        name.endswith('.tar') and name.startswith('iteration'))]
+            name.endswith('.tar') and name.startswith('iteration'))]
     if len(checkpoint_versions) >= 3:
         checkpoint_versions.sort()
         os.remove(os.path.join(model_dir, checkpoint_versions[0]))
@@ -70,6 +70,44 @@ def atexit_tasks(loss, writer, summary_dir):
     logger.info(f'training loss: {loss}')
 
 
+def write_variable_to_summary(writer, iteration, var, namespace, var_name):
+    """
+    TODO
+    Write summary statistics for a Tensor (for tensorboardX visualization)
+    """
+    # plot gradients of weights
+    grad = var.grad
+    if grad is not None:
+        grad_mean = torch.mean(grad)
+        writer.add_scalar(
+            osp.join(namespace, var_name, 'gradients_mean'),
+            grad_mean,
+            iteration)
+        grad_stddev = torch.std(grad)
+        writer.add_scalar(
+            osp.join(namespace, var_name, 'gradients_stddev'),
+            grad_stddev,
+            iteration)
+
+        writer.add_histogram(
+            osp.join(namespace, var_name, 'gradients'), grad, iteration)
+
+    mean = torch.mean(var.data)
+    writer.add_scalar(
+        osp.join(namespace, var_name, 'mean'),
+        mean,
+        iteration)
+    stddev = torch.std(var.data)
+    writer.add_scalar(
+        osp.join(namespace, var_name, 'stddev'),
+        stddev,
+        iteration)
+    writer.add_histogram(
+        osp.join(namespace, var_name),
+        var.data,
+        iteration)
+
+
 def train():
     logger.info('start training function')
     timestamp = datetime.datetime.now(
@@ -87,6 +125,7 @@ def train():
         raw_channel=config_siamese.raw_channel,
         mask_channel=config_siamese.mask_channel,
         num_workers=config.num_workers,
+        in_memory=config_siamese.in_memory
     )
     logger.info(f'init dataset in {now() - start} s')
 
@@ -112,11 +151,21 @@ def train():
     logger.info(f'device: {device}')
 
     start = now()
+
+    # init tensorboard summary writer
+    if config_siamese.summary:
+        writer = torch.utils.tensorboard.SummaryWriter(
+            log_dir=osp.join(config_siamese.runs_dir, timestamp, 'summary')
+        )
+    else:
+        writer = None
+
     model = SiameseVgg3d(
+        writer=writer,
         input_size=np.array(config_siamese.patch_size) /
-        np.array(config.voxel_size),
+                   np.array(config.voxel_size),
         input_fmaps=int(config_siamese.raw_channel) +
-        int(config_siamese.mask_channel),
+                    int(config_siamese.mask_channel),
         fmaps=config_siamese.fmaps,
         fmaps_max=config_siamese.fmaps_max,
         output_features=config_siamese.output_features,
@@ -140,12 +189,6 @@ def train():
         reduction='mean'
     )
 
-    if config_siamese.summary:
-        writer = torch.utils.tensorboard.SummaryWriter(
-            log_dir=osp.join(config_siamese.runs_dir, timestamp, 'summary')
-        )
-    else:
-        writer = None
 
     logger.info('start training loop')
     samples_count = 0
@@ -176,6 +219,28 @@ def train():
             input2=out1,
             target=labels
         )
+
+        # write to tensorboard
+        if config_siamese.summary:
+            for num_module, module in enumerate(model.features):
+                try:
+                    write_variable_to_summary(
+                        writer=writer,
+                        iteration=i,
+                        var=module.weight,
+                        namespace=num_module,
+                        var_name=f'{module._get_name()}/weight'
+                    )
+                    write_variable_to_summary(
+                        writer=writer,
+                        iteration=i,
+                        var=module.bias,
+                        namespace=num_module,
+                        var_name=f'{module._get_name()}/bias'
+                    )
+                except AttributeError:
+                    pass
+
 
         # TODO not sure if that's the intended use
         # register exit routines, in case there is an interrupt, e.g. via keyboard

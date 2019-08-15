@@ -33,6 +33,9 @@ p.add('--summary_interval', type=int)
 p.add('--checkpoint_interval', type=int)
 
 p.add(
+    '--in_memory', type=str2bool,
+    help='entire zarr dataset can be loaded into memory for faster batch requests')
+p.add(
     '--num_workers_dataloader', type=int)
 p.add(
     '--training_samples', type=int,

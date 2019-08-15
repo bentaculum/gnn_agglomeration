@@ -6,7 +6,6 @@ from time import time as now
 import math
 
 from .siamese_dataset import SiameseDataset  # noqa
-from .hdf5_like_in_memory import InMemZarrSource  # noqa
 
 # dataset configs for many params
 from config import config  # noqa
@@ -21,7 +20,7 @@ class SiameseDatasetTrain(SiameseDataset):
     Each data point is actually a mini-batch of volume pairs
     """
 
-    def __init__(self, patch_size, raw_channel, mask_channel, num_workers=5):
+    def __init__(self, patch_size, raw_channel, mask_channel, num_workers=5, in_memory=True):
         """
         connect to db, load and weed out edges, define gunpowder pipeline
         Args:
@@ -35,7 +34,8 @@ class SiameseDatasetTrain(SiameseDataset):
             patch_size=patch_size,
             raw_channel=raw_channel,
             mask_channel=mask_channel,
-            num_workers=num_workers
+            num_workers=num_workers,
+            in_memory=in_memory
         )
 
         # assign dataset length
@@ -58,14 +58,17 @@ class SiameseDatasetTrain(SiameseDataset):
         self.raw_key = ArrayKey('RAW')
         self.labels_key = ArrayKey('LABELS')
 
+        if self.in_memory:
+            from .hdf5_like_in_memory import InMemZarrSource as ZarrSource  # noqa
+
         self.sources = (
-            InMemZarrSource(
+            ZarrSource(
                 config.groundtruth_zarr,
                 datasets={self.raw_key: config.raw_ds},
                 array_specs={self.raw_key: ArraySpec(interpolatable=True)}) +
             Normalize(self.raw_key) +
             Pad(self.raw_key, None, value=0),
-            InMemZarrSource(
+            ZarrSource(
                 config.fragments_zarr,
                 datasets={self.labels_key: config.fragments_ds},
                 array_specs={self.labels_key: ArraySpec(interpolatable=True)}) +
