@@ -1,5 +1,6 @@
 import logging
 import numpy as np
+from time import time as now
 
 from gunpowder.batch import Batch
 from gunpowder.profiling import Timing
@@ -36,13 +37,16 @@ class Hdf5InMemory(Hdf5LikeSource):
                 # logger.info((spec.roi - spec.roi.get_offset()) /
                 # spec.voxel_size)
 
+                start = now()
                 logger.info(
-                    f'start reading {data_file}, {ds_name} into memory')
+                    f'start loading {ds_name} into memory')
                 self.in_mem_datasets[array_key] = self._Hdf5LikeSource__read(
                     data_file,
                     self.datasets[array_key],
                     (spec.roi - spec.roi.get_offset()) / spec.voxel_size,
                 )
+                logger.info(
+                    f'loaded {ds_name} into memory in {now() - start} s')
 
     def provide(self, request):
 

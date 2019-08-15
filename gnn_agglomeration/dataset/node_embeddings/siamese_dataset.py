@@ -115,8 +115,8 @@ class SiameseDataset(torch.utils.data.Dataset, ABC):
     def build_pipeline(self):
         logger.info('start building pipeline')
         start = now()
-        built_pipeline = build(self.pipeline)
-        self.batch_provider = built_pipeline.__enter__()
+        self.built_pipeline = build(self.pipeline)
+        self.batch_provider = self.built_pipeline.__enter__()
         logger.info(f'built pipeline in {now() - start} s')
 
     def __len__(self):
