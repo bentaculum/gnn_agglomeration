@@ -14,7 +14,7 @@ from . import utils  # noqa
 from config import config  # noqa
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 # logging.getLogger('gunpowder.nodes.').setLevel(logging.DEBUG)
 
 
@@ -148,7 +148,8 @@ class SiameseDataset(torch.utils.data.Dataset, ABC):
                 # logger.debug(f'labels_array shape {labels_array.shape}')
                 labels_array = (labels_array == node_id).astype(np.float32)
                 # sanity check: is there overlap?
-                # TODO request new pair if fragment not contained
+                # TODO request new pair if fragment not contained?
+                # No,because that's also going to appear in the inference
                 logger.debug(f'overlap: {labels_array.sum()} voxels')
                 channels.append(labels_array)
 
