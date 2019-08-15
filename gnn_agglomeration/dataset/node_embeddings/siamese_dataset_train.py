@@ -6,10 +6,10 @@ from time import time as now
 import math
 
 from .siamese_dataset import SiameseDataset  # noqa
+from .hdf5_like_in_memory import InMemZarrSource  # noqa
 
 # dataset configs for many params
 from config import config  # noqa
-from node_embeddings.hdf5_like_in_memory import InMemZarrSource
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -86,10 +86,10 @@ class SiameseDatasetTrain(SiameseDataset):
                 prob_shift=0.0,
                 max_misalign=0,
                 # TODO adjust subsample value for speed
-                subsample=8) +
+                subsample=8)  # +
             # TODO do not use transpose, currently buggy
             # SimpleAugment(transpose_only=[]) +
-            PrintProfilingStats(every=1)
+            # PrintProfilingStats(every=1)
         )
 
         if self.raw_channel:
@@ -106,12 +106,6 @@ class SiameseDatasetTrain(SiameseDataset):
         # output_dir='snapshots',
         # output_filename=f'sample_{now()}.hdf')
         # )
-
-        logger.info('start building pipeline')
-        start = now()
-        built_pipeline = build(self.pipeline)
-        self.batch_provider = built_pipeline.__enter__()
-        logger.info(f'built pipeline in {now() - start} s')
 
     def __getitem__(self, index):
         """

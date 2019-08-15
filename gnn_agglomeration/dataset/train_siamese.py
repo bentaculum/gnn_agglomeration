@@ -220,6 +220,7 @@ def train():
 
     logger.info(
         f'training {samples_count} samples took {now() - start_training} s')
+
     dataset.batch_provider.__exit__()
 
 

@@ -36,6 +36,7 @@ class SiameseDataset(torch.utils.data.Dataset, ABC):
 
         self.load_rag()
         self.init_pipeline()
+        self.build_pipeline()
 
     def load_rag(self):
         # TODO parametrize the used names
@@ -111,6 +112,13 @@ class SiameseDataset(torch.utils.data.Dataset, ABC):
     def init_pipeline(self):
         pass
 
+    def build_pipeline(self):
+        logger.info('start building pipeline')
+        start = now()
+        built_pipeline = build(self.pipeline)
+        self.batch_provider = built_pipeline.__enter__()
+        logger.info(f'built pipeline in {now() - start} s')
+
     def __len__(self):
         return self.len
 
@@ -129,7 +137,7 @@ class SiameseDataset(torch.utils.data.Dataset, ABC):
         roi = Roi(offset=offset, shape=self.patch_size)
         roi = roi.snap_to_grid(Coordinate(config.voxel_size), mode='closest')
         # logger.debug(f'ROI snapped to grid: {roi}')
-        # with build(self.pipeline) as p:
+
         request = BatchRequest()
         if self.raw_channel:
             request[self.raw_key] = ArraySpec(roi=roi)

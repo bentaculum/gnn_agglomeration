@@ -8,9 +8,11 @@ import bson
 import pickle
 
 from .siamese_dataset import SiameseDataset  # noqa
+from .hdf5_like_in_memory import InMemZarrSource  # noqa
 
 # dataset configs for many params
 from config import config  # noqa
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -48,14 +50,14 @@ class SiameseDatasetInference(SiameseDataset):
         self.labels_key = ArrayKey('LABELS')
 
         self.sources = (
-            ZarrSource(
+            InMemZarrSource(
                 config.groundtruth_zarr,
                 datasets={self.raw_key: config.raw_ds},
                 array_specs={self.raw_key: ArraySpec(interpolatable=True)}) +
             Normalize(self.raw_key) +
             Pad(self.raw_key, None, value=0),
             # interpolatable?
-            ZarrSource(
+            InMemZarrSource(
                 config.fragments_zarr,
                 datasets={self.labels_key: config.fragments_ds},
                 array_specs={self.labels_key: ArraySpec(interpolatable=True)}) +
