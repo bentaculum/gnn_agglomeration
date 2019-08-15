@@ -149,9 +149,10 @@ def train():
 
     logger.info('start training loop')
     samples_count = 0
+    start_training = now()
     for i, data in enumerate(dataloader):
         start_batch = now()
-        logger.info(f'batch {i} ...')
+        logger.debug(f'batch {i} ...')
 
         input0, input1, labels = data
         unique_labels = labels.unique()
@@ -188,12 +189,14 @@ def train():
 
         # TODO move to subprocess for speed?
         if config_siamese.summary:
+            start = now()
             if i % config_siamese.summary_interval == 0:
                 writer.add_scalar(
                     tag='loss',
                     scalar_value=loss,
                     global_step=i
                 )
+            logger.debug(f'write to summary in {now() - start}')
 
         loss.backward()
         optimizer.step()
@@ -202,16 +205,21 @@ def train():
 
         # save model
         if i % config_siamese.checkpoint_interval == 0 and i > 0:
+            start = now()
             save(
                 model=model,
                 optimizer=optimizer,
                 model_dir=model_dir,
                 iteration=i
             )
+            logger.debug(f'save checkpoint in {now() - start}')
 
         samples_count += config_siamese.batch_size
         if samples_count >= config_siamese.training_samples:
             break
+
+    logger.info(
+        f'training {samples_count} samples took {now() - start_training} s')
 
 
 if __name__ == '__main__':
