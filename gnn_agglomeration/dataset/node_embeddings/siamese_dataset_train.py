@@ -9,6 +9,7 @@ from .siamese_dataset import SiameseDataset  # noqa
 
 # dataset configs for many params
 from config import config  # noqa
+from node_embeddings.hdf5_like_in_memory import InMemZarrSource
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -58,13 +59,13 @@ class SiameseDatasetTrain(SiameseDataset):
         self.labels_key = ArrayKey('LABELS')
 
         self.sources = (
-            ZarrSource(
+            InMemZarrSource(
                 config.groundtruth_zarr,
                 datasets={self.raw_key: config.raw_ds},
                 array_specs={self.raw_key: ArraySpec(interpolatable=True)}) +
             Normalize(self.raw_key) +
             Pad(self.raw_key, None, value=0),
-            ZarrSource(
+            InMemZarrSource(
                 config.fragments_zarr,
                 datasets={self.labels_key: config.fragments_ds},
                 array_specs={self.labels_key: ArraySpec(interpolatable=True)}) +
