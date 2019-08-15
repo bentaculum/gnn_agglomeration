@@ -59,13 +59,13 @@ class SiameseDatasetTrain(SiameseDataset):
         self.labels_key = ArrayKey('LABELS')
 
         self.sources = (
-            InMemZarrSource(
+            ZarrSource(
                 config.groundtruth_zarr,
                 datasets={self.raw_key: config.raw_ds},
                 array_specs={self.raw_key: ArraySpec(interpolatable=True)}) +
             Normalize(self.raw_key) +
             Pad(self.raw_key, None, value=0),
-            InMemZarrSource(
+            ZarrSource(
                 config.fragments_zarr,
                 datasets={self.labels_key: config.fragments_ds},
                 array_specs={self.labels_key: ArraySpec(interpolatable=True)}) +
@@ -80,14 +80,14 @@ class SiameseDatasetTrain(SiameseDataset):
                 control_point_spacing=[40, 40, 40],
                 # copied from /groups/funke/funkelab/sheridana/lsd_experiments/hemi/02_train/setup01/train.py
                 jitter_sigma=[2, 2, 2],
-                rotation_interval=[0, math.pi / 2.0],
+                rotation_interval=[0, 0],  # indep. rotation of two cropouts does not help
                 prob_slip=0.0,
                 prob_shift=0.0,
                 max_misalign=0,
                 # TODO adjust subsample value for speed
                 subsample=8) +
             # TODO do not use transpose, currently buggy
-            SimpleAugment(transpose_only=[]) +
+            # SimpleAugment(transpose_only=[]) +
             PrintProfilingStats(every=1)
         )
 
@@ -106,6 +106,9 @@ class SiameseDatasetTrain(SiameseDataset):
         # output_dir='snapshots',
         # output_filename=f'sample_{now()}.hdf')
         # )
+
+        self.built_pipeline = build(self.pipeline)
+        self.built_pipeline.__enter__()
 
     def __getitem__(self, index):
         """

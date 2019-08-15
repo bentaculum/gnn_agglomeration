@@ -129,37 +129,37 @@ class SiameseDataset(torch.utils.data.Dataset, ABC):
         roi = Roi(offset=offset, shape=self.patch_size)
         roi = roi.snap_to_grid(Coordinate(config.voxel_size), mode='closest')
         # logger.debug(f'ROI snapped to grid: {roi}')
-        with build(self.pipeline) as p:
-            request = BatchRequest()
-            if self.raw_channel:
-                request[self.raw_key] = ArraySpec(roi=roi)
-            if self.mask_channel:
-                request[self.labels_key] = ArraySpec(roi=roi)
+        # with build(self.pipeline) as p:
+        request = BatchRequest()
+        if self.raw_channel:
+            request[self.raw_key] = ArraySpec(roi=roi)
+        if self.mask_channel:
+            request[self.labels_key] = ArraySpec(roi=roi)
 
-            batch = p.request_batch(request)
+        batch = self.built_pipeline.request_batch(request)
 
-            channels = []
-            if self.raw_channel:
-                raw_array = batch[self.raw_key].data
-                # logger.debug(f'raw_array shape {raw_array.shape}')
-                channels.append(raw_array)
-            if self.mask_channel:
-                labels_array = batch[self.labels_key].data
-                # logger.debug(f'labels_array shape {labels_array.shape}')
-                labels_array = (labels_array == node_id).astype(np.float32)
-                # sanity check: is there overlap?
-                # TODO request new pair if fragment not contained?
-                # No,because that's also going to appear in the inference
-                logger.debug(f'overlap: {labels_array.sum()} voxels')
-                channels.append(labels_array)
+        channels = []
+        if self.raw_channel:
+            raw_array = batch[self.raw_key].data
+            # logger.debug(f'raw_array shape {raw_array.shape}')
+            channels.append(raw_array)
+        if self.mask_channel:
+            labels_array = batch[self.labels_key].data
+            # logger.debug(f'labels_array shape {labels_array.shape}')
+            labels_array = (labels_array == node_id).astype(np.float32)
+            # sanity check: is there overlap?
+            # TODO request new pair if fragment not contained?
+            # No,because that's also going to appear in the inference
+            logger.debug(f'overlap: {labels_array.sum()} voxels')
+            channels.append(labels_array)
 
-            tensor = torch.tensor(channels, dtype=torch.float)
+        tensor = torch.tensor(channels, dtype=torch.float)
 
-            # Not necessary: Add the `channel`-dimension
-            # if len(channels) == 1:
-            # tensor = tensor.unsqueeze(0)
+        # Not necessary: Add the `channel`-dimension
+        # if len(channels) == 1:
+        # tensor = tensor.unsqueeze(0)
 
-            return tensor
+        return tensor
 
     @abstractmethod
     def __getitem__(self, index):
