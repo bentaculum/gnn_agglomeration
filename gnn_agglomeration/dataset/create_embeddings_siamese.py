@@ -64,8 +64,8 @@ def create_embeddings():
 
     # find latest state of the model
     def extract_number(f):
-        s = re.findall("\d+", f)
-        return (int(s[0]) if s else -1, f)
+        s = re.findall(r'\d+', f)
+        return int(s[0]) if s else -1, f
 
     load_model_dir = os.path.join(run_path, 'model')
     checkpoint_versions = [name for name in os.listdir(

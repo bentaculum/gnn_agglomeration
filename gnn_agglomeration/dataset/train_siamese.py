@@ -9,6 +9,7 @@ import datetime
 import pytz
 import atexit
 import tarfile
+import re
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -33,12 +34,17 @@ def save(model, optimizer, model_dir, iteration):
     Returns:
 
     """
+    # find latest state of the model
+    def extract_number(f):
+        s = re.findall(r'\d+', f)
+        return int(s[0]) if s else -1, f
+
     # delete older models
     checkpoint_versions = [name for name in os.listdir(model_dir) if (
         name.endswith('.tar') and name.startswith('iteration'))]
     if len(checkpoint_versions) >= 3:
-        checkpoint_versions.sort()
-        os.remove(os.path.join(model_dir, checkpoint_versions[0]))
+        checkpoint_to_remove = min(checkpoint_versions, key=extract_number)
+        os.remove(osp.join(model_dir, checkpoint_to_remove))
 
     # save the new one
     model_tar = osp.join(model_dir, f'iteration_{iteration}.tar')
@@ -233,7 +239,7 @@ def train():
         reduction='mean'
     )
 
-    logger.info('start training loop')
+    logger.info(f'start training loop for {config_siamese.training_samples} samples')
     samples_count = 0
     start_training = now()
     for i, data in enumerate(dataloader):
@@ -316,7 +322,8 @@ def train():
     logger.info(
         f'training {samples_count} samples took {now() - start_training} s')
 
-    dataset.built_pipeline.__exit__()
+    # parameters here are placeholders
+    dataset.built_pipeline.__exit__(type=None, value=None, traceback=None)
 
 
 if __name__ == '__main__':
