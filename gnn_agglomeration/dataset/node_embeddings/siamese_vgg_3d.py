@@ -70,21 +70,19 @@ class SiameseVgg3d(torch.nn.Module):
             #     "Can not downsample %s by chosen downsample factor" % current_size
             current_size = size
 
-            logger.info(f'VGG level {i}: ({current_size}), {current_fmaps} fmaps')
+            logger.info(
+                f'VGG level {i}: ({current_size}), {current_fmaps} fmaps')
 
         self.features = torch.nn.Sequential(*features)
 
-        num_features = int(current_size[0] * current_size[1] * current_size[2] * current_fmaps),
+        num_features = int(
+            current_size[0] * current_size[1] * current_size[2] * current_fmaps),
         logger.info(f'inputs to fc layer: {num_features}')
 
         fully_connected = [
             torch.nn.Linear(
-                int(current_size[0] * current_size[1] * current_size[2] * current_fmaps),
-                4096),
-            torch.nn.ReLU(inplace=True),
-            torch.nn.Dropout(),
-            torch.nn.Linear(
-                4096,
+                int(current_size[0] * current_size[1]
+                    * current_size[2] * current_fmaps),
                 2048),
             torch.nn.ReLU(inplace=True),
             torch.nn.Dropout(),
@@ -120,4 +118,3 @@ class SiameseVgg3d(torch.nn.Module):
         for param in self.parameters():
             param.requires_grad = mode
         return ret
-

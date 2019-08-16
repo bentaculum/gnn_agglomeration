@@ -277,7 +277,7 @@ def train():
             start = now()
             if i % config_siamese.summary_interval == 0:
                 writer.add_scalar(
-                    tag='-_loss',
+                    tag='00_loss',
                     scalar_value=loss,
                     global_step=i
                 )
