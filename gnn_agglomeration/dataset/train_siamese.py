@@ -35,7 +35,7 @@ def save(model, optimizer, model_dir, iteration):
     """
     # delete older models
     checkpoint_versions = [name for name in os.listdir(model_dir) if (
-            name.endswith('.tar') and name.startswith('iteration'))]
+        name.endswith('.tar') and name.startswith('iteration'))]
     if len(checkpoint_versions) >= 3:
         checkpoint_versions.sort()
         os.remove(os.path.join(model_dir, checkpoint_versions[0]))
@@ -108,6 +108,48 @@ def write_variable_to_summary(writer, iteration, var, namespace, var_name):
         iteration)
 
 
+def write_network_to_summary(writer, iteration, model):
+    # write to tensorboard
+    for num_module, module in enumerate(model.features):
+        try:
+            write_variable_to_summary(
+                writer=writer,
+                iteration=str(iteration),
+                var=module.weight,
+                namespace=f'{num_module}_{module._get_name()}',
+                var_name='weight'
+            )
+            write_variable_to_summary(
+                writer=writer,
+                iteration=str(iteration),
+                var=module.bias,
+                namespace=f'{num_module}_{module._get_name()}',
+                var_name='bias'
+            )
+        except AttributeError:
+            pass
+
+    num_pre_fc_modules = len(model.features)
+    for num_module, module in enumerate(model.fully_connected):
+        try:
+            write_variable_to_summary(
+                writer=writer,
+                iteration=str(iteration),
+                var=module.weight,
+                namespace=f'{num_pre_fc_modules + num_module}_{module._get_name()}',
+                var_name='weight'
+            )
+            write_variable_to_summary(
+                writer=writer,
+                iteration=str(iteration),
+                var=module.bias,
+                namespace=f'{num_pre_fc_modules + num_module}_{module._get_name()}',
+                var_name='bias'
+            )
+        except AttributeError:
+            pass
+
+
 def train():
     logger.info('start training function')
     timestamp = datetime.datetime.now(
@@ -163,9 +205,9 @@ def train():
     model = SiameseVgg3d(
         writer=writer,
         input_size=np.array(config_siamese.patch_size) /
-                   np.array(config.voxel_size),
+        np.array(config.voxel_size),
         input_fmaps=int(config_siamese.raw_channel) +
-                    int(config_siamese.mask_channel),
+        int(config_siamese.mask_channel),
         fmaps=config_siamese.fmaps,
         fmaps_max=config_siamese.fmaps_max,
         output_features=config_siamese.output_features,
@@ -185,10 +227,9 @@ def train():
     )
 
     loss_function = torch.nn.CosineEmbeddingLoss(
-        margin=0.5,
+        margin=config_siamese.cosine_loss_margin,
         reduction='mean'
     )
-
 
     logger.info('start training loop')
     samples_count = 0
@@ -220,29 +261,8 @@ def train():
             target=labels
         )
 
-        # write to tensorboard
-        if config_siamese.summary:
-            for num_module, module in enumerate(model.features):
-                try:
-                    write_variable_to_summary(
-                        writer=writer,
-                        iteration=i,
-                        var=module.weight,
-                        namespace=num_module,
-                        var_name=f'{module._get_name()}/weight'
-                    )
-                    write_variable_to_summary(
-                        writer=writer,
-                        iteration=i,
-                        var=module.bias,
-                        namespace=num_module,
-                        var_name=f'{module._get_name()}/bias'
-                    )
-                except AttributeError:
-                    pass
-
-
         # TODO not sure if that's the intended use
+        # somehow, the exit function gets called multiple times in some instances
         # register exit routines, in case there is an interrupt, e.g. via keyboard
         atexit.unregister(atexit_tasks)
         atexit.register(
@@ -257,7 +277,7 @@ def train():
             start = now()
             if i % config_siamese.summary_interval == 0:
                 writer.add_scalar(
-                    tag='loss',
+                    tag='-_loss',
                     scalar_value=loss,
                     global_step=i
                 )
@@ -265,6 +285,12 @@ def train():
 
         loss.backward()
         optimizer.step()
+
+        if config_siamese.summary:
+            write_network_to_summary(
+                writer=writer,
+                iteration=i,
+                model=model)
 
         # print(f'batch {i} done in {now() - start_batch} s', end='\r')
         logging.info(f'batch {i} done in {now() - start_batch} s')

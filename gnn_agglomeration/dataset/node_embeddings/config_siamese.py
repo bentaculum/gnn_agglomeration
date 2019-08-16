@@ -64,6 +64,9 @@ p.add(
 p.add(
     '--downsample_factors', type=list_of_ints, nargs='+',
     help='tuple of 3D downsample factors for each pooling layer')
+p.add(
+    '--cosine_loss_margin', type=float,
+    help='margin for tuning cosine loss on negative samples')
 
 p.add(
     '--adam_lr', type=float,
