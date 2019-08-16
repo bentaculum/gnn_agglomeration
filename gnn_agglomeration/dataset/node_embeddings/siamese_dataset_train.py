@@ -20,7 +20,14 @@ class SiameseDatasetTrain(SiameseDataset):
     Each data point is actually a mini-batch of volume pairs
     """
 
-    def __init__(self, patch_size, raw_channel, mask_channel, num_workers=5, in_memory=True):
+    def __init__(
+            self,
+            patch_size,
+            raw_channel,
+            mask_channel,
+            num_workers=5,
+            in_memory=True,
+            rag_block_size=None):
         """
         connect to db, load and weed out edges, define gunpowder pipeline
         Args:
@@ -35,7 +42,8 @@ class SiameseDatasetTrain(SiameseDataset):
             raw_channel=raw_channel,
             mask_channel=mask_channel,
             num_workers=num_workers,
-            in_memory=in_memory
+            in_memory=in_memory,
+            rag_block_size=rag_block_size
         )
 
         # assign dataset length

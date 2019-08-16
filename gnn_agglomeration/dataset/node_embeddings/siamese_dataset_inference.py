@@ -24,7 +24,14 @@ class SiameseDatasetInference(SiameseDataset):
     Each data point is one patch + node id
     """
 
-    def __init__(self, patch_size, raw_channel, mask_channel, num_workers=5, inference_samples='all'):
+    def __init__(
+            self,
+            patch_size,
+            raw_channel,
+            mask_channel,
+            num_workers=5,
+            inference_samples='all',
+            rag_block_size=None):
         """
         connect to db, load and weed out edges, define gunpowder pipeline
         Args:
@@ -38,7 +45,8 @@ class SiameseDatasetInference(SiameseDataset):
             patch_size=patch_size,
             raw_channel=raw_channel,
             mask_channel=mask_channel,
-            num_workers=num_workers
+            num_workers=num_workers,
+            rag_block_size=rag_block_size
         )
 
         # assign dataset length

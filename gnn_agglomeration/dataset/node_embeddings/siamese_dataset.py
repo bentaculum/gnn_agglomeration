@@ -15,11 +15,20 @@ from config import config  # noqa
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+
 # logging.getLogger('gunpowder.nodes.').setLevel(logging.DEBUG)
 
 
 class SiameseDataset(torch.utils.data.Dataset, ABC):
-    def __init__(self, patch_size, raw_channel, mask_channel, num_workers=5, in_memory=True):
+    def __init__(
+            self,
+            patch_size,
+            raw_channel,
+            mask_channel,
+            num_workers=5,
+            in_memory=True,
+            rag_block_size=None):
         """
         connect to db, load and weed out edges, define gunpowder pipeline
         Args:
@@ -35,11 +44,11 @@ class SiameseDataset(torch.utils.data.Dataset, ABC):
         self.in_memory = in_memory
         assert raw_channel or mask_channel
 
-        self.load_rag()
+        self.load_rag(rag_block_size=rag_block_size)
         self.init_pipeline()
         self.build_pipeline()
 
-    def load_rag(self):
+    def load_rag(self, rag_block_size):
         # TODO parametrize the used names
         self.id_field = 'id'
         self.node1_field = 'u'
@@ -66,12 +75,9 @@ class SiameseDataset(torch.utils.data.Dataset, ABC):
         roi = daisy.Roi(offset=config.roi_offset, shape=config.roi_shape)
         logger.info(roi)
 
-        # TODO parametrize block size
-        block_size = (np.array(roi.get_shape())/2).astype(np.int_)
-
         nodes_attrs, edges_attrs = graph_provider.read_blockwise(
             roi=roi,
-            block_size=daisy.Coordinate(block_size),
+            block_size=daisy.Coordinate(rag_block_size),
             num_workers=self.num_workers
         )
         logger.debug(f'read whole graph in {now() - start} s')
