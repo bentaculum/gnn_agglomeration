@@ -202,6 +202,7 @@ def train():
     else:
         writer = None
 
+    # TODO enable continuation of training
     model = SiameseVgg3d(
         writer=writer,
         input_size=np.array(config_siamese.patch_size) /
@@ -292,8 +293,9 @@ def train():
                 iteration=i,
                 model=model)
 
-        # print(f'batch {i} done in {now() - start_batch} s', end='\r')
-        logging.info(f'batch {i} done in {now() - start_batch} s')
+        if i % config_siamese.console_update_interval == 0:
+            # print(f'batch {i} done in {now() - start_batch} s', end='\r')
+            logging.info(f'batch {i} done in {now() - start_batch} s')
 
         # save model
         if i % config_siamese.checkpoint_interval == 0 and i > 0:

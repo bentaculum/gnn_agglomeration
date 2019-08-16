@@ -32,6 +32,7 @@ p.add('--summary_loss', type=str2bool)
 p.add('--summary_detailed', type=str2bool)
 p.add('--summary_interval', type=int)
 p.add('--checkpoint_interval', type=int)
+p.add('--console_update_interval', type=int)
 
 p.add(
     '--in_memory', type=str2bool,
