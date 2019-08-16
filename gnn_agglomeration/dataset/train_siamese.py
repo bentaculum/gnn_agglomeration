@@ -195,7 +195,7 @@ def train():
     start = now()
 
     # init tensorboard summary writer
-    if config_siamese.summary:
+    if config_siamese.summary_loss or config_siamese.summary_detailed:
         writer = torch.utils.tensorboard.SummaryWriter(
             log_dir=osp.join(config_siamese.runs_dir, timestamp, 'summary')
         )
@@ -273,7 +273,7 @@ def train():
         )
 
         # TODO move to subprocess for speed?
-        if config_siamese.summary:
+        if config_siamese.summary_loss:
             start = now()
             if i % config_siamese.summary_interval == 0:
                 writer.add_scalar(
@@ -286,7 +286,7 @@ def train():
         loss.backward()
         optimizer.step()
 
-        if config_siamese.summary:
+        if config_siamese.summary_detailed:
             write_network_to_summary(
                 writer=writer,
                 iteration=i,

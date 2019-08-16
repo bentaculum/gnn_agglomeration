@@ -28,7 +28,8 @@ p.add('--config_file', is_config_file=True,
       help='file path to config that overwrites the default configs')
 
 p.add('--runs_dir', type=str)
-p.add('--summary', type=str2bool)
+p.add('--summary_loss', type=str2bool)
+p.add('--summary_detailed', type=str2bool)
 p.add('--summary_interval', type=int)
 p.add('--checkpoint_interval', type=int)
 
