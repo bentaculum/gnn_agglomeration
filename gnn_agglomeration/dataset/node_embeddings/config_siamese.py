@@ -24,7 +24,7 @@ def list_of_ints(v):
 p = configargparse.ArgParser(
     default_config_files=['node_embeddings/config_siamese.ini'])
 
-p.add('--config_file', is_config_file=True,
+p.add('--config_file_siamese', is_config_file=True,
       help='file path to config that overwrites the default configs')
 
 p.add('--runs_dir', type=str)
@@ -35,7 +35,7 @@ p.add('--checkpoint_interval', type=int)
 p.add('--console_update_interval', type=int)
 
 p.add(
-    '--rag_block_size', type=int, nargs=3,
+    '--rag_block_size', type=int, action='append',
     help='block size for loading RAG with daisy')
 p.add(
     '--in_memory', type=str2bool,
@@ -46,7 +46,7 @@ p.add(
     '--training_samples', type=int,
     help='number of rag edges to used for training')
 p.add(
-    '--patch_size', type=int, nargs=3,
+    '--patch_size', type=int, action='append',
     help='3D size to use for creating samples in nanometers')
 p.add(
     '--raw_channel', type=str2bool,
@@ -67,7 +67,7 @@ p.add(
     '--output_features', type=int,
     help='dimensionality of embeddings before loss')
 p.add(
-    '--downsample_factors', type=list_of_ints, nargs='+',
+    '--downsample_factors', type=list_of_ints, action='append',
     help='tuple of 3D downsample factors for each pooling layer')
 p.add(
     '--cosine_loss_margin', type=float,
@@ -95,4 +95,4 @@ p.add(
 
 config, remaining_argv = p.parse_known_args()
 sys.argv = [sys.argv[0], *remaining_argv]
-logger.info(f"\n{p.format_values()}")
+logger.debug(f"\n{p.format_values()}")

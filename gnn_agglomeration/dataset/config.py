@@ -67,13 +67,15 @@ p.add(
     '--background_id',
     type=int,
     help='id for background voxels in fragment data')
-p.add('--roi_offset', type=int, nargs='+', help='3D ROI offset in nanometers')
-p.add('--roi_shape', type=int, nargs='+', help='3D ROI shape in nanometers')
-p.add('--block_size', type=int, nargs='+',
+p.add('--roi_offset', type=int, action='append',
+      help='3D ROI offset in nanometers')
+p.add('--roi_shape', type=int,
+      action='append', help='3D ROI shape in nanometers')
+p.add('--block_size', type=int, action='append',
       help='block size used for processing fragments')
-p.add('--padding', type=int, nargs=3,
+p.add('--padding', type=int, action='append',
       help='padding used for fragment creation. Not used at the moment')
-p.add('--voxel_size', type=int, nargs=3,
+p.add('--voxel_size', type=int, action='append',
       help='voxel size in nanometers')
 
 # [DATA PROCESSING]
@@ -82,7 +84,7 @@ p.add(
     '--threshold_overlap',
     type=float,
     help='percentage of overlap required to consider a fragment non-background')
-p.add('--con_comp_thresholds_minmax', type=float, nargs=2,
+p.add('--con_comp_thresholds_minmax', type=float, action='append',
       help='lower and upper limit for the different runs of connected components')
 p.add('--con_comp_thresholds_step', type=float,
       help='step size for threshold of connected components runs')
@@ -111,7 +113,7 @@ p.add(
 
 config, remaining_argv = p.parse_known_args()
 sys.argv = [sys.argv[0], *remaining_argv]
-logger.info(f"\n{p.format_values()}")
+logger.debug(f"\n{p.format_values()}")
 
 pw_parser = configparser.ConfigParser()
 pw_parser.read(config.db_host)

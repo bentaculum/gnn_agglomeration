@@ -10,15 +10,15 @@ import pytz
 import atexit
 import tarfile
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+logging.basicConfig(level=logging.INFO)
+
 from node_embeddings.config_siamese import config as config_siamese, p as parser_siamese  # noqa
 from config import config  # noqa
 
 from node_embeddings.siamese_dataset_train import SiameseDatasetTrain  # noqa
 from node_embeddings.siamese_vgg_3d import SiameseVgg3d  # noqa
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-logging.basicConfig(level=logging.INFO)
 
 
 def save(model, optimizer, model_dir, iteration):
