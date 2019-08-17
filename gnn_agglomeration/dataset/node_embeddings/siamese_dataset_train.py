@@ -109,8 +109,7 @@ class SiameseDatasetTrain(SiameseDataset):
 
         if self.raw_channel:
             self.pipeline + \
-                IntensityAugment(self.raw_key, 0.9, 1.1, - 0.1, 0.1) + \
-                IntensityScaleShift(self.raw_key, 2, -1)
+                IntensityAugment(self.raw_key, 0.9, 1.1, - 0.1, 0.1)
 
         # at least for debugging:
         # Snapshot({
