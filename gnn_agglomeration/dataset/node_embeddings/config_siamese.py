@@ -55,6 +55,9 @@ p.add(
     '--mask_channel', type=str2bool,
     help='if set true, create a channel with binary mask of the fragment in a patch')
 p.add(
+    '--raw_mask_channel', type=str2bool,
+    help='if set true, create a channel with raw volumetric data, masked on one fragment id')
+p.add(
     '--batch_size', type=int)
 
 p.add(

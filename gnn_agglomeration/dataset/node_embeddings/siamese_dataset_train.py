@@ -25,6 +25,7 @@ class SiameseDatasetTrain(SiameseDataset):
             patch_size,
             raw_channel,
             mask_channel,
+            raw_mask_channel,
             num_workers=5,
             in_memory=True,
             rag_block_size=None):
@@ -41,6 +42,7 @@ class SiameseDatasetTrain(SiameseDataset):
             patch_size=patch_size,
             raw_channel=raw_channel,
             mask_channel=mask_channel,
+            raw_mask_channel=raw_mask_channel,
             num_workers=num_workers,
             in_memory=in_memory,
             rag_block_size=rag_block_size
