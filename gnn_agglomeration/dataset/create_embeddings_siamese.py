@@ -29,6 +29,7 @@ def create_embeddings():
         patch_size=config_siamese.patch_size,
         raw_channel=config_siamese.raw_channel,
         mask_channel=config_siamese.mask_channel,
+        raw_mask_channel=config_siamese.raw_mask_channel,
         num_workers=config.num_workers,
         inference_samples=config_siamese.inference_samples
     )
@@ -87,8 +88,9 @@ def create_embeddings():
     model = SiameseVgg3d(
         input_size=np.array(config_siamese.patch_size) /
         np.array(config.voxel_size),
-        input_fmaps=int(config_siamese.raw_channel) +
-        int(config_siamese.mask_channel),
+        input_fmaps=int(config_siamese.raw_channel) +  # noqa
+            int(config_siamese.mask_channel) +  # noqa
+            int(config_siamese.raw_mask_channel),  # noqa
         fmaps=config_siamese.fmaps,
         fmaps_max=config_siamese.fmaps_max,
         output_features=config_siamese.output_features,

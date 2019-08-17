@@ -15,8 +15,6 @@ from config import config  # noqa
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
-
 # logging.getLogger('gunpowder.nodes.').setLevel(logging.DEBUG)
 
 
@@ -76,13 +74,15 @@ class SiameseDataset(torch.utils.data.Dataset, ABC):
         start = now()
         roi = daisy.Roi(offset=config.roi_offset, shape=config.roi_shape)
         logger.info(roi)
+        rag_block_size = daisy.Coordinate(rag_block_size)
+        logger.info(f'rag_block_size {rag_block_size}')
 
         nodes_attrs, edges_attrs = graph_provider.read_blockwise(
             roi=roi,
-            block_size=daisy.Coordinate(rag_block_size),
+            block_size=rag_block_size,
             num_workers=self.num_workers
         )
-        logger.debug(f'read whole graph in {now() - start} s')
+        logger.info(f'read whole graph in {now() - start} s')
 
         start = now()
         nodes_cols = [self.id_field, 'center_z', 'center_y', 'center_x']
@@ -148,9 +148,9 @@ class SiameseDataset(torch.utils.data.Dataset, ABC):
         # logger.debug(f'ROI snapped to grid: {roi}')
 
         request = BatchRequest()
-        if self.raw_channel:
+        if self.raw_channel or self.raw_mask_channel:
             request[self.raw_key] = ArraySpec(roi=roi)
-        if self.mask_channel:
+        if self.mask_channel or self.raw_mask_channel:
             request[self.labels_key] = ArraySpec(roi=roi)
 
         batch = self.batch_provider.request_batch(request)
@@ -159,10 +159,12 @@ class SiameseDataset(torch.utils.data.Dataset, ABC):
         if self.raw_mask_channel:
             raw_array = batch[self.raw_key].data
             labels_array = batch[self.labels_key].data
+            assert raw_array.shape == labels_array.shape, \
+                f'raw shape {raw_array.shape}, labels shape {labels_array.shape}'
             mask = labels_array == node_id
 
-            raw_mask_array = raw_array[mask]
-            channels.append(raw_mask_array)
+            raw_mask_array = raw_array * mask
+            channels.append(raw_mask_array.astype(np.float32))
             if self.raw_channel:
                 channels.append(raw_array)
             if self.mask_channel:
@@ -180,10 +182,11 @@ class SiameseDataset(torch.utils.data.Dataset, ABC):
                 # sanity check: is there overlap?
                 # TODO request new pair if fragment not contained?
                 # No,because that's also going to appear in the inference
-                logger.debug(f'overlap: {labels_array.sum()} voxels')
+                # logger.debug(f'overlap: {labels_array.sum()} voxels')
                 channels.append(labels_array)
 
         tensor = torch.tensor(channels, dtype=torch.float)
+        # logger.debug(f'patch tensor shape {tensor.shape}')
 
         # Not necessary: Add the `channel`-dimension
         # if len(channels) == 1:

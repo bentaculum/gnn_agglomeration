@@ -78,18 +78,15 @@ class SiameseDatasetInference(SiameseDataset):
             self.sources +
             MergeProvider()
         )
-
-        if self.raw_channel:
-            self.pipeline + IntensityScaleShift(self.raw_key, 2, -1)  # +
-            # at least for debugging:
-            # Snapshot({
-            # self.raw_key: 'volumes/raw',
-            # self.labels_key: 'volumes/labels'
-            # },
-            # every=100,
-            # output_dir='snapshots',
-            # output_filename=f'sample_{now()}.hdf')
-            # PrintProfilingStats(every=1)
+        # at least for debugging:
+        # Snapshot({
+        # self.raw_key: 'volumes/raw',
+        # self.labels_key: 'volumes/labels'
+        # },
+        # every=100,
+        # output_dir='snapshots',
+        # output_filename=f'sample_{now()}.hdf')
+        # PrintProfilingStats(every=1)
 
     def __getitem__(self, index):
         """

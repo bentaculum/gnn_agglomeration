@@ -107,7 +107,7 @@ class SiameseDatasetTrain(SiameseDataset):
             # PrintProfilingStats(every=1)
         )
 
-        if self.raw_channel:
+        if self.raw_channel or self.raw_mask_channel:
             self.pipeline + \
                 IntensityAugment(self.raw_key, 0.9, 1.1, - 0.1, 0.1)
 

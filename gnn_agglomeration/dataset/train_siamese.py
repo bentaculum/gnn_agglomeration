@@ -172,6 +172,7 @@ def train():
         patch_size=config_siamese.patch_size,
         raw_channel=config_siamese.raw_channel,
         mask_channel=config_siamese.mask_channel,
+        raw_mask_channel=config_siamese.raw_mask_channel,
         num_workers=config.num_workers,
         in_memory=config_siamese.in_memory,
         rag_block_size=config_siamese.rag_block_size
@@ -214,8 +215,9 @@ def train():
         writer=writer,
         input_size=np.array(config_siamese.patch_size) /
         np.array(config.voxel_size),
-        input_fmaps=int(config_siamese.raw_channel) +
-        int(config_siamese.mask_channel),
+        input_fmaps=int(config_siamese.raw_channel) +  # noqa
+            int(config_siamese.mask_channel) +  # noqa
+            int(config_siamese.raw_mask_channel),  # noqa
         fmaps=config_siamese.fmaps,
         fmaps_max=config_siamese.fmaps_max,
         output_features=config_siamese.output_features,
@@ -239,7 +241,8 @@ def train():
         reduction='mean'
     )
 
-    logger.info(f'start training loop for {config_siamese.training_samples} samples')
+    logger.info(
+        f'start training loop for {config_siamese.training_samples} samples')
     samples_count = 0
     start_training = now()
     for i, data in enumerate(dataloader):

@@ -3,7 +3,7 @@ import logging
 import sys
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 def str2bool(v):
@@ -18,6 +18,7 @@ def str2bool(v):
 
 
 def list_of_ints(v):
+    v = v.strip()
     return list(map(int, v.replace('[', '').replace(']', '').split(' ')))
 
 
