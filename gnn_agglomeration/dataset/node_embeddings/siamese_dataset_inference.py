@@ -88,6 +88,60 @@ class SiameseDatasetInference(SiameseDataset):
         # output_filename=f'sample_{now()}.hdf')
         # PrintProfilingStats(every=1)
 
+    def get_batch(self, center, node_id):
+        """
+        get volumetric patch using gunpowder
+        Args:
+            center(tuple of ints): center of mass for the node
+            node_id(int): node id from db
+
+        Returns:
+            patch as torch.Tensor, with one or more channels
+
+        """
+        offset = np.array(center) - np.array(self.patch_size) / 2
+        roi = Roi(offset=offset, shape=self.patch_size)
+        roi = roi.snap_to_grid(Coordinate(config.voxel_size), mode='closest')
+        # logger.debug(f'ROI snapped to grid: {roi}')
+
+        request = BatchRequest()
+        if self.raw_channel or self.raw_mask_channel:
+            request[self.raw_key] = ArraySpec(roi=roi)
+        if self.mask_channel or self.raw_mask_channel:
+            request[self.labels_key] = ArraySpec(roi=roi)
+
+        batch = self.batch_provider.request_batch(request)
+
+        channels = []
+        if self.raw_mask_channel:
+            raw_array = batch[self.raw_key].data
+            labels_array = batch[self.labels_key].data
+            assert raw_array.shape == labels_array.shape, \
+                f'raw shape {raw_array.shape}, labels shape {labels_array.shape}'
+            mask = labels_array == node_id
+
+            raw_mask_array = raw_array * mask
+            channels.append(raw_mask_array.astype(np.float32))
+            if self.raw_channel:
+                channels.append(raw_array)
+            if self.mask_channel:
+                channels.append(mask.astype(np.float32))
+
+        else:
+            if self.raw_channel:
+                raw_array = batch[self.raw_key].data
+                channels.append(raw_array)
+            if self.mask_channel:
+                labels_array = batch[self.labels_key].data
+                labels_array = (labels_array == node_id).astype(np.float32)
+                # sanity check: is there overlap?
+                # logger.debug(f'overlap: {labels_array.sum()} voxels')
+                channels.append(labels_array)
+
+        tensor = torch.tensor(channels, dtype=torch.float)
+
+        return tensor
+
     def __getitem__(self, index):
         """
         Args:
@@ -107,7 +161,7 @@ class SiameseDatasetInference(SiameseDataset):
             self.nodes_attrs['center_y'][index],
             self.nodes_attrs['center_x'][index])
 
-        patch = self.get_patch(center=node_center, node_id=node_id)
+        patch = self.get_batch(center=node_center, node_id=node_id)
 
         logger.debug(f'__getitem__ in {now() - start_getitem} s')
         return patch.float(), torch.tensor(node_id.astype(np.int64))

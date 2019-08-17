@@ -6,6 +6,7 @@ from time import time as now
 import math
 
 from .siamese_dataset import SiameseDataset  # noqa
+from .merge_fragments import MergeFragments  # noqa
 
 # dataset configs for many params
 from config import config  # noqa
@@ -90,6 +91,7 @@ class SiameseDatasetTrain(SiameseDataset):
         self.pipeline = (
             self.sources +
             MergeProvider() +
+            MergeFragments() +
             ElasticAugment(
                 # copied from /groups/funke/funkelab/sheridana/lsd_experiments/hemi/02_train/setup01/train.py
                 control_point_spacing=[40, 40, 40],
@@ -102,7 +104,6 @@ class SiameseDatasetTrain(SiameseDataset):
                 max_misalign=0,
                 # TODO adjust subsample value for speed
                 subsample=8)  # +
-            # TODO do not use transpose, currently buggy
             # SimpleAugment(transpose_only=[]) +
             # PrintProfilingStats(every=1)
         )
@@ -120,6 +121,65 @@ class SiameseDatasetTrain(SiameseDataset):
         # output_dir='snapshots',
         # output_filename=f'sample_{now()}.hdf')
         # )
+
+    def get_batch(self, center, node_id):
+        """
+        TODO
+        Args:
+            center:
+            node_id:
+
+        Returns:
+
+        """
+        center_u, center_v = center
+        roi = Roi(offset=(0, 0, 0), shape=self.patch_size)
+        roi = roi.snap_to_grid(Coordinate(config.voxel_size), mode='closest')
+
+        request = BatchRequest()
+        request.center_u = Coordinate(center_u)
+        request.center_v = Coordinate(center_v)
+
+        if self.raw_channel or self.raw_mask_channel:
+            request[self.raw_key] = ArraySpec(roi=roi)
+        if self.mask_channel or self.raw_mask_channel:
+            request[self.labels_key] = ArraySpec(roi=roi)
+
+        batch = self.batch_provider.request_batch(request)
+
+        batch_torch = []
+        for i in range(0, 2):
+            # u=0, v=1
+            channels = []
+            if self.raw_mask_channel:
+                raw_array = batch[self.raw_key].data[i]
+                labels_array = batch[self.labels_key].data[i]
+                assert raw_array.shape == labels_array.shape, \
+                    f'raw shape {raw_array.shape}, labels shape {labels_array.shape}'
+                mask = labels_array == node_id[i]
+
+                raw_mask_array = raw_array * mask
+                channels.append(raw_mask_array.astype(np.float32))
+                if self.raw_channel:
+                    channels.append(raw_array)
+                if self.mask_channel:
+                    channels.append(mask.astype(np.float32))
+
+            else:
+                if self.raw_channel:
+                    raw_array = batch[self.raw_key].data[i]
+                    channels.append(raw_array)
+                if self.mask_channel:
+                    labels_array = batch[self.labels_key].data[i]
+                    labels_array = (labels_array == node_id[i]).astype(np.float32)
+                    # sanity check: is there overlap?
+                    # logger.debug(f'overlap: {labels_array.sum()} voxels')
+                    channels.append(labels_array)
+
+            tensor = torch.tensor(channels, dtype=torch.float)
+            batch_torch.append(tensor)
+
+        return batch_torch
 
     def __getitem__(self, index):
         """
@@ -154,18 +214,20 @@ class SiameseDatasetTrain(SiameseDataset):
             self.nodes_attrs['center_y'][node2_index],
             self.nodes_attrs['center_x'][node2_index])
 
-        node1_patch = self.get_patch(center=node1_center, node_id=node1_id)
-        node2_patch = self.get_patch(center=node2_center, node_id=node2_id)
+        node1_patch, node2_patch = self.get_batch(
+            center=(node1_center, node2_center),
+            node_id=(node1_id, node2_id)
+        )
 
-        if node1_patch is None or node2_patch is None:
-            logger.warning(
-                f'patch for one of the nodes is not fully contained in ROI, try again')
-            # Sample a new index, using the sample weights again
-            new_index = torch.multinomial(
-                input=self.samples_weights,
-                num_samples=1,
-                replacement=True).item()
-            return self.__getitem__(index=new_index)
+        # if node1_patch is None or node2_patch is None:
+        #     logger.warning(
+        #         f'patch for one of the nodes is not fully contained in ROI, try again')
+        #     # Sample a new index, using the sample weights again
+        #     new_index = torch.multinomial(
+        #         input=self.samples_weights,
+        #         num_samples=1,
+        #         replacement=True).item()
+        #     return self.__getitem__(index=new_index)
 
         input0 = node1_patch.float()
         input1 = node2_patch.float()
