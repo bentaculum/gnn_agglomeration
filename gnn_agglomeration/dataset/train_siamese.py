@@ -73,7 +73,7 @@ def atexit_tasks(loss, writer, summary_dir):
     logger.info(f'save tensorboard summaries')
 
     # report current loss
-    logger.info(f'training loss: {loss}')
+    # logger.info(f'training loss last iteration: {loss}')
 
 
 def write_variable_to_summary(writer, iteration, var, namespace, var_name):
@@ -182,7 +182,7 @@ def train():
     start = now()
     sampler = torch.utils.data.WeightedRandomSampler(
         weights=dataset.samples_weights,
-        num_samples=dataset.__len__(),
+        num_samples=config_siamese.training_samples,
         replacement=True
     )
 
@@ -243,9 +243,11 @@ def train():
 
     logger.info(
         f'start training loop for {config_siamese.training_samples} samples')
-    samples_count = 0
+    # samples_count = 0
     start_training = now()
     for i, data in enumerate(dataloader):
+        if i % config_siamese.console_update_interval == 1:
+            start_console_update = now()
         start_batch = now()
         logger.debug(f'batch {i} ...')
 
@@ -303,9 +305,9 @@ def train():
                 iteration=i,
                 model=model)
 
-        if i % config_siamese.console_update_interval == 0:
-            # print(f'batch {i} done in {now() - start_batch} s', end='\r')
-            logging.info(f'batch {i} done in {now() - start_batch} s')
+        # if i % config_siamese.console_update_interval == 0 and i > 0:
+        print(f'batch {i} done in {now() - start_batch} s', end='\r')
+        # logging.info(f'batches {i} done in {now() - start_console_update} s')
 
         # save model
         if i % config_siamese.checkpoint_interval == 0 and i > 0:
@@ -318,12 +320,12 @@ def train():
             )
             logger.debug(f'save checkpoint in {now() - start}')
 
-        samples_count += config_siamese.batch_size
-        if samples_count >= config_siamese.training_samples:
-            break
+        # samples_count += config_siamese.batch_size
+        # if samples_count >= config_siamese.training_samples:
+            # break
 
-    logger.info(
-        f'training {samples_count} samples took {now() - start_training} s')
+    # logger.info(
+        # f'training {samples_count} samples took {now() - start_training} s')
 
     # parameters here are placeholders
     dataset.built_pipeline.__exit__(type=None, value=None, traceback=None)
