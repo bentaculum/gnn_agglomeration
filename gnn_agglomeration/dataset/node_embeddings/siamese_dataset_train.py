@@ -137,13 +137,19 @@ class SiameseDatasetTrain(SiameseDataset):
         roi = roi.snap_to_grid(Coordinate(config.voxel_size), mode='closest')
 
         request = BatchRequest()
+        request.thaw()
         request.center_u = Coordinate(center_u)
         request.center_v = Coordinate(center_v)
+        request.freeze()
 
         if self.raw_channel or self.raw_mask_channel:
-            request[self.raw_key] = ArraySpec(roi=roi)
+            request[self.raw_key] = ArraySpec(
+                roi=roi,
+                voxel_size=Coordinate(config.voxel_size))
         if self.mask_channel or self.raw_mask_channel:
-            request[self.labels_key] = ArraySpec(roi=roi)
+            request[self.labels_key] = ArraySpec(
+                roi=roi,
+                voxel_size=Coordinate(config.voxel_size))
 
         batch = self.batch_provider.request_batch(request)
 
@@ -171,7 +177,8 @@ class SiameseDatasetTrain(SiameseDataset):
                     channels.append(raw_array)
                 if self.mask_channel:
                     labels_array = batch[self.labels_key].data[i]
-                    labels_array = (labels_array == node_id[i]).astype(np.float32)
+                    labels_array = (
+                        labels_array == node_id[i]).astype(np.float32)
                     # sanity check: is there overlap?
                     # logger.debug(f'overlap: {labels_array.sum()} voxels')
                     channels.append(labels_array)

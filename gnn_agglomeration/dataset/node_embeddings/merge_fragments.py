@@ -26,10 +26,10 @@ class MergeFragments(BatchFilter):
         offset_v = request.center_v - center
 
         request_u = request.copy()
-        for key, spec in request_u.arrays:
+        for key, spec in request_u.array_specs.items():
             spec.roi += offset_u
         request_v = request.copy()
-        for key, spec in request_v.arrays:
+        for key, spec in request_v.array_specs.items():
             spec.roi += offset_v
 
         batch_u = self.get_upstream_provider().provide(request_u)
@@ -40,8 +40,8 @@ class MergeFragments(BatchFilter):
 
             data = np.stack([batch_u[key].data, batch_v[key].data])
             batch[key] = Array(
-                data,
-                request[key].spec.copy())
+                data=data,
+                spec=request[key].copy())
 
         timing.stop()
         batch.profiling_stats.add(timing)
