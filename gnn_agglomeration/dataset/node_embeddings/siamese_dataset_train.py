@@ -4,6 +4,7 @@ from gunpowder import *
 import numpy as np
 from time import time as now
 import math
+import os
 
 from .siamese_dataset import SiameseDataset  # noqa
 from .merge_fragments import MergeFragments  # noqa
@@ -106,23 +107,24 @@ class SiameseDatasetTrain(SiameseDataset):
                 max_misalign=0,
                 # TODO adjust subsample value for speed
                 subsample=8) +
-            SimpleAugment()
+            SimpleAugment() +
+            # for debugging
+            IntensityAugment(self.raw_key, 0.9, 1.1, - 0.1, 0.1) +
+            Snapshot(
+                {
+                    self.raw_key: 'volumes/raw',
+                    self.labels_key: 'volumes/labels'
+                },
+                every=1,
+                output_dir=os.path.join('snapshots', str(now()))
+            )
             # PrintProfilingStats(every=1)
         )
 
-        if self.raw_channel or self.raw_mask_channel:
-            self.pipeline + \
-                IntensityAugment(self.raw_key, 0.9, 1.1, - 0.1, 0.1)
-
-        # at least for debugging:
-        # Snapshot({
-        # self.raw_key: 'volumes/raw',
-        # self.labels_key: 'volumes/labels'
-        # },
-        # every=100,
-        # output_dir='snapshots',
-        # output_filename=f'sample_{now()}.hdf')
-        # )
+        # TODO reuse when debugging is done
+        # if self.raw_channel or self.raw_mask_channel:
+        # self.pipeline + \
+        # IntensityAugment(self.raw_key, 0.9, 1.1, - 0.1, 0.1)
 
     def get_batch(self, center, node_id):
         """
