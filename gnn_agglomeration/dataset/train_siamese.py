@@ -16,7 +16,7 @@ logger.setLevel(logging.INFO)
 logging.basicConfig(level=logging.INFO)
 
 from node_embeddings.config_siamese import config as config_siamese, p as parser_siamese  # noqa
-from config import config  # noqa
+from config import config, p as parser_ds  # noqa
 
 from node_embeddings.siamese_dataset_train import SiameseDatasetTrain  # noqa
 from node_embeddings.siamese_vgg_3d import SiameseVgg3d  # noqa
@@ -55,11 +55,16 @@ def save(model, optimizer, model_dir, iteration):
         'optimizer_state_dict': optimizer.state_dict(),
     }, model_tar)
 
-    # save config file
+    # save config files
+    parser_ds.write_config_file(
+        parsed_namespace=config,
+        output_file_paths=[osp.join(model_dir, 'config.ini')],
+        exit_after=False
+    )
     parser_siamese.write_config_file(
         parsed_namespace=config_siamese,
         # TODO write is reported three times, but seems to work fine
-        output_file_paths=[osp.join(model_dir, 'config.ini')],
+        output_file_paths=[osp.join(model_dir, 'config_siamese.ini')],
         exit_after=False
     )
 

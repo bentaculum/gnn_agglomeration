@@ -78,7 +78,8 @@ def load_checkpoint(load_model, load_model_version, runs_dir):
         runs = sorted([name for name in os.listdir(
             runs_dir) if name.startswith('2019')])
 
-        run_path = osp.join(runs_dir, runs[-1])
+        # take second last, as the newest dir is the one for the current run
+        run_path = osp.join(runs_dir, runs[-2])
     else:
         run_path = load_model
 
@@ -100,7 +101,8 @@ def load_checkpoint(load_model, load_model_version, runs_dir):
     else:
         checkpoint_to_load = load_model_version
 
-    logger.info(f'Load model {run_path}, checkpoint {checkpoint_to_load}')
+    logger.info(
+        f'Load model {load_model_dir}, checkpoint {checkpoint_to_load}')
     checkpoint = torch.load(os.path.join(
         load_model_dir, checkpoint_to_load))
 
