@@ -20,6 +20,7 @@ from config import config  # noqa
 
 from node_embeddings.siamese_dataset_train import SiameseDatasetTrain  # noqa
 from node_embeddings.siamese_vgg_3d import SiameseVgg3d  # noqa
+from node_embeddings import utils  # noqa
 
 
 def save(model, optimizer, model_dir, iteration):
@@ -50,7 +51,6 @@ def save(model, optimizer, model_dir, iteration):
     model_tar = osp.join(model_dir, f'iteration_{iteration}.tar')
     logger.info(f'saving model to {model_tar} ...')
     torch.save({
-        'epoch': iteration,
         'model_state_dict': model.state_dict(),
         'optimizer_state_dict': optimizer.state_dict(),
     }, model_tar)
@@ -156,6 +156,33 @@ def write_network_to_summary(writer, iteration, model):
             pass
 
 
+def run_validation(model, loss_function, dataloader, device, writer, train_iteration):
+    start = now()
+    model.eval()
+    for i, data in enumerate(dataloader):
+        input0, input1, labels = data
+
+        input0 = input0.to(device)
+        input1 = input1.to(device)
+        labels = labels.to(device)
+
+        out0, out1 = model(input0, input1)
+        loss = loss_function(
+            input1=out0,
+            input2=out1,
+            target=labels
+        )
+
+        writer.add_scalar(
+            tag='00_loss',
+            scalar_value=loss,
+            global_step=train_iteration + i
+        )
+
+    model.train()
+    logger.info(f'run validation in {now() - start} s')
+
+
 def train():
     logger.info('start training function')
     timestamp = datetime.datetime.now(
@@ -180,21 +207,62 @@ def train():
     logger.info(f'init dataset in {now() - start} s')
 
     start = now()
-    sampler = torch.utils.data.WeightedRandomSampler(
-        weights=dataset.samples_weights,
-        num_samples=config_siamese.training_samples,
-        replacement=True
-    )
+    if config_siamese.use_validation:
+        zeros = torch.zeros(len(dataset.samples_weights) * 0.2)
+        ones = torch.ones(len(dataset.samples_weights) * 0.8)
 
-    dataloader = torch.utils.data.DataLoader(
-        dataset=dataset,
-        shuffle=False,
-        sampler=sampler,
-        batch_size=config_siamese.batch_size,
-        num_workers=config_siamese.num_workers_dataloader,
-        pin_memory=True,
-        worker_init_fn=lambda idx: np.random.seed()
-    )
+        train_val_indices = torch.cat((zeros, ones))
+        samples_weights_train = train_val_indices.float() * dataset.samples_weights
+        samples_weights_val = ~(train_val_indices.byte()).float() * dataset.samples_weights
+
+        sampler = torch.utils.data.WeightedRandomSampler(
+            weights=samples_weights_train,
+            num_samples=config_siamese.training_samples,
+            replacement=True
+        )
+
+        dataloader = torch.utils.data.DataLoader(
+            dataset=dataset,
+            shuffle=False,
+            sampler=sampler,
+            batch_size=config_siamese.batch_size,
+            num_workers=config_siamese.num_workers_dataloader,
+            pin_memory=True,
+            worker_init_fn=lambda idx: np.random.seed()
+        )
+
+        sampler_val = torch.utils.data.WeightedRandomSampler(
+            weights=samples_weights_val,
+            num_samples=config_siamese.validation_samples,
+            replacement=True
+        )
+
+        dataloader_val = torch.utils.data.DataLoader(
+            dataset=dataset,
+            shuffle=False,
+            sampler=sampler_val,
+            batch_size=config_siamese.batch_size,
+            num_workers=config_siamese.num_workers_dataloader,
+            pin_memory=True,
+            worker_init_fn=lambda idx: np.random.seed()
+        )
+
+    else:
+        sampler = torch.utils.data.WeightedRandomSampler(
+            weights=dataset.samples_weights,
+            num_samples=config_siamese.training_samples,
+            replacement=True
+        )
+
+        dataloader = torch.utils.data.DataLoader(
+            dataset=dataset,
+            shuffle=False,
+            sampler=sampler,
+            batch_size=config_siamese.batch_size,
+            num_workers=config_siamese.num_workers_dataloader,
+            pin_memory=True,
+            worker_init_fn=lambda idx: np.random.seed()
+        )
     logger.info(f'init dataloader in {now() - start} s')
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -204,13 +272,20 @@ def train():
 
     # init tensorboard summary writer
     if config_siamese.summary_loss or config_siamese.summary_detailed:
-        writer = torch.utils.tensorboard.SummaryWriter(
-            log_dir=osp.join(config_siamese.runs_dir, timestamp, 'summary')
-        )
+        if config_siamese.use_validation:
+            writer_val = torch.utils.tensorboard.SummaryWriter(
+                log_dir=osp.join(config_siamese.runs_dir, timestamp, 'summary', 'val')
+            )
+            writer = torch.utils.tensorboard.SummaryWriter(
+                log_dir=osp.join(config_siamese.runs_dir, timestamp, 'summary', 'train')
+            )
+        else:
+            writer = torch.utils.tensorboard.SummaryWriter(
+                log_dir=osp.join(config_siamese.runs_dir, timestamp, 'summary')
+            )
     else:
         writer = None
 
-    # TODO enable continuation of training
     model = SiameseVgg3d(
         writer=writer,
         input_size=np.array(config_siamese.patch_size) /
@@ -226,15 +301,24 @@ def train():
     total_params = sum(p.numel()
                        for p in model.parameters() if p.requires_grad)
     logger.info(f"number of diff'able params: {total_params}")
-
     model.to(device)
-    logger.info(f'init model in {now() - start} s')
 
     optimizer = torch.optim.Adam(
         params=model.parameters(),
         lr=config_siamese.adam_lr,
         weight_decay=config_siamese.adam_weight_decay
     )
+
+    if config_siamese.load_model is not None:
+        checkpoint = utils.load_checkpoint(
+            load_model=config_siamese.load_model,
+            load_model_version=config_siamese.load_model_version,
+            runs_dir=config_siamese.runs_dir
+        )
+        model.load_state_dict(checkpoint['model_state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+
+    logger.info(f'init model in {now() - start} s')
 
     loss_function = torch.nn.CosineEmbeddingLoss(
         margin=config_siamese.cosine_loss_margin,
@@ -243,11 +327,11 @@ def train():
 
     logger.info(
         f'start training loop for {config_siamese.training_samples} samples')
-    # samples_count = 0
     start_training = now()
+    model.train()
     for i, data in enumerate(dataloader):
-        if i % config_siamese.console_update_interval == 1:
-            start_console_update = now()
+        # if i % config_siamese.console_update_interval == 1:
+        #     start_console_update = now()
         start_batch = now()
         logger.debug(f'batch {i} ...')
 
@@ -309,6 +393,17 @@ def train():
         print(f'batch {i} done in {now() - start_batch} s', end='\r')
         # logging.info(f'batches {i} done in {now() - start_console_update} s')
 
+        if config_siamese.use_validation:
+            if i % config_siamese.validation_interval == 0 and i > 0:
+                run_validation(
+                    model=model,
+                    loss_function=loss_function,
+                    dataloader=dataloader_val,
+                    device=device,
+                    writer=writer_val,
+                    train_iteration=i
+                )
+
         # save model
         if i % config_siamese.checkpoint_interval == 0 and i > 0:
             start = now()
@@ -320,12 +415,8 @@ def train():
             )
             logger.debug(f'save checkpoint in {now() - start}')
 
-        # samples_count += config_siamese.batch_size
-        # if samples_count >= config_siamese.training_samples:
-            # break
-
-    # logger.info(
-        # f'training {samples_count} samples took {now() - start_training} s')
+    logger.info(
+        f'training {config_siamese.training_samples} samples took {now() - start_training} s')
 
     # parameters here are placeholders
     dataset.built_pipeline.__exit__(type=None, value=None, traceback=None)

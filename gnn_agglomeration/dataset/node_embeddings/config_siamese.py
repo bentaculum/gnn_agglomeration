@@ -84,6 +84,10 @@ p.add(
     '--adam_weight_decay', type=float,
     help='weight decay for adam optimizer')
 
+p.add('--use_validation', type=str2bool)
+p.add('--validation_samples', type=int)
+p.add('--validation_interval', type=int)
+
 p.add(
     '--load_model', type=str,
     help='latest | path/to/tarfile')

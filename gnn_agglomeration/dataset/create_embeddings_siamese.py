@@ -2,18 +2,16 @@ import logging
 import torch
 from torch.utils import tensorboard
 import numpy as np
-import os
-import os.path as osp
 from time import time as now
 import datetime
 import pytz
-import re
 
 from node_embeddings.config_siamese import config as config_siamese, p as parser_siamese  # noqa
 from config import config  # noqa
 
 from node_embeddings.siamese_dataset_inference import SiameseDatasetInference  # noqa
 from node_embeddings.siamese_vgg_3d import SiameseVgg3d  # noqa
+from node_embeddings import utils  # noqa
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -52,39 +50,6 @@ def create_embeddings():
 
     start = now()
 
-    if config_siamese.load_model == 'latest':
-        # find latest model in the runs path
-        # TODO filter for correct format of directory name, instead of
-        # '2019'
-        runs = sorted([name for name in os.listdir(
-            config_siamese.runs_dir) if name.startswith('2019')])
-
-        run_path = osp.join(config_siamese.runs_dir, runs[-1])
-    else:
-        run_path = config_siamese.load_model
-
-    # find latest state of the model
-    def extract_number(f):
-        s = re.findall(r'\d+', f)
-        return int(s[0]) if s else -1, f
-
-    load_model_dir = os.path.join(run_path, 'model')
-    checkpoint_versions = [name for name in os.listdir(
-        load_model_dir) if name.endswith('.tar')]
-    if config_siamese.load_model_version == 'latest':
-        if 'final.tar' in checkpoint_versions:
-            checkpoint_to_load = 'final.tar'
-        else:
-            checkpoint_versions = [
-                v for v in checkpoint_versions if v.startswith('iteration')]
-            checkpoint_to_load = max(checkpoint_versions, key=extract_number)
-    else:
-        checkpoint_to_load = config.load_model_version
-
-    logger.info(f'Load model {run_path}, checkpoint {checkpoint_to_load}')
-    checkpoint = torch.load(os.path.join(
-        load_model_dir, checkpoint_to_load))
-
     model = SiameseVgg3d(
         input_size=np.array(config_siamese.patch_size) /
         np.array(config.voxel_size),
@@ -100,6 +65,11 @@ def create_embeddings():
     # model.to(device) has to be executed before loading the state
     # dicts
     model.to(device)
+    checkpoint = utils.load_checkpoint(
+        load_model=config_siamese.load_model,
+        load_model_version=config_siamese.load_model_version,
+        runs_dir=config_siamese.runs_dir
+    )
     model.load_state_dict(checkpoint['model_state_dict'])
 
     total_params = sum(p.numel()
