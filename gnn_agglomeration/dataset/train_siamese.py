@@ -161,7 +161,23 @@ def write_network_to_summary(writer, iteration, model):
             pass
 
 
-def run_validation(model, loss_function, dataloader, device, writer, train_iteration):
+def accuracy_thresholded(out0, out1, labels):
+    # TODO better to calculate on cpu?
+    # out0, out1, labels = out0.cpu(), out1.cpu(), labels.cpu()
+
+    # TODO parametrize embedding threshold, range is -1 to 1
+    cosine_similarity = torch.nn.functional.cosine_similarity(
+        out0, out1, dim=1)
+    mask = cosine_similarity > 0
+    pred = torch.zeros_like(cosine_similarity)
+    pred[mask] = 1.0
+    pred[~mask] = -1.0
+    correct = pred.eq(labels.float()).sum().item()
+    acc = correct / labels.size(0)
+    return acc
+
+
+def run_validation(model, loss_function, labels, dataloader, device, writer, train_iteration):
     start = now()
     model.eval()
     for i, data in enumerate(dataloader):
@@ -179,8 +195,13 @@ def run_validation(model, loss_function, dataloader, device, writer, train_itera
         )
 
         writer.add_scalar(
-            tag='00_loss',
+            tag='00/loss',
             scalar_value=loss,
+            global_step=train_iteration + i
+        )
+        writer.add_scalar(
+            tag='00/accuracy',
+            scalar_value=accuracy_thresholded(out0, out1, labels),
             global_step=train_iteration + i
         )
 
@@ -386,8 +407,13 @@ def train():
             start = now()
             if i % config_siamese.summary_interval == 0:
                 writer.add_scalar(
-                    tag='00_loss',
+                    tag='00/loss',
                     scalar_value=loss,
+                    global_step=i
+                )
+                writer.add_scalar(
+                    tag='00/accuracy',
+                    scalar_value=accuracy_thresholded(out0, out1, labels),
                     global_step=i
                 )
             logger.debug(f'write to summary in {now() - start}')
@@ -410,6 +436,7 @@ def train():
                 run_validation(
                     model=model,
                     loss_function=loss_function,
+                    labels=labels,
                     dataloader=dataloader_val,
                     device=device,
                     writer=writer_val,
