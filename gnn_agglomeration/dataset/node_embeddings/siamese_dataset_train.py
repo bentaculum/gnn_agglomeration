@@ -5,6 +5,11 @@ import numpy as np
 from time import time as now
 import math
 import os
+import os.path as osp
+import json
+import h5py
+import datetime
+import pytz
 
 from .siamese_dataset import SiameseDataset  # noqa
 from .merge_fragments import MergeFragments  # noqa
@@ -66,7 +71,6 @@ class SiameseDatasetTrain(SiameseDataset):
         logger.debug(f'assign sample weights in {now() - start} s')
 
     def init_pipeline(self):
-        # gunpowder init
         self.raw_key = ArrayKey('RAW')
         self.labels_key = ArrayKey('LABELS')
 
@@ -89,6 +93,12 @@ class SiameseDatasetTrain(SiameseDataset):
             Pad(self.labels_key, None, value=0),
         )
 
+        timestamp = datetime.datetime.now(
+            pytz.timezone('US/Eastern')).strftime('%Y%m%dT%H%M%S.%f%z')
+        self.snapshot_dir = os.path.join('snapshots', str(timestamp))
+        if not osp.isdir(self.snapshot_dir):
+            os.makedirs(self.snapshot_dir)
+
         self.pipeline = (
             self.sources +
             MergeProvider() +
@@ -109,15 +119,15 @@ class SiameseDatasetTrain(SiameseDataset):
                 subsample=8) +
             SimpleAugment() +
             # for debugging
-            IntensityAugment(self.raw_key, 0.9, 1.1, - 0.1, 0.1) +
-            Snapshot(
-                {
-                    self.raw_key: 'volumes/raw',
-                    self.labels_key: 'volumes/labels'
-                },
-                every=1,
-                output_dir=os.path.join('snapshots', str(now()))
-            )
+            IntensityAugment(self.raw_key, 0.9, 1.1, - 0.1, 0.1)  # +
+            # Snapshot(
+            # {
+            # self.raw_key: 'volumes/raw',
+            # self.labels_key: 'volumes/labels'
+            # },
+            # every=1,
+            # output_dir=self.snapshot_dir
+            # )
             # PrintProfilingStats(every=1)
         )
 
@@ -156,8 +166,10 @@ class SiameseDatasetTrain(SiameseDataset):
                 voxel_size=Coordinate(config.voxel_size))
 
         batch = self.batch_provider.request_batch(request)
+        logger.info(f'batch id {batch.id}')
 
         batch_torch = []
+        overlaps = []
         for i in range(0, 2):
             # u=0, v=1
             channels = []
@@ -174,6 +186,7 @@ class SiameseDatasetTrain(SiameseDataset):
                     channels.append(raw_array)
                 if self.mask_channel:
                     channels.append(mask.astype(np.float32))
+                    overlap = labels_array.sum()
 
             else:
                 if self.raw_channel:
@@ -184,13 +197,14 @@ class SiameseDatasetTrain(SiameseDataset):
                     labels_array = (
                         labels_array == node_id[i]).astype(np.float32)
                     # sanity check: is there overlap?
-                    # logger.debug(f'overlap: {labels_array.sum()} voxels')
+                    overlap = labels_array.sum()
+                    overlaps.append(overlap)
                     channels.append(labels_array)
 
             tensor = torch.tensor(channels, dtype=torch.float)
             batch_torch.append(tensor)
 
-        return batch_torch
+        return batch_torch, batch.id, overlaps
 
     def __getitem__(self, index):
         """
@@ -225,7 +239,7 @@ class SiameseDatasetTrain(SiameseDataset):
             self.nodes_attrs['center_y'][node2_index],
             self.nodes_attrs['center_x'][node2_index])
 
-        node1_patch, node2_patch = self.get_batch(
+        (node1_patch, node2_patch), batch_id, overlap = self.get_batch(
             center=(node1_center, node2_center),
             node_id=(node1_id, node2_id)
         )
@@ -251,5 +265,37 @@ class SiameseDatasetTrain(SiameseDataset):
             raise ValueError(
                 f'Value {edge_score} cannot be transformed into a valid label')
 
+        # TODO this is only for visualization
+        self.snapshot_batch(
+            batch_id=batch_id,
+            label=label,
+            overlap=overlap,
+            inputs=(input0, input1),
+            centers=(node1_center, node2_center)
+        )
+
         logger.debug(f'__getitem__ in {now() - start_getitem} s')
         return input0, input1, label
+
+    def snapshot_batch(self, batch_id, label, overlap, inputs, centers):
+        # meta data
+        with open(os.path.join(self.snapshot_dir, f'{batch_id}.json'), 'w') as f:
+            json.dump({'label': str(label.item()),
+                       'fragment_pixels': str(overlap)}, f)
+
+        input0, input1 = inputs
+        arrays = [input0.cpu().numpy(), input1.cpu().numpy()]
+        ds_names = ['raw', 'mask']
+        for i, arr in enumerate(arrays):
+            with h5py.File(osp.join(self.snapshot_dir, f'{batch_id}_{i}.hdf'), 'w') as f:
+                for name, block in zip(ds_names, list(arr)):
+                    dataset = f.create_dataset(name=name, data=block)
+
+                    # calculate the offset, which the gp pipeline does not have
+                    offset = np.array(centers[i]) - np.array(self.patch_size)/2
+                    roi = Roi(offset=offset, shape=self.patch_size)
+                    roi = roi.snap_to_grid(Coordinate(
+                        config.voxel_size), mode='closest')
+
+                    dataset.attrs['offset'] = roi.get_offset()
+                    dataset.attrs['resolution'] = Coordinate(config.voxel_size)
