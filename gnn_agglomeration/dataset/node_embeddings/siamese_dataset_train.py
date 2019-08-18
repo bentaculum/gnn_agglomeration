@@ -94,17 +94,19 @@ class SiameseDatasetTrain(SiameseDataset):
             MergeFragments() +
             ElasticAugment(
                 # copied from /groups/funke/funkelab/sheridana/lsd_experiments/hemi/02_train/setup01/train.py
-                control_point_spacing=[40, 40, 40],
+
+                # TODO consider config voxel size
+                control_point_spacing=[8, 8, 8],
                 # copied from /groups/funke/funkelab/sheridana/lsd_experiments/hemi/02_train/setup01/train.py
-                jitter_sigma=[2, 2, 2],
+                jitter_sigma=[0.5, 0.5, 0.5],
                 # indep. rotation of two cropouts does not help
-                rotation_interval=[0, 0],
+                rotation_interval=[0, math.pi/2],
                 prob_slip=0.0,
                 prob_shift=0.0,
                 max_misalign=0,
                 # TODO adjust subsample value for speed
-                subsample=8)  # +
-            # SimpleAugment(transpose_only=[]) +
+                subsample=8) +
+            SimpleAugment()
             # PrintProfilingStats(every=1)
         )
 
