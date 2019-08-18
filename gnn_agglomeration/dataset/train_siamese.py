@@ -180,7 +180,7 @@ def run_validation(model, loss_function, dataloader, device, writer, train_itera
         )
 
     model.train()
-    logger.info(f'run validation in {now() - start} s')
+    print(f'run validation in {now() - start} s', end='\r')
 
 
 def train():
@@ -208,12 +208,17 @@ def train():
 
     start = now()
     if config_siamese.use_validation:
-        zeros = torch.zeros(len(dataset.samples_weights) * 0.2)
-        ones = torch.ones(len(dataset.samples_weights) * 0.8)
+        split_size = int(len(dataset.samples_weights) * 0.2)
+        zeros = torch.zeros(split_size)
+        ones = torch.ones(len(dataset.samples_weights) - split_size)
 
         train_val_indices = torch.cat((zeros, ones))
+        train_val_indices = train_val_indices[torch.randperm(
+            len(train_val_indices))]
+
         samples_weights_train = train_val_indices.float() * dataset.samples_weights
-        samples_weights_val = ~(train_val_indices.byte()).float() * dataset.samples_weights
+        samples_weights_val = (~(train_val_indices.byte())
+                               ).float() * dataset.samples_weights
 
         sampler = torch.utils.data.WeightedRandomSampler(
             weights=samples_weights_train,
@@ -274,10 +279,12 @@ def train():
     if config_siamese.summary_loss or config_siamese.summary_detailed:
         if config_siamese.use_validation:
             writer_val = torch.utils.tensorboard.SummaryWriter(
-                log_dir=osp.join(config_siamese.runs_dir, timestamp, 'summary', 'val')
+                log_dir=osp.join(config_siamese.runs_dir,
+                                 timestamp, 'summary', 'val')
             )
             writer = torch.utils.tensorboard.SummaryWriter(
-                log_dir=osp.join(config_siamese.runs_dir, timestamp, 'summary', 'train')
+                log_dir=osp.join(config_siamese.runs_dir,
+                                 timestamp, 'summary', 'train')
             )
         else:
             writer = torch.utils.tensorboard.SummaryWriter(
