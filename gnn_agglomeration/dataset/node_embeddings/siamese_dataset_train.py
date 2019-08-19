@@ -89,7 +89,7 @@ class SiameseDatasetTrain(SiameseDataset):
             ZarrSource(
                 config.fragments_zarr,
                 datasets={self.labels_key: config.fragments_ds},
-                array_specs={self.labels_key: ArraySpec(interpolatable=True)}) +
+                array_specs={self.labels_key: ArraySpec(interpolatable=False)}) +
             Pad(self.labels_key, None, value=0),
         )
 
@@ -105,7 +105,6 @@ class SiameseDatasetTrain(SiameseDataset):
             MergeFragments() +
             ElasticAugment(
                 # copied from /groups/funke/funkelab/sheridana/lsd_experiments/hemi/02_train/setup01/train.py
-
                 # TODO consider config voxel size
                 control_point_spacing=[8, 8, 8],
                 # copied from /groups/funke/funkelab/sheridana/lsd_experiments/hemi/02_train/setup01/train.py
@@ -170,6 +169,7 @@ class SiameseDatasetTrain(SiameseDataset):
 
         batch_torch = []
         overlaps = []
+        fragment_arrays_for_snapshot = []
         for i in range(0, 2):
             # u=0, v=1
             channels = []
@@ -194,6 +194,7 @@ class SiameseDatasetTrain(SiameseDataset):
                     channels.append(raw_array)
                 if self.mask_channel:
                     labels_array = batch[self.labels_key].data[i]
+                    fragment_arrays_for_snapshot.append(labels_array[:])
                     labels_array = (
                         labels_array == node_id[i]).astype(np.float32)
                     # sanity check: is there overlap?
@@ -203,8 +204,7 @@ class SiameseDatasetTrain(SiameseDataset):
 
             tensor = torch.tensor(channels, dtype=torch.float)
             batch_torch.append(tensor)
-
-        return batch_torch, batch.id, overlaps
+        return batch_torch, batch.id, overlaps, fragment_arrays_for_snapshot
 
     def __getitem__(self, index):
         """
@@ -225,6 +225,7 @@ class SiameseDatasetTrain(SiameseDataset):
         node1_id = self.edges_attrs[self.node1_field][index]
         node2_id = self.edges_attrs[self.node2_field][index]
         # weird numpy syntax
+        # TODO node ids have to be unique for this!
         node1_index = np.where(
             self.nodes_attrs[self.id_field] == node1_id)[0][0]
         node2_index = np.where(
@@ -239,7 +240,7 @@ class SiameseDatasetTrain(SiameseDataset):
             self.nodes_attrs['center_y'][node2_index],
             self.nodes_attrs['center_x'][node2_index])
 
-        (node1_patch, node2_patch), batch_id, overlap = self.get_batch(
+        (node1_patch, node2_patch), batch_id, overlap, fragment_arrays = self.get_batch(
             center=(node1_center, node2_center),
             node_id=(node1_id, node2_id)
         )
@@ -271,24 +272,33 @@ class SiameseDatasetTrain(SiameseDataset):
             label=label,
             overlap=overlap,
             inputs=(input0, input1),
-            centers=(node1_center, node2_center)
+            centers=(node1_center, node2_center),
+            fragment_arrays=fragment_arrays,
+            node_ids=(node1_id, node2_id)
         )
 
         logger.debug(f'__getitem__ in {now() - start_getitem} s')
         return input0, input1, label
 
-    def snapshot_batch(self, batch_id, label, overlap, inputs, centers):
+    def snapshot_batch(self, batch_id, label, overlap, inputs, centers, fragment_arrays, node_ids):
         # meta data
         with open(os.path.join(self.snapshot_dir, f'{batch_id}.json'), 'w') as f:
             json.dump({'label': str(label.item()),
-                       'fragment_pixels': str(overlap)}, f)
+                       'fragment_pixels': str(overlap),
+                       'node_ids': str(node_ids)},
+                      f)
 
         input0, input1 = inputs
-        arrays = [input0.cpu().numpy(), input1.cpu().numpy()]
-        ds_names = ['raw', 'mask']
+        input0, input1 = input0.cpu().numpy(), input1.cpu().numpy()
+
+        arrays = [
+            [input0[0], input0[1], fragment_arrays[0]],
+            [input1[0], input1[1], fragment_arrays[1]]
+        ]
+        ds_names = ['raw', 'mask', 'fragments']
         for i, arr in enumerate(arrays):
             with h5py.File(osp.join(self.snapshot_dir, f'{batch_id}_{i}.hdf'), 'w') as f:
-                for name, block in zip(ds_names, list(arr)):
+                for name, block in zip(ds_names, arr):
                     dataset = f.create_dataset(name=name, data=block)
 
                     # calculate the offset, which the gp pipeline does not have
@@ -299,3 +309,7 @@ class SiameseDatasetTrain(SiameseDataset):
 
                     dataset.attrs['offset'] = roi.get_offset()
                     dataset.attrs['resolution'] = Coordinate(config.voxel_size)
+                    dataset.attrs['value_range'] = (
+                        np.asscalar(block.min()),
+                        np.asscalar(block.max())
+                    )
