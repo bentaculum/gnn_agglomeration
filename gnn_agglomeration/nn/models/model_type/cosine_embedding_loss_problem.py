@@ -8,7 +8,12 @@ class CosineEmbeddingLossProblem(ModelType):
         super().__init__(config)
 
         self.loss_name = 'Cosine Embedding loss'
-        self.out_channels = self.config.out_dimensionality
+
+        # TODO this is only true if there is no fc layer on top of each node after the GNN
+        if self.config.att_heads_concat:
+            self.out_channels = self.config.hidden_units[-1] * self.config.attention_heads[-1]
+        else:
+            self.out_channels = self.config.hidden_units[-1]
 
     def out_nonlinearity(self, x):
         return x
@@ -25,7 +30,7 @@ class CosineEmbeddingLossProblem(ModelType):
         """
         # go from 0 = merge, 1 = split ground truth values to
         # 1 = merge, -1 = split targets
-        # TODO careful with bitwise operations in torch, feature is still beta
+        # TODO careful with bitwise operations in torch, feature is being updated in recent versions
         targets = (~(targets.byte())).float()
         targets = targets * 2 - 1
 
