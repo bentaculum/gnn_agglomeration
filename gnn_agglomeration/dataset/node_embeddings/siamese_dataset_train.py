@@ -165,7 +165,6 @@ class SiameseDatasetTrain(SiameseDataset):
                 voxel_size=Coordinate(config.voxel_size))
 
         batch = self.batch_provider.request_batch(request)
-        logger.info(f'batch id {batch.id}')
 
         batch_torch = []
         mask_sizes = []

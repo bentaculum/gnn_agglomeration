@@ -32,7 +32,7 @@ def create_embeddings():
         in_memory=config_siamese.in_memory,
         inference_samples=config_siamese.inference_samples,
         rag_block_size=config_siamese.rag_block_size,
-        rag_from_file=config_siameses.rag_from_file,
+        rag_from_file=config_siamese.rag_from_file,
         dump_rag=config_siamese.dump_rag
     )
     logger.info(f'init dataset in {now() - start} s')
@@ -99,7 +99,7 @@ def create_embeddings():
 
     logger.info('start inference loop')
     for i, data in enumerate(dataloader):
-
+        start_batch = now()
         logger.info(f'batch {i} ...')
         patches, node_ids_batch = data
 
@@ -107,8 +107,11 @@ def create_embeddings():
         assert patches.dim() == 5, patches.shape
 
         patches = patches.to(device)
-
         out = model.forward_once(patches)
+
+        if torch.cuda.is_available():
+            logger.debug(
+                f'max GPU memory allocated: {torch.cuda.max_memory_allocated(device=device)/(2**30)} GiB')
 
         node_ids.extend(list(node_ids_batch.numpy()))
         embeddings.extend(list(out.cpu().numpy()))
@@ -116,6 +119,8 @@ def create_embeddings():
         samples_count += config_siamese.batch_size
         if samples_count >= samples_limit:
             break
+
+        logger.debug(f'batch {i} in {now() - start_batch} s')
 
     dataset.write_embeddings_to_db(
         node_ids=node_ids,

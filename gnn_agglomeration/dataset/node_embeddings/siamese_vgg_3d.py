@@ -13,7 +13,6 @@ class SiameseVgg3d(torch.nn.Module):
     """
 
     def __init__(self,
-                 writer,
                  input_size,
                  input_fmaps=1,
                  fmaps=32,
@@ -29,8 +28,6 @@ class SiameseVgg3d(torch.nn.Module):
             downsample_factors:
         """
         super(SiameseVgg3d, self).__init__()
-
-        self.writer = writer
 
         downsample_factors = np.array(downsample_factors)
         current_fmaps = input_fmaps

@@ -12,7 +12,7 @@ import tarfile
 import re
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 logging.basicConfig(level=logging.INFO)
 
 from node_embeddings.config_siamese import config as config_siamese, p as parser_siamese  # noqa
@@ -323,7 +323,6 @@ def train():
         writer = None
 
     model = SiameseVgg3d(
-        writer=writer,
         input_size=np.array(config_siamese.patch_size) /
         np.array(config.voxel_size),
         input_fmaps=int(config_siamese.raw_channel) +  # noqa
@@ -366,8 +365,8 @@ def train():
     start_training = now()
     model.train()
     for i, data in enumerate(dataloader):
-        # if i % config_siamese.console_update_interval == 1:
-        #     start_console_update = now()
+        if i % config_siamese.console_update_interval == 0:
+            start_console_update = now()
         start_batch = now()
         logger.debug(f'batch {i} ...')
 
@@ -430,9 +429,15 @@ def train():
                 iteration=i,
                 model=model)
 
-        # if i % config_siamese.console_update_interval == 0 and i > 0:
-        print(f'batch {i} done in {now() - start_batch} s', end='\r')
-        # logging.info(f'batches {i} done in {now() - start_console_update} s')
+        if torch.cuda.is_available():
+            logger.debug(
+                f'max GPU memory allocated: {torch.cuda.max_memory_allocated(device=device)/(2**30)} GiB')
+
+        # print(f'batch {i} done in {now() - start_batch} s', end='\r')
+        if i % config_siamese.console_update_interval == config_siamese.console_update_interval - 1 \
+                or config_siamese.console_update_interval == 1:
+            logging.info(
+                f'batches {i} done in {now() - start_console_update} s')
 
         if config_siamese.use_validation:
             if i % config_siamese.validation_interval == 0 and i > 0:
