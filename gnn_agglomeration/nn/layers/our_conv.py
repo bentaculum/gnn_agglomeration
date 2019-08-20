@@ -60,6 +60,7 @@ class OurConv(MessagePassing):
                  local_layers=1,
                  local_hidden_dims=None,
                  non_linearity='leaky_relu',
+                 att_use_node_features=False,
                  attention_nn_params=None):
         super(OurConv, self).__init__('add')
 
@@ -74,6 +75,7 @@ class OurConv(MessagePassing):
 
         self.non_linearity = non_linearity
         self.local_layers = local_layers
+        self.att_use_node_features = att_use_node_features
         self.weight_list = torch.nn.ParameterList()
 
         # avoid empty list as default value
@@ -82,6 +84,7 @@ class OurConv(MessagePassing):
         else:
             weight_dims = local_hidden_dims.copy()
 
+        # TODO possibly use the same weight matrix for all attention heads?
         weight_dims.insert(0, in_channels)
         weight_dims.append(heads * out_channels)
 
@@ -90,9 +93,14 @@ class OurConv(MessagePassing):
                 weight_dims[i], weight_dims[i + 1]))
             self.weight_list.append(w)
 
+        if att_use_node_features:
+            att_in_features = 2 * out_channels + dim
+        else:
+            att_in_features = dim
+
         self.att = AttentionMLP(
             heads=self.heads,
-            in_features=2 * out_channels + dim,
+            in_features=att_in_features,
             layers=attention_nn_params['layers'],
             layer_dims=attention_nn_params['layer_dims'],
             bias=attention_nn_params['bias'],
@@ -145,8 +153,13 @@ class OurConv(MessagePassing):
             pseudo=pseudo)
 
     def message(self, edge_index_i, x_i, x_j, num_nodes, pseudo):
-        # Compute attention coefficients.
-        alpha = torch.cat([x_i, x_j, pseudo], dim=-1)
+        # Compute attention coefficients
+        # TODO we should be able to speed this up if we don't pass x_i and x_j to this function
+        if self.att_use_node_features:
+            alpha = torch.cat([x_i, x_j, pseudo], dim=-1)
+        else:
+            alpha = pseudo
+
         alpha = self.att(alpha)
         alpha = F.leaky_relu(alpha, self.negative_slope)
         if self.normalize_with_softmax:

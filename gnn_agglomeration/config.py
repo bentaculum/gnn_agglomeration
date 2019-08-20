@@ -424,6 +424,12 @@ class Config:
         self.default['att_nodenet_hidden_dims'] = []
 
         self.parser.add_argument(
+            '--att_use_node_features',
+            type=str2bool,
+            help='wether the attention function takes the node features as input on top of the pseudo-coordinates')
+        self.default['att_use_node_features'] = False
+
+        self.parser.add_argument(
             '--load_model',
             type=str,
             help="Load model from file. 'latest' | relative/path/to/tarfile")
@@ -674,7 +680,7 @@ class Config:
             '--dataloader_pin_memory',
             type=str2bool,
             help='whether to pin memory for pre-fetching')
-        self.default['dataloader_pin_memory'] = False
+        self.default['dataloader_pin_memory'] = True
 
         self.parser.add_argument(
             '--save_processed_train',

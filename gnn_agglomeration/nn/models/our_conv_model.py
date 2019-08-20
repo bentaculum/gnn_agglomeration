@@ -61,6 +61,7 @@ class OurConvModel(GnnModel):
             local_layers=self.config.att_nodenet_layers,
             local_hidden_dims=self.config.att_nodenet_hidden_dims,
             non_linearity=self.config.att_non_linearity,
+            att_use_node_features=self.config.att_use_node_features,
             attention_nn_params=attention_nn_params
         )
         self.layers_list.append(conv_in)
