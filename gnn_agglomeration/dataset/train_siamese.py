@@ -228,7 +228,10 @@ def train():
         raw_mask_channel=config_siamese.raw_mask_channel,
         num_workers=config.num_workers,
         in_memory=config_siamese.in_memory,
-        rag_block_size=config_siamese.rag_block_size
+        rag_block_size=config_siamese.rag_block_size,
+        rag_from_file=config_siamese.rag_from_file,
+        dump_rag=config_siamese.dump_rag,
+        snapshots=config_siamese.snapshots
     )
     logger.info(f'init dataset in {now() - start} s')
 

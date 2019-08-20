@@ -76,20 +76,23 @@ class SiameseVgg3d(torch.nn.Module):
         self.features = torch.nn.Sequential(*features)
 
         num_features = int(
-            current_size[0] * current_size[1] * current_size[2] * current_fmaps),
-        logger.info(f'inputs to fc layer: {num_features}')
+            current_size[0] * current_size[1] * current_size[2] * current_fmaps)
+        logger.info(f'inputs to fc: {num_features}')
 
+        fc_size = [2048]
         fully_connected = [
             torch.nn.Linear(
-                int(current_size[0] * current_size[1]
-                    * current_size[2] * current_fmaps),
-                2048),
+                num_features,
+                fc_size[0]),
             torch.nn.ReLU(inplace=True),
             torch.nn.Dropout(),
             torch.nn.Linear(
-                2048,
+                fc_size[0],
                 output_features)
         ]
+
+        logger.info(f'fc level 0: {fc_size[0]}')
+        logger.info(f'output: {output_features}')
 
         self.fully_connected = torch.nn.Sequential(*fully_connected)
 

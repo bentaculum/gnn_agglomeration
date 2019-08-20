@@ -6,6 +6,7 @@ import numpy as np
 from time import time as now
 import math
 from abc import ABC, abstractmethod
+import pickle
 
 # TODO how to import from beyond top level path?
 from . import utils  # noqa
@@ -27,7 +28,9 @@ class SiameseDataset(torch.utils.data.Dataset, ABC):
             raw_mask_channel,
             num_workers=5,
             in_memory=True,
-            rag_block_size=None):
+            rag_block_size=None,
+            rag_from_file=None,
+            dump_rag=None):
         """
         connect to db, load and weed out edges, define gunpowder pipeline
         Args:
@@ -44,15 +47,27 @@ class SiameseDataset(torch.utils.data.Dataset, ABC):
         self.in_memory = in_memory
         assert raw_channel or mask_channel or raw_mask_channel
 
-        self.load_rag(rag_block_size=rag_block_size)
+        self.load_rag(
+            rag_block_size=rag_block_size,
+            rag_from_file=rag_from_file,
+            dump_rag=dump_rag
+        )
         self.init_pipeline()
         self.build_pipeline()
 
-    def load_rag(self, rag_block_size):
+    def load_rag(self, rag_block_size, rag_from_file, dump_rag):
+
         # TODO parametrize the used names
         self.id_field = 'id'
         self.node1_field = 'u'
         self.node2_field = 'v'
+
+        if rag_from_file:
+            start = now()
+            self.nodes_attrs, self.edges_attrs = pickle.load(
+                open(rag_from_file, 'rb'))
+            logger.info(f'load rag from {rag_from_file} in {now() - start} s')
+            return
 
         # connect to one RAG DB
         logger.debug('ready to connect to RAG db')
@@ -105,7 +120,7 @@ class SiameseDataset(torch.utils.data.Dataset, ABC):
 
         # filter edges, we only want edges labeled 0 or 1
         edge_filter = (edges_attrs[config.new_edge_attr_trinary] == 1) | \
-                      (edges_attrs[config.new_edge_attr_trinary] == 0)
+            (edges_attrs[config.new_edge_attr_trinary] == 0)
 
         for attr, vals in edges_attrs.items():
             edges_attrs[attr] = vals[edge_filter]
@@ -114,8 +129,14 @@ class SiameseDataset(torch.utils.data.Dataset, ABC):
         logger.debug(f'num nodes: {len(self.nodes_attrs[self.id_field])}')
         logger.debug(f'num edges: {len(self.edges_attrs[self.node1_field])}')
         logger.debug(
-            f'''convert graph to numpy arrays, drop outgoing edges 
+            f'''convert graph to numpy arrays, drop outgoing edges
             and filter edges in {now() - start} s''')
+
+        if dump_rag:
+            start_dump = now()
+            pickle.dump((self.nodes_attrs, self.edges_attrs),
+                        open(dump_rag, 'wb'))
+            logger.info(f'dump rag to {dump_rag} in {now() - start_dump} s')
 
     @abstractmethod
     def init_pipeline(self):

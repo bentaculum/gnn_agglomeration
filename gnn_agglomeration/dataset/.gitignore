@@ -1,2 +1,4 @@
 *.json
 snapshots
+rags
+.nfs*

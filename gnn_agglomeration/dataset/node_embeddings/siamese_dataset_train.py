@@ -35,7 +35,10 @@ class SiameseDatasetTrain(SiameseDataset):
             raw_mask_channel,
             num_workers=5,
             in_memory=True,
-            rag_block_size=None):
+            rag_block_size=None,
+            rag_from_file=None,
+            dump_rag=None,
+            snapshots=False):
         """
         connect to db, load and weed out edges, define gunpowder pipeline
         Args:
@@ -45,6 +48,7 @@ class SiameseDatasetTrain(SiameseDataset):
             num_workers (int): number of workers available, e.g. for loading RAG
         """
 
+        self.snapshots = snapshots
         super().__init__(
             patch_size=patch_size,
             raw_channel=raw_channel,
@@ -52,7 +56,9 @@ class SiameseDatasetTrain(SiameseDataset):
             raw_mask_channel=raw_mask_channel,
             num_workers=num_workers,
             in_memory=in_memory,
-            rag_block_size=rag_block_size
+            rag_block_size=rag_block_size,
+            rag_from_file=rag_from_file,
+            dump_rag=dump_rag
         )
 
         # assign dataset length
@@ -99,16 +105,21 @@ class SiameseDatasetTrain(SiameseDataset):
         if not osp.isdir(self.snapshot_dir):
             os.makedirs(self.snapshot_dir)
 
+        # 5 control points (4 intervals) per axis
+        adaptive_control_point_spacing = np.array(
+            self.patch_size)/(4 * np.array(config.voxel_size, dtype=np.int_))
+        logger.info(
+            f'ElasticAugment control point spacing: {adaptive_control_point_spacing}')
+        adaptive_jitter_sigma = adaptive_control_point_spacing / 16
+        logger.info(f'ElasticAugment jitter sigma: {adaptive_jitter_sigma}')
+
         self.pipeline = (
             self.sources +
             MergeProvider() +
             MergeFragments() +
             ElasticAugment(
-                # copied from /groups/funke/funkelab/sheridana/lsd_experiments/hemi/02_train/setup01/train.py
-                # TODO consider config voxel size
-                control_point_spacing=[8, 8, 8],
-                # copied from /groups/funke/funkelab/sheridana/lsd_experiments/hemi/02_train/setup01/train.py
-                jitter_sigma=[0.5, 0.5, 0.5],
+                control_point_spacing=adaptive_control_point_spacing,
+                jitter_sigma=adaptive_jitter_sigma,
                 # indep. rotation of two cropouts does not help
                 rotation_interval=[0, math.pi/2],
                 prob_slip=0.0,
@@ -116,24 +127,13 @@ class SiameseDatasetTrain(SiameseDataset):
                 max_misalign=0,
                 # TODO adjust subsample value for speed
                 subsample=8) +
-            SimpleAugment() +
-            # for debugging
-            IntensityAugment(self.raw_key, 0.9, 1.1, - 0.1, 0.1)  # +
-            # Snapshot(
-            # {
-            # self.raw_key: 'volumes/raw',
-            # self.labels_key: 'volumes/labels'
-            # },
-            # every=1,
-            # output_dir=self.snapshot_dir
-            # )
+            SimpleAugment()
             # PrintProfilingStats(every=1)
         )
 
-        # TODO reuse when debugging is done
-        # if self.raw_channel or self.raw_mask_channel:
-        # self.pipeline + \
-        # IntensityAugment(self.raw_key, 0.9, 1.1, - 0.1, 0.1)
+        if self.raw_channel or self.raw_mask_channel:
+            self.pipeline + \
+                IntensityAugment(self.raw_key, 0.9, 1.1, - 0.1, 0.1)
 
     def get_batch(self, center, node_id):
         """
@@ -168,12 +168,16 @@ class SiameseDatasetTrain(SiameseDataset):
         logger.info(f'batch id {batch.id}')
 
         batch_torch = []
-        overlaps = []
+        mask_sizes = []
         fragment_arrays_for_snapshot = []
         for i in range(0, 2):
             # u=0, v=1
             channels = []
             if self.raw_mask_channel:
+                if self.snapshots:
+                    raise NotImplementedError(
+                        'Snapshots not implemented for raw_mask_channel')
+
                 raw_array = batch[self.raw_key].data[i]
                 labels_array = batch[self.labels_key].data[i]
                 assert raw_array.shape == labels_array.shape, \
@@ -181,12 +185,12 @@ class SiameseDatasetTrain(SiameseDataset):
                 mask = labels_array == node_id[i]
 
                 raw_mask_array = raw_array * mask
+
                 channels.append(raw_mask_array.astype(np.float32))
                 if self.raw_channel:
                     channels.append(raw_array)
                 if self.mask_channel:
                     channels.append(mask.astype(np.float32))
-                    overlap = labels_array.sum()
 
             else:
                 if self.raw_channel:
@@ -194,17 +198,21 @@ class SiameseDatasetTrain(SiameseDataset):
                     channels.append(raw_array)
                 if self.mask_channel:
                     labels_array = batch[self.labels_key].data[i]
-                    fragment_arrays_for_snapshot.append(labels_array[:])
-                    labels_array = (
+                    mask = (
                         labels_array == node_id[i]).astype(np.float32)
-                    # sanity check: is there overlap?
-                    overlap = labels_array.sum()
-                    overlaps.append(overlap)
-                    channels.append(labels_array)
+
+                    if self.snapshots:
+                        fragment_arrays_for_snapshot.append(labels_array)
+                        # sanity check: fragment size, according to the mask
+                        overlap = mask.sum()
+                        mask_sizes.append(overlap)
+
+                    channels.append(mask)
 
             tensor = torch.tensor(channels, dtype=torch.float)
             batch_torch.append(tensor)
-        return batch_torch, batch.id, overlaps, fragment_arrays_for_snapshot
+
+        return batch_torch, batch.id, mask_sizes, fragment_arrays_for_snapshot
 
     def __getitem__(self, index):
         """
@@ -225,7 +233,6 @@ class SiameseDatasetTrain(SiameseDataset):
         node1_id = self.edges_attrs[self.node1_field][index]
         node2_id = self.edges_attrs[self.node2_field][index]
         # weird numpy syntax
-        # TODO node ids have to be unique for this!
         node1_index = np.where(
             self.nodes_attrs[self.id_field] == node1_id)[0][0]
         node2_index = np.where(
@@ -240,20 +247,10 @@ class SiameseDatasetTrain(SiameseDataset):
             self.nodes_attrs['center_y'][node2_index],
             self.nodes_attrs['center_x'][node2_index])
 
-        (node1_patch, node2_patch), batch_id, overlap, fragment_arrays = self.get_batch(
+        (node1_patch, node2_patch), batch_id, mask_sizes, fragment_arrays = self.get_batch(
             center=(node1_center, node2_center),
             node_id=(node1_id, node2_id)
         )
-
-        # if node1_patch is None or node2_patch is None:
-        #     logger.warning(
-        #         f'patch for one of the nodes is not fully contained in ROI, try again')
-        #     # Sample a new index, using the sample weights again
-        #     new_index = torch.multinomial(
-        #         input=self.samples_weights,
-        #         num_samples=1,
-        #         replacement=True).item()
-        #     return self.__getitem__(index=new_index)
 
         input0 = node1_patch.float()
         input1 = node2_patch.float()
@@ -266,25 +263,29 @@ class SiameseDatasetTrain(SiameseDataset):
             raise ValueError(
                 f'Value {edge_score} cannot be transformed into a valid label')
 
-        # TODO this is only for visualization
-        self.snapshot_batch(
-            batch_id=batch_id,
-            label=label,
-            overlap=overlap,
-            inputs=(input0, input1),
-            centers=(node1_center, node2_center),
-            fragment_arrays=fragment_arrays,
-            node_ids=(node1_id, node2_id)
-        )
+        if self.snapshots:
+            self.snapshot_batch(
+                batch_id=batch_id,
+                label=label,
+                mask_sizes=mask_sizes,
+                inputs=(input0, input1),
+                centers=(node1_center, node2_center),
+                fragment_arrays=fragment_arrays,
+                node_ids=(node1_id, node2_id)
+            )
 
         logger.debug(f'__getitem__ in {now() - start_getitem} s')
         return input0, input1, label
 
-    def snapshot_batch(self, batch_id, label, overlap, inputs, centers, fragment_arrays, node_ids):
+    def snapshot_batch(self, batch_id, label, mask_sizes, inputs, centers, fragment_arrays, node_ids):
+        """
+        adapted from https://github.com/funkey/gunpowder/blob/53a7961c273ee70c0b8e5c95835609cb04decba3/gunpowder/nodes/snapshot.py
+        TODO clean this up 
+        """
         # meta data
         with open(os.path.join(self.snapshot_dir, f'{batch_id}.json'), 'w') as f:
             json.dump({'label': str(label.item()),
-                       'fragment_pixels': str(overlap),
+                       'fragment_pixels': str(mask_sizes),
                        'node_ids': str(node_ids)},
                       f)
 

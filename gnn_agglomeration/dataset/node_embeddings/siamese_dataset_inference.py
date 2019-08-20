@@ -8,7 +8,6 @@ import bson
 import pickle
 
 from .siamese_dataset import SiameseDataset  # noqa
-from .hdf5_like_in_memory import InMemZarrSource  # noqa
 
 # dataset configs for many params
 from config import config  # noqa
@@ -31,8 +30,11 @@ class SiameseDatasetInference(SiameseDataset):
             mask_channel,
             raw_mask_channel,
             num_workers=5,
+            in_memory=True,
             inference_samples='all',
-            rag_block_size=None):
+            rag_block_size=None,
+            rag_from_file=None,
+            dump_rag=None):
         """
         connect to db, load and weed out edges, define gunpowder pipeline
         Args:
@@ -48,29 +50,35 @@ class SiameseDatasetInference(SiameseDataset):
             mask_channel=mask_channel,
             raw_mask_channel=raw_mask_channel,
             num_workers=num_workers,
-            rag_block_size=rag_block_size
+            in_memory=in_memory,
+            rag_block_size=rag_block_size,
+            rag_from_file=rag_from_file,
+            dump_rag=dump_rag
         )
 
         # assign dataset length
         self.len = len(self.nodes_attrs[self.id_field])
 
     def init_pipeline(self):
-        # gunpowder init
         self.raw_key = ArrayKey('RAW')
         self.labels_key = ArrayKey('LABELS')
 
+        if self.in_memory:
+            from .hdf5_like_in_memory import InMemZarrSource as ZarrSource  # noqa
+        else:
+            from gunpowder.nodes.zarr_source import ZarrSource  # noqa
+
         self.sources = (
-            InMemZarrSource(
+            ZarrSource(
                 config.groundtruth_zarr,
                 datasets={self.raw_key: config.raw_ds},
                 array_specs={self.raw_key: ArraySpec(interpolatable=True)}) +
             Normalize(self.raw_key) +
             Pad(self.raw_key, None, value=0),
-            # interpolatable?
-            InMemZarrSource(
+            ZarrSource(
                 config.fragments_zarr,
                 datasets={self.labels_key: config.fragments_ds},
-                array_specs={self.labels_key: ArraySpec(interpolatable=True)}) +
+                array_specs={self.labels_key: ArraySpec(interpolatable=False)}) +
             Pad(self.labels_key, None, value=0),
         )
 
@@ -78,14 +86,6 @@ class SiameseDatasetInference(SiameseDataset):
             self.sources +
             MergeProvider()
         )
-        # at least for debugging:
-        # Snapshot({
-        # self.raw_key: 'volumes/raw',
-        # self.labels_key: 'volumes/labels'
-        # },
-        # every=100,
-        # output_dir='snapshots',
-        # output_filename=f'sample_{now()}.hdf')
         # PrintProfilingStats(every=1)
 
     def get_batch(self, center, node_id):

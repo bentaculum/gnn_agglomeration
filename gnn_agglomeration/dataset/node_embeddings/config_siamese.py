@@ -34,10 +34,17 @@ p.add('--summary_detailed', type=str2bool)
 p.add('--summary_interval', type=int)
 p.add('--checkpoint_interval', type=int)
 p.add('--console_update_interval', type=int)
+p.add('--snapshots', type=str2bool)
 
 p.add(
     '--rag_block_size', type=int, action='append',
     help='block size for loading RAG with daisy')
+p.add(
+    '--rag_from_file', type=str,
+    help='path to pickled rag. Set `None` if not desired')
+p.add(
+    '--dump_rag', type=str,
+    help='path to dump pickled rag. Set `None` if not desired')
 p.add(
     '--in_memory', type=str2bool,
     help='entire zarr dataset can be loaded into memory for faster batch requests')

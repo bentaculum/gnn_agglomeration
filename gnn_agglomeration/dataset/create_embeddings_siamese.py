@@ -29,7 +29,11 @@ def create_embeddings():
         mask_channel=config_siamese.mask_channel,
         raw_mask_channel=config_siamese.raw_mask_channel,
         num_workers=config.num_workers,
-        inference_samples=config_siamese.inference_samples
+        in_memory=config_siamese.in_memory,
+        inference_samples=config_siamese.inference_samples,
+        rag_block_size=config_siamese.rag_block_size,
+        rag_from_file=config_siameses.rag_from_file,
+        dump_rag=config_siamese.dump_rag
     )
     logger.info(f'init dataset in {now() - start} s')
 
