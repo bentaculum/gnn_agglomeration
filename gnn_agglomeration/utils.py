@@ -1,3 +1,4 @@
+import torch
 import time
 import numpy as np
 import logging
@@ -64,3 +65,10 @@ def to_np_arrays(list_of_dicts):
     for k, v in d.items():
         d[k] = np.array(v)
     return d
+
+
+def log_max_memory_allocated(_log, device):
+    if torch.cuda.is_available():
+        _log.debug(
+            f'max GPU memory allocated: {torch.cuda.max_memory_allocated(device=device) / (2**30):.3f} GiB')
+        torch.cuda.reset_max_memory_allocated(device=device)

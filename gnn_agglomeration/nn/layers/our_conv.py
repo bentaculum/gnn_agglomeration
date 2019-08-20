@@ -1,3 +1,4 @@
+import logging
 import torch
 from torch.nn import Parameter
 import torch.nn.functional as F
@@ -6,6 +7,9 @@ from torch_geometric.nn.conv import MessagePassing
 from torch_geometric.utils import softmax
 
 from .attention_mlp import AttentionMLP
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 class OurConv(MessagePassing):
@@ -85,6 +89,7 @@ class OurConv(MessagePassing):
             weight_dims = local_hidden_dims.copy()
 
         # TODO possibly use the same weight matrix for all attention heads?
+        #  --> also adapt in forward, message
         weight_dims.insert(0, in_channels)
         weight_dims.append(heads * out_channels)
 
@@ -92,6 +97,7 @@ class OurConv(MessagePassing):
             w = Parameter(torch.Tensor(
                 weight_dims[i], weight_dims[i + 1]))
             self.weight_list.append(w)
+            logger.debug(f'node layer ({weight_dims[i]}, {weight_dims[i+1]})')
 
         if att_use_node_features:
             att_in_features = 2 * out_channels + dim

@@ -1,14 +1,13 @@
-import math
-
 import torch
 from torch.nn.parameter import Parameter
 from torch.nn import init
 import torch.nn.functional as F
+import math
 
 import logging
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class AttentionMLP(torch.nn.Module):
@@ -39,11 +38,13 @@ class AttentionMLP(torch.nn.Module):
 
         w_in = Parameter(torch.Tensor(1, heads, in_features, layer_dims[0]))
         self.weight_list.append(w_in)
+        logger.debug(f'att layer {tuple(w_in.shape[1:])}')
 
         for i in range(layers - 1):
             w = Parameter(torch.Tensor(
                 1, heads, layer_dims[i], layer_dims[i+1]))
             self.weight_list.append(w)
+            logger.debug(f'att layer {tuple(w.shape[1:])}')
 
         if bias:
             for i in range(layers):
@@ -71,8 +72,11 @@ class AttentionMLP(torch.nn.Module):
 
     def forward(self, x):
         for i, w in enumerate(self.weight_list):
-            if torch.cuda.is_available():
-                logger.debug(f"GPU memory allocated: {torch.cuda.memory_allocated(device='cuda')} B")
+
+            # TODO this seems to be the memory bottleneck of the entire network
+            # if torch.cuda.is_available():
+            #     logger.debug(f"GPU memory allocated: {torch.cuda.memory_allocated(device='cuda')} B")
+
             # enable batched matrix multiplication with extra dim
             x = x.unsqueeze(-2)
             x = torch.matmul(x, w)

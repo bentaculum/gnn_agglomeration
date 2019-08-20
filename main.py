@@ -1,10 +1,12 @@
 import sacred
 from sacred.observers import MongoObserver, TelegramObserver
 from sacred.stflow import LogFileWriter
+import logging
 
 import torch
 
 torch.multiprocessing.set_sharing_strategy('file_system')
+
 import os  # noqa
 import shutil  # noqa
 from torch_geometric.data import DataLoader  # noqa
@@ -16,6 +18,7 @@ import tarfile  # noqa
 import argparse  # noqa
 import json  # noqa
 import time  # noqa
+from time import time as now  # noqa
 import numpy as np  # noqa
 import datetime  # noqa
 import pytz  # noqa
@@ -23,8 +26,15 @@ from funlib.segment.arrays import replace_values  # noqa
 
 from gnn_agglomeration.pyg_datasets import *  # noqa
 from gnn_agglomeration.nn.models import *  # noqa
+
+from gnn_agglomeration import utils
+
 from gnn_agglomeration.experiment import ex  # noqa
 from gnn_agglomeration.config import Config  # noqa
+
+# TODO does this work together with sacred?
+# Init logging module
+logging.basicConfig(level=logging.INFO)
 
 
 @ex.main
@@ -71,6 +81,7 @@ def main(_config, _run, _log):
     val_writer = SummaryWriter(os.path.join(
         config.run_abs_path, 'summary', 'validation'))
 
+    start_load_datasets = now()
     # create and load datasets
     if config.dataset_type_train.startswith('HemibrainDataset'):
         _log.info('Preparing training dataset ...')
@@ -129,14 +140,14 @@ def main(_config, _run, _log):
     if config.standardize_targets and config.model_type == 'RegressionProblem':
         config.targets_mean, config.targets_std = train_dataset.targets_mean_std()
 
-    _log.info('Datasets are ready')
+    _log.info(f'Datasets ready in {now() - start_load_datasets} s')
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     _log.debug(f'num of gpus available: {torch.cuda.device_count()}')
     if torch.cuda.is_available():
-        _log.debug(f'current device: {torch.cuda.current_device()}')
+        _log.info(f'current device: {torch.cuda.current_device()}')
     else:
-        _log.debug(f'current device: cpu')
+        _log.info(f'current device: cpu')
 
     data_loader_train = DataLoader(
         train_dataset,
@@ -154,6 +165,7 @@ def main(_config, _run, _log):
         worker_init_fn=lambda idx: np.random.seed()
     )
 
+    start_load_model = now()
     if not config.load_model:
         model = globals()[config.model](
             config=config,
@@ -203,10 +215,8 @@ def main(_config, _run, _log):
     total_params = sum(p.numel()
                        for p in model.parameters() if p.requires_grad)
     _run.log_scalar('nr_params', total_params, config.training_epochs)
-    _log.info('Model is ready')
-    if torch.cuda.is_available():
-        _log.debug(
-            f'GPU memory allocated so far: {torch.cuda.memory_allocated(device=device)}B')
+    _log.info(f'Model ready in {now() - start_load_model} s')
+    utils.log_max_memory_allocated(_log, device)
 
     # save config to file and store in DB
     config_filepath = os.path.join(config.run_abs_path, 'config.json')
@@ -253,6 +263,7 @@ def main(_config, _run, _log):
             for data_ft in data_loader_train:
                 data_ft = data_ft.to(device)
                 out_ft = model(data_ft)
+                utils.log_max_memory_allocated(_log, device)
                 final_loss_train += model.loss(out_ft,
                                                data_ft.y,
                                                data_ft.mask).item() * data_ft.num_nodes
@@ -305,10 +316,8 @@ def main(_config, _run, _log):
                 _log.debug(
                     f'batch {i}: num nodes {data_fe.num_nodes}, num edges {data_fe.num_edges}')
                 data_fe = data_fe.to(device)
-                if torch.cuda.is_available():
-                    _log.debug(
-                        f'GPU memory allocated: {torch.cuda.memory_allocated(device=device)/(2**30)}GiB')
                 out_fe = model(data_fe)
+                utils.log_max_memory_allocated(_log, device)
 
                 if config.write_to_db:
                     start = time.time()
@@ -453,13 +462,17 @@ def main(_config, _run, _log):
         nr_nodes_train = 0
         _log.info('epoch {} ...'.format(epoch))
         for batch_i, data in enumerate(data_loader_train):
+
+            # mask is half as long as num edges, because it is not directed
             _log.info(
-                f'batch {batch_i}: num nodes {data.num_nodes}, num edges {data.num_edges}')
+                f'batch {batch_i}: num nodes {data.num_nodes}, \
+                num edges in loss/total {int(2 * data.mask.sum().item())}/{data.num_edges}'
+            )
+
             data = data.to(device)
-            if torch.cuda.is_available():
-                _log.debug(
-                    f'GPU memory allocated: {torch.cuda.memory_allocated(device=device)}B')
+
             # call the forward method
+            _log.debug('forward pass')
             out = model(data)
 
             loss = model.loss(out, data.y, data.mask)
@@ -473,6 +486,7 @@ def main(_config, _run, _log):
             # clear the gradient variables of the model
             model.optimizer.zero_grad()
 
+            _log.debug('backward pass')
             loss.backward()
 
             # Gradient clipping
@@ -490,6 +504,7 @@ def main(_config, _run, _log):
                     )
 
             model.optimizer.step()
+            utils.log_max_memory_allocated(_log, device)
             model.train_batch_iteration += 1
 
         epoch_loss /= nr_nodes_train
@@ -513,6 +528,7 @@ def main(_config, _run, _log):
         for batch_i, data in enumerate(data_loader_validation):
             data = data.to(device)
             out = model(data)
+            utils.log_max_memory_allocated(_log, device)
             loss = model.loss(out, data.y, data.mask)
             # model.print_current_loss(
             # epoch, 'validation {}'.format(batch_i), _log)
