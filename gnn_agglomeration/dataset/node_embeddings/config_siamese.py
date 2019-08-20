@@ -66,7 +66,9 @@ p.add(
     '--raw_mask_channel', type=str2bool,
     help='if set true, create a channel with raw volumetric data, masked on one fragment id')
 p.add(
-    '--batch_size', type=int)
+    '--batch_size_train', type=int)
+p.add(
+    '--batch_size_eval', type=int)
 
 p.add(
     '--fmaps', type=int,

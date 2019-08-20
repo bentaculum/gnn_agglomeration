@@ -259,7 +259,7 @@ def train():
             dataset=dataset,
             shuffle=False,
             sampler=sampler,
-            batch_size=config_siamese.batch_size,
+            batch_size=config_siamese.batch_size_train,
             num_workers=config_siamese.num_workers_dataloader,
             pin_memory=True,
             worker_init_fn=lambda idx: np.random.seed()
@@ -275,7 +275,7 @@ def train():
             dataset=dataset,
             shuffle=False,
             sampler=sampler_val,
-            batch_size=config_siamese.batch_size,
+            batch_size=config_siamese.batch_size_eval,
             num_workers=config_siamese.num_workers_dataloader,
             pin_memory=True,
             worker_init_fn=lambda idx: np.random.seed()
@@ -292,7 +292,7 @@ def train():
             dataset=dataset,
             shuffle=False,
             sampler=sampler,
-            batch_size=config_siamese.batch_size,
+            batch_size=config_siamese.batch_size_train,
             num_workers=config_siamese.num_workers_dataloader,
             pin_memory=True,
             worker_init_fn=lambda idx: np.random.seed()

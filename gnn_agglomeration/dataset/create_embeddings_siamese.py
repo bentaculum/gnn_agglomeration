@@ -41,7 +41,7 @@ def create_embeddings():
     dataloader = torch.utils.data.DataLoader(
         dataset=dataset,
         shuffle=False,
-        batch_size=config_siamese.batch_size,
+        batch_size=config_siamese.batch_size_eval,
         num_workers=config_siamese.num_workers_dataloader,
         pin_memory=True,
     )
@@ -116,7 +116,7 @@ def create_embeddings():
         node_ids.extend(list(node_ids_batch.numpy()))
         embeddings.extend(list(out.cpu().numpy()))
 
-        samples_count += config_siamese.batch_size
+        samples_count += config_siamese.batch_size_eval
         if samples_count >= samples_limit:
             break
 
