@@ -1,3 +1,4 @@
+import logging
 import torch
 import torch.nn.functional as F
 
@@ -5,6 +6,8 @@ from .gnn_model import GnnModel
 from ..layers.our_conv import OurConv
 from .model_type.cosine_embedding_loss_problem import CosineEmbeddingLossProblem
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 class OurConvModel(GnnModel):
     def __init__(self,
@@ -77,10 +80,8 @@ class OurConvModel(GnnModel):
 
         for i in range(self.config.hidden_layers):
             if self.config.att_heads_concat:
-                in_channels = self.config.hidden_units[i] * \
-                    (self.config.kernel_size**(i + 1))
-                out_channels = self.config.hidden_units[i + 1] * \
-                    (self.config.kernel_size**(i + 1))
+                in_channels = self.config.hidden_units[i] * self.config.kernel_size
+                out_channels = self.config.hidden_units[i + 1]
             else:
                 in_channels = self.config.hidden_units[i]
                 out_channels = self.config.hidden_units[i + 1]

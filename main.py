@@ -214,6 +214,7 @@ def main(_config, _run, _log):
 
     total_params = sum(p.numel()
                        for p in model.parameters() if p.requires_grad)
+    _log.info(f'nr params: {total_params}')
     _run.log_scalar('nr_params', total_params, config.training_epochs)
     _log.info(f'Model ready in {now() - start_load_model} s')
     utils.log_max_memory_allocated(_log, device)
@@ -465,8 +466,8 @@ def main(_config, _run, _log):
 
             # mask is half as long as num edges, because it is not directed
             _log.info(
-                f'batch {batch_i}: num nodes {data.num_nodes}, \
-                num edges in loss/total {int(2 * data.mask.sum().item())}/{data.num_edges}'
+                f'batch {batch_i}: num nodes {data.num_nodes},'
+                f'num edges in loss/total {int(2 * data.mask.sum().item())}/{data.num_edges}'
             )
 
             data = data.to(device)
