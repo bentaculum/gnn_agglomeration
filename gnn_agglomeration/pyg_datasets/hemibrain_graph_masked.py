@@ -16,6 +16,7 @@ class HemibrainGraphMasked(HemibrainGraph):
     def read_and_process(
             self,
             graph_provider,
+            embeddings,
             block_offset,
             block_shape,
             inner_block_offset,
@@ -48,7 +49,7 @@ class HemibrainGraphMasked(HemibrainGraph):
             self.pos, \
             self.node_ids, \
             mask, \
-            self.y = self.parse_rag_excerpt(node_attrs, edge_attrs)
+            self.y = self.parse_rag_excerpt(node_attrs, edge_attrs, embeddings)
         logger.debug(f'parse rag excerpt in {time.time() - start} s')
 
         start = time.time()

@@ -12,6 +12,7 @@ import time
 import bson
 import multiprocessing
 from time import time as now
+import pickle
 
 from ..data_transforms import *
 from gnn_agglomeration import utils
@@ -29,18 +30,21 @@ class HemibrainDataset(Dataset, ABC):
             root,
             config,
             db_name,
+            embeddings_collection,
             roi_offset,
             roi_shape,
             length=None,
             save_processed=False):
         self.config = config
         self.db_name = db_name
+        self.embeddings_collection = embeddings_collection
         self.roi_offset = np.array(roi_offset)
         self.roi_shape = np.array(roi_shape)
         self.len = length
         self.save_processed = save_processed
 
         self.connect_to_db()
+        self.load_node_embeddings()
         self.prepare()
 
         data_augmentation = globals()[config.data_augmentation](config=config)
@@ -49,6 +53,25 @@ class HemibrainDataset(Dataset, ABC):
         transform = T.Compose([data_augmentation, coordinate_transform])
         super(HemibrainDataset, self).__init__(
             root=root, transform=transform, pre_transform=None)
+
+    def load_node_embeddings(self):
+
+        if self.embeddings_collection is None:
+            self.embeddings = None
+            return
+
+        with open(self.config.db_host, 'r') as f:
+            pw_parser = configparser.ConfigParser()
+            pw_parser.read_file(f)
+
+        client = pymongo.MongoClient(pw_parser['DEFAULT']['db_host'])
+        db = client[self.db_name]
+        collection = db[self.embeddings_collection]
+
+        # TODO parametrize field names
+        self.embeddings = {}
+        for line in collection.find():
+            self.embeddings[line['id']] = pickle.loads(line['embedding'])
 
     def prepare(self):
         pass
@@ -168,12 +191,6 @@ class HemibrainDataset(Dataset, ABC):
         start = now()
         outputs_dict = {(min(k), max(k)): v for k, v in outputs_dict.items()}
         logger.info(f'lower id first in all edges in outputs_dict in {now() - start} s')
-        with open(self.config.db_host, 'r') as f:
-            pw_parser = configparser.ConfigParser()
-            pw_parser.read_file(f)
-
-        client = pymongo.MongoClient(pw_parser['DEFAULT']['db_host'])
-        db = client[self.db_name]
 
         start = now()
         roi = daisy.Roi(list(self.roi_offset), list(self.roi_shape))
@@ -250,6 +267,12 @@ class HemibrainDataset(Dataset, ABC):
         assert len(orig_edge_attrs[node1_field]) == len(outputs_dict),\
             f'num edges in ROI {len(orig_edge_attrs[node1_field])}, num outputs including dummy values {len(outputs_dict)}'
 
+        with open(self.config.db_host, 'r') as f:
+            pw_parser = configparser.ConfigParser()
+            pw_parser.read_file(f)
+
+        client = pymongo.MongoClient(pw_parser['DEFAULT']['db_host'])
+        db = client[self.db_name]
         collection = db[collection_name]
 
         start = now()

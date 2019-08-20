@@ -89,6 +89,7 @@ def main(_config, _run, _log):
             root=config.dataset_abs_path_train,
             config=config,
             db_name=config.db_name_train,
+            embeddings_collection=config.embeddings_collection_train,
             roi_offset=config.train_roi_offset,
             roi_shape=config.train_roi_shape,
             length=config.samples,
@@ -100,6 +101,7 @@ def main(_config, _run, _log):
             root=config.dataset_abs_path_val,
             config=config,
             db_name=config.db_name_val,
+            embeddings_collection=config.embeddings_collection_val,
             roi_offset=config.val_roi_offset,
             roi_shape=config.val_roi_shape,
             save_processed=config.save_processed_val
@@ -110,6 +112,7 @@ def main(_config, _run, _log):
             root=config.dataset_abs_path_test,
             config=config,
             db_name=config.db_name_test,
+            embeddings_collection=config.embeddings_collection_test,
             roi_offset=config.test_roi_offset,
             roi_shape=config.test_roi_shape,
             save_processed=config.save_processed_test

@@ -15,6 +15,7 @@ class HemibrainGraphUnmasked(HemibrainGraph):
     def read_and_process(
             self,
             graph_provider,
+            embeddings,
             block_offset,
             block_shape,
             inner_block_offset,
@@ -43,7 +44,7 @@ class HemibrainGraphUnmasked(HemibrainGraph):
             self.pos, \
             self.node_ids, \
             self.mask, \
-            self.y = self.parse_rag_excerpt(node_attrs, edge_attrs)
+            self.y = self.parse_rag_excerpt(node_attrs, edge_attrs, embeddings)
 
         self.roi_mask = torch.ones_like(self.mask, dtype=torch.uint8)
 

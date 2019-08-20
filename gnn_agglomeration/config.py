@@ -669,6 +669,26 @@ class Config:
             help='name of mongodb collection for RAG edges')
         self.default['edges_collection'] = 'edges_hist_quant_50'
 
+        # TODO set default values for embeddings collections once settle for a certain set of embeddings
+        self.parser.add_argument(
+            '--embeddings_collection_train',
+            type=str,
+            help='name of mondogb collection for RAG node embeddings train')
+        self.default['embeddings_collection_train'] = None
+
+        self.parser.add_argument(
+            '--embeddings_collection_val',
+            type=str,
+            help='name of mondogb collection for RAG node embeddings val')
+        self.default['embeddings_collection_val'] = None
+
+        self.parser.add_argument(
+            '--embeddings_collection_test',
+            type=str,
+            help='name of mondogb collection for RAG node embeddings test')
+        self.default['embeddings_collection_test'] = None
+
+
         self.parser.add_argument(
             '--graph_type',
             type=str,

@@ -4,6 +4,7 @@ import logging
 import numpy as np
 from abc import ABC, abstractmethod
 import time
+from time import time as now
 from funlib.segment.arrays import replace_values
 
 from gnn_agglomeration import utils
@@ -20,6 +21,7 @@ class HemibrainGraph(Data, ABC):
     def read_and_process(
             self,
             graph_provider,
+            embeddings,
             block_offset,
             block_shape,
             inner_block_offset,
@@ -63,7 +65,7 @@ class HemibrainGraph(Data, ABC):
         # remove config property so Data object can be saved with torch
         del self.config
 
-    def parse_rag_excerpt(self, nodes_list, edges_list):
+    def parse_rag_excerpt(self, nodes_list, edges_list, embeddings):
 
         # TODO parametrize the used names
         id_field = 'id'
@@ -91,6 +93,17 @@ class HemibrainGraph(Data, ABC):
         if len(edges_attrs[node1_field]) == 0:
             raise ValueError(
                 f'Removed all edges in ROI, as one node is outside of ROI for each edge')
+
+        start = now()
+        if embeddings is None:
+            x = torch.ones(len(node_attrs[id_field]), 1, dtype=torch.float)
+        else:
+            # TODO this is for debugging. Later, I should have an embedding for each node
+            embeddings_list = [embeddings[i] if i in embeddings else np.random.rand(10) for i in
+                               node_attrs[id_field]]
+            # embeddings_list = [embeddings[i] for i in node_attrs[id_field]]
+            x = torch.tensor(embeddings_list, dtype=torch.float)
+        logger.info(f'load embeddings from dict in {now() - start} s')
 
         node_ids_np = node_attrs[id_field].astype(np.int64)
         node_ids = torch.tensor(node_ids_np, dtype=torch.long)
@@ -155,9 +168,6 @@ class HemibrainGraph(Data, ABC):
                 dtype=torch.float),
             dim0=0,
             dim1=1)
-
-        # TODO node features go here
-        x = torch.ones(len(node_attrs[id_field]), 1, dtype=torch.float)
 
         # Targets operate on undirected edges, therefore no duplicate necessary
         mask = torch.tensor(
