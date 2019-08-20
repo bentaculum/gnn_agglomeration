@@ -263,7 +263,13 @@ class Config:
             type=positive_int,
             nargs='+',
             help='number of units per hidden layer in the GNN')
-        self.default['hidden_units'] = [32, 8, 4, 1]
+        self.default['hidden_units'] = [4, 4, 4, 4]
+
+        self.parser.add_argument(
+            '--attention_heads',
+            nargs='+',
+            help='number of attention heads per hidden layer in the GNN')
+        self.default['attention_heads'] = [8, 4, 2, 1]
 
         self.parser.add_argument(
             '--use_bias',

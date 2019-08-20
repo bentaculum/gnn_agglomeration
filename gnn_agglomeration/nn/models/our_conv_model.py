@@ -55,7 +55,7 @@ class OurConvModel(GnnModel):
             in_channels=self.config.feature_dimensionality,
             out_channels=out_channels_in,
             dim=self.config.pseudo_dimensionality,
-            heads=self.config.kernel_size,
+            heads=self.config.attention_heads[0],
             concat=self.config.att_heads_concat,
             negative_slope=0.2,
             dropout=self.config.att_final_dropout,
@@ -71,7 +71,7 @@ class OurConvModel(GnnModel):
 
         if self.config.batch_norm:
             if self.config.att_heads_concat:
-                batch_norm_size_in = out_channels_in * self.config.kernel_size
+                batch_norm_size_in = out_channels_in * self.config.attention_heads[0]
             else:
                 batch_norm_size_in = out_channels_in
             b = torch.nn.BatchNorm1d(batch_norm_size_in)
@@ -80,7 +80,7 @@ class OurConvModel(GnnModel):
 
         for i in range(self.config.hidden_layers):
             if self.config.att_heads_concat:
-                in_channels = self.config.hidden_units[i] * self.config.kernel_size
+                in_channels = self.config.hidden_units[i] * self.config.attention_heads[i]
                 out_channels = self.config.hidden_units[i + 1]
             else:
                 in_channels = self.config.hidden_units[i]
@@ -90,7 +90,7 @@ class OurConvModel(GnnModel):
                 in_channels=in_channels,
                 out_channels=out_channels,
                 dim=self.config.pseudo_dimensionality,
-                heads=self.config.kernel_size,
+                heads=self.config.attention_heads[i+1],
                 concat=self.config.att_heads_concat,
                 negative_slope=0.2,
                 dropout=self.config.att_final_dropout,
@@ -105,15 +105,14 @@ class OurConvModel(GnnModel):
 
             if self.config.batch_norm:
                 if self.config.att_heads_concat:
-                    batch_norm_size = out_channels * self.config.kernel_size
+                    batch_norm_size = out_channels * self.config.attention_heads[i+1]
                 else:
                     batch_norm_size = out_channels
                 b = torch.nn.BatchNorm1d(batch_norm_size)
                 self.batch_norm_list.append(b)
 
         if self.config.att_heads_concat:
-            fc_in_features = self.config.hidden_units[-1] * \
-                (self.config.kernel_size**(self.config.hidden_layers + 1))
+            fc_in_features = self.config.hidden_units[-1] * self.config.attention_heads[-1]
         else:
             fc_in_features = self.config.hidden_units[-1]
 
