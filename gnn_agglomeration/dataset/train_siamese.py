@@ -11,9 +11,9 @@ import atexit
 import tarfile
 import re
 
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
-logging.basicConfig(level=logging.INFO)
 
 from node_embeddings.config_siamese import config as config_siamese, p as parser_siamese  # noqa
 from config import config, p as parser_ds  # noqa
@@ -215,9 +215,11 @@ def train():
         pytz.timezone('US/Eastern')).strftime('%Y%m%dT%H%M%S.%f%z')
 
     # make necessary logging directories
-    model_dir = osp.join(config_siamese.runs_dir, timestamp, 'model')
+    run_dir = osp.join(config_siamese.runs_dir,
+                       f'{timestamp}_{config_siamese.comment}')
+    model_dir = osp.join(run_dir, 'model')
     os.makedirs(model_dir)
-    summary_dir = osp.join(config_siamese.runs_dir, timestamp, 'summary')
+    summary_dir = osp.join(run_dir, 'summary')
     os.makedirs(summary_dir)
 
     start = now()
@@ -308,16 +310,14 @@ def train():
     if config_siamese.summary_loss or config_siamese.summary_detailed:
         if config_siamese.use_validation:
             writer_val = torch.utils.tensorboard.SummaryWriter(
-                log_dir=osp.join(config_siamese.runs_dir,
-                                 timestamp, 'summary', 'val')
+                log_dir=osp.join(summary_dir, 'val')
             )
             writer = torch.utils.tensorboard.SummaryWriter(
-                log_dir=osp.join(config_siamese.runs_dir,
-                                 timestamp, 'summary', 'train')
+                log_dir=osp.join(summary_dir, 'train')
             )
         else:
             writer = torch.utils.tensorboard.SummaryWriter(
-                log_dir=osp.join(config_siamese.runs_dir, timestamp, 'summary')
+                log_dir=summary_dir
             )
     else:
         writer = None

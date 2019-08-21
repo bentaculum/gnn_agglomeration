@@ -108,7 +108,7 @@ p.add(
     help='`all` | threshold number')
 p.add(
     '--comment', type=str,
-    help='used for naming new collection in db')
+    help='used for naming training run, new collection in db')
 
 config, remaining_argv = p.parse_known_args()
 sys.argv = [sys.argv[0], *remaining_argv]
