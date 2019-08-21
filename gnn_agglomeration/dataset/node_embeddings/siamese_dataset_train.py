@@ -88,13 +88,13 @@ class SiameseDatasetTrain(SiameseDataset):
         self.sources = (
             ZarrSource(
                 config.groundtruth_zarr,
-                datasets={self.raw_key: config.raw_ds},
+                datasets={self.raw_key: config.raw_ds_emb},
                 array_specs={self.raw_key: ArraySpec(interpolatable=True)}) +
             Normalize(self.raw_key) +
             Pad(self.raw_key, None, value=0),
             ZarrSource(
                 config.fragments_zarr,
-                datasets={self.labels_key: config.fragments_ds},
+                datasets={self.labels_key: config.fragments_ds_emb},
                 array_specs={self.labels_key: ArraySpec(interpolatable=False)}) +
             Pad(self.labels_key, None, value=0),
         )
@@ -107,7 +107,7 @@ class SiameseDatasetTrain(SiameseDataset):
 
         # 5 control points (4 intervals) per axis
         adaptive_control_point_spacing = np.array(
-            self.patch_size)/(4 * np.array(config.voxel_size, dtype=np.int_))
+            self.patch_size)/(4 * np.array(config.voxel_size_emb, dtype=np.int_))
         logger.info(
             f'ElasticAugment control point spacing: {adaptive_control_point_spacing}')
         adaptive_jitter_sigma = adaptive_control_point_spacing / 16
@@ -147,7 +147,7 @@ class SiameseDatasetTrain(SiameseDataset):
         """
         center_u, center_v = center
         roi = Roi(offset=(0, 0, 0), shape=self.patch_size)
-        roi = roi.snap_to_grid(Coordinate(config.voxel_size), mode='closest')
+        roi = roi.snap_to_grid(Coordinate(config.voxel_size_emb), mode='closest')
 
         request = BatchRequest()
         request.thaw()
@@ -158,11 +158,11 @@ class SiameseDatasetTrain(SiameseDataset):
         if self.raw_channel or self.raw_mask_channel:
             request[self.raw_key] = ArraySpec(
                 roi=roi,
-                voxel_size=Coordinate(config.voxel_size))
+                voxel_size=Coordinate(config.voxel_size_emb))
         if self.mask_channel or self.raw_mask_channel:
             request[self.labels_key] = ArraySpec(
                 roi=roi,
-                voxel_size=Coordinate(config.voxel_size))
+                voxel_size=Coordinate(config.voxel_size_emb))
 
         batch = self.batch_provider.request_batch(request)
 
@@ -305,10 +305,10 @@ class SiameseDatasetTrain(SiameseDataset):
                     offset = np.array(centers[i]) - np.array(self.patch_size)/2
                     roi = Roi(offset=offset, shape=self.patch_size)
                     roi = roi.snap_to_grid(Coordinate(
-                        config.voxel_size), mode='closest')
+                        config.voxel_size_emb), mode='closest')
 
                     dataset.attrs['offset'] = roi.get_offset()
-                    dataset.attrs['resolution'] = Coordinate(config.voxel_size)
+                    dataset.attrs['resolution'] = Coordinate(config.voxel_size_emb)
                     dataset.attrs['value_range'] = (
                         np.asscalar(block.min()),
                         np.asscalar(block.max())

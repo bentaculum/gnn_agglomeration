@@ -56,7 +56,7 @@ def create_embeddings():
 
     model = SiameseVgg3d(
         input_size=np.array(config_siamese.patch_size) /
-        np.array(config.voxel_size),
+        np.array(config.voxel_size_emb),
         input_fmaps=int(config_siamese.raw_channel) +  # noqa
             int(config_siamese.mask_channel) +  # noqa
             int(config_siamese.raw_mask_channel),  # noqa

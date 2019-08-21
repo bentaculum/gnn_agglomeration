@@ -71,13 +71,13 @@ class SiameseDatasetInference(SiameseDataset):
         self.sources = (
             ZarrSource(
                 config.groundtruth_zarr,
-                datasets={self.raw_key: config.raw_ds},
+                datasets={self.raw_key: config.raw_ds_emb},
                 array_specs={self.raw_key: ArraySpec(interpolatable=True)}) +
             Normalize(self.raw_key) +
             Pad(self.raw_key, None, value=0),
             ZarrSource(
                 config.fragments_zarr,
-                datasets={self.labels_key: config.fragments_ds},
+                datasets={self.labels_key: config.fragments_ds_emb},
                 array_specs={self.labels_key: ArraySpec(interpolatable=False)}) +
             Pad(self.labels_key, None, value=0),
         )
@@ -101,7 +101,7 @@ class SiameseDatasetInference(SiameseDataset):
         """
         offset = np.array(center) - np.array(self.patch_size) / 2
         roi = Roi(offset=offset, shape=self.patch_size)
-        roi = roi.snap_to_grid(Coordinate(config.voxel_size), mode='closest')
+        roi = roi.snap_to_grid(Coordinate(config.voxel_size_emb), mode='closest')
         # logger.debug(f'ROI snapped to grid: {roi}')
 
         request = BatchRequest()
