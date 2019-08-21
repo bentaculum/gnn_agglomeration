@@ -13,7 +13,7 @@ import re
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 from node_embeddings.config_siamese import config as config_siamese, p as parser_siamese  # noqa
 from config import config, p as parser_ds  # noqa
