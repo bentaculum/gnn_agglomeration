@@ -28,11 +28,15 @@ p.add(
     '--groundtruth_ds',
     type=str,
     help='relative path to the ground truth in the .zarr file')
-p.add(
-    '--raw_ds',
-    type=str,
-    help='relative path to the raw image data in the groundtruth .zarr file')
 
+p.add(
+    '--fragments_ds_emb',
+    type=str,
+    help='relative path to the fragments ds in fragments_zarr used to create node embeddings')
+p.add(
+    '--raw_ds_emb',
+    type=str,
+    help='relative path to the raw image data in groundtruth_zarr used to create node_embeddings')
 
 p.add('--temp_path', type=str, help='where to temp. store the blockwise outputs')
 p.add('--lut_fragments_to_overlap_gt', type=str,
@@ -77,6 +81,8 @@ p.add('--padding', type=int, action='append',
       help='padding used for fragment creation. Not used at the moment')
 p.add('--voxel_size', type=int, action='append',
       help='voxel size in nanometers')
+p.add('--voxel_size_emb', type=int, action='append',
+      help='voxel size in nanometers used to create node embeddings')
 
 # [DATA PROCESSING]
 p.add('--num_workers', type=int, help='number of daisy subprocesses')
