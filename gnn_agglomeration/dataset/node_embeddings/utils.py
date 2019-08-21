@@ -107,3 +107,10 @@ def load_checkpoint(load_model, load_model_version, runs_dir):
         load_model_dir, checkpoint_to_load))
 
     return checkpoint
+
+
+def log_max_memory_allocated(device):
+    if torch.cuda.is_available():
+        logger.debug(
+            f'max GPU memory allocated: {torch.cuda.max_memory_allocated(device=device) / (2**30):.3f} GiB')
+        torch.cuda.reset_max_memory_allocated(device=device)

@@ -43,7 +43,7 @@ def create_embeddings():
         shuffle=False,
         batch_size=config_siamese.batch_size_eval,
         num_workers=config_siamese.num_workers_dataloader,
-        pin_memory=True,
+        pin_memory=config_siamese.pin_memory,
     )
     logger.info(f'init dataloader in {now() - start} s')
 

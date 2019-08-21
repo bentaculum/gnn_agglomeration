@@ -1,3 +1,4 @@
+from gnn_agglomeration import utils
 import sacred
 from sacred.observers import MongoObserver, TelegramObserver
 from sacred.stflow import LogFileWriter
@@ -5,6 +6,7 @@ import logging
 
 import torch
 
+# TODO what does this do exactly?
 torch.multiprocessing.set_sharing_strategy('file_system')
 
 import os  # noqa
@@ -27,7 +29,6 @@ from funlib.segment.arrays import replace_values  # noqa
 from gnn_agglomeration.pyg_datasets import *  # noqa
 from gnn_agglomeration.nn.models import *  # noqa
 
-from gnn_agglomeration import utils
 
 from gnn_agglomeration.experiment import ex  # noqa
 from gnn_agglomeration.config import Config  # noqa
@@ -336,7 +337,8 @@ def main(_config, _run, _log):
                     out_1d = out_1d[data_fe.roi_mask.byte()].cpu()
 
                     if len(edges) == 0:
-                        _log.warning(f'test pass: no edges in block after masking')
+                        _log.warning(
+                            f'test pass: no edges in block after masking')
                         continue
 
                     edges_orig_labels = np.zeros_like(edges, dtype=np.int64)
@@ -497,12 +499,14 @@ def main(_config, _run, _log):
             if config.clip_grad:
                 if config.clip_method == 'value':
                     torch.nn.utils.clip_grad_value_(
-                        parameters=filter(lambda p: p.requires_grad, model.parameters()),
+                        parameters=filter(
+                            lambda p: p.requires_grad, model.parameters()),
                         clip_value=config.clip_value
                     )
                 else:
                     torch.nn.utils.clip_grad_norm_(
-                        parameters=filter(lambda p: p.requires_grad, model.parameters()),
+                        parameters=filter(
+                            lambda p: p.requires_grad, model.parameters()),
                         max_norm=config.clip_value,
                         norm_type=float(config.clip_method)
                     )

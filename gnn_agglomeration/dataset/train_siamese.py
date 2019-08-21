@@ -13,7 +13,7 @@ import re
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 from node_embeddings.config_siamese import config as config_siamese, p as parser_siamese  # noqa
 from config import config, p as parser_ds  # noqa
@@ -162,8 +162,6 @@ def write_network_to_summary(writer, iteration, model):
 
 
 def accuracy_thresholded(out0, out1, labels):
-    # TODO better to calculate on cpu?
-    # out0, out1, labels = out0.cpu(), out1.cpu(), labels.cpu()
 
     # TODO parametrize embedding threshold, range is -1 to 1
     cosine_similarity = torch.nn.functional.cosine_similarity(
@@ -263,7 +261,7 @@ def train():
             sampler=sampler,
             batch_size=config_siamese.batch_size_train,
             num_workers=config_siamese.num_workers_dataloader,
-            pin_memory=True,
+            pin_memory=config_siamese.pin_memory,
             worker_init_fn=lambda idx: np.random.seed()
         )
 
@@ -279,7 +277,7 @@ def train():
             sampler=sampler_val,
             batch_size=config_siamese.batch_size_eval,
             num_workers=config_siamese.num_workers_dataloader,
-            pin_memory=True,
+            pin_memory=config_siamese.pin_memory,
             worker_init_fn=lambda idx: np.random.seed()
         )
 
@@ -296,7 +294,7 @@ def train():
             sampler=sampler,
             batch_size=config_siamese.batch_size_train,
             num_workers=config_siamese.num_workers_dataloader,
-            pin_memory=True,
+            pin_memory=config_siamese.pin_memory,
             worker_init_fn=lambda idx: np.random.seed()
         )
     logger.info(f'init dataloader in {now() - start} s')
@@ -378,21 +376,29 @@ def train():
             logger.debug(f'# class {int(l)}: {int(c)}')
 
         # make sure the dimensionality is ok
-        assert input0.dim() == 5, input0.shape
-        assert labels.dim() == 1, labels.shape
+        # assert input0.dim() == 5, input0.shape
+        # assert labels.dim() == 1, labels.shape
 
+        start_to_gpu = now()
         input0 = input0.to(device)
         input1 = input1.to(device)
         labels = labels.to(device)
+        logger.debug(f'tensors to gpu in {now() - start_to_gpu} s')
 
         optimizer.zero_grad()
+        start_forward = now()
         out0, out1 = model(input0, input1)
+        logger.debug(f'forward in {now() - start_forward} s')
+
+        start_loss = now()
         loss = loss_function(
             input1=out0,
             input2=out1,
             target=labels
         )
+        logger.debug(f'loss in {now() - start_loss} s')
 
+        start_register = now()
         # TODO not sure if that's the intended use
         # somehow, the exit function gets called multiple times in some instances
         # register exit routines, in case there is an interrupt, e.g. via keyboard
@@ -403,25 +409,33 @@ def train():
             writer=writer,
             summary_dir=summary_dir
         )
+        logger.debug(f'register atexit in {now() - start_register} s')
 
         # TODO move to subprocess for speed?
+        # Yes. Or aggregate first and write only sometimes
         if config_siamese.summary_loss:
-            start = now()
             if i % config_siamese.summary_interval == 0:
+                start_summary = now()
                 writer.add_scalar(
                     tag='00/loss',
                     scalar_value=loss,
                     global_step=i
                 )
+                logger.debug(
+                    f'write loss to summary in {now() - start_summary} s')
+                start_summary = now()
                 writer.add_scalar(
                     tag='00/accuracy',
                     scalar_value=accuracy_thresholded(out0, out1, labels),
                     global_step=i
                 )
-            logger.debug(f'write to summary in {now() - start}')
+                logger.debug(
+                    f'write accuracy to summary in {now() - start_summary} s')
 
+        start_backward = now()
         loss.backward()
         optimizer.step()
+        logger.debug(f'backward + step in {now() - start_backward} s')
 
         if config_siamese.summary_detailed:
             write_network_to_summary(
@@ -429,9 +443,7 @@ def train():
                 iteration=i,
                 model=model)
 
-        if torch.cuda.is_available():
-            logger.debug(
-                f'max GPU memory allocated: {torch.cuda.max_memory_allocated(device=device)/(2**30)} GiB')
+        utils.log_max_memory_allocated(device)
 
         # print(f'batch {i} done in {now() - start_batch} s', end='\r')
         if i % config_siamese.console_update_interval == config_siamese.console_update_interval - 1 \

@@ -18,7 +18,7 @@ from .merge_fragments import MergeFragments  # noqa
 from config import config  # noqa
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 # logging.getLogger('gunpowder.nodes').setLevel(logging.DEBUG)
 
 
@@ -147,7 +147,8 @@ class SiameseDatasetTrain(SiameseDataset):
         """
         center_u, center_v = center
         roi = Roi(offset=(0, 0, 0), shape=self.patch_size)
-        roi = roi.snap_to_grid(Coordinate(config.voxel_size_emb), mode='closest')
+        roi = roi.snap_to_grid(Coordinate(
+            config.voxel_size_emb), mode='closest')
 
         request = BatchRequest()
         request.thaw()
@@ -308,7 +309,8 @@ class SiameseDatasetTrain(SiameseDataset):
                         config.voxel_size_emb), mode='closest')
 
                     dataset.attrs['offset'] = roi.get_offset()
-                    dataset.attrs['resolution'] = Coordinate(config.voxel_size_emb)
+                    dataset.attrs['resolution'] = Coordinate(
+                        config.voxel_size_emb)
                     dataset.attrs['value_range'] = (
                         np.asscalar(block.min()),
                         np.asscalar(block.max())

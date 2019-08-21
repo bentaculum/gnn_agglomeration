@@ -35,6 +35,9 @@ p.add('--summary_interval', type=int)
 p.add('--checkpoint_interval', type=int)
 p.add('--console_update_interval', type=int)
 p.add('--snapshots', type=str2bool)
+p.add(
+    '--pin_memory', type=str2bool,
+    help='pytorch dataloader flag')
 
 p.add(
     '--rag_block_size', type=int, action='append',
