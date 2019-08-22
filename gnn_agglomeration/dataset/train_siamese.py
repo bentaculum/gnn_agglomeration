@@ -214,7 +214,7 @@ def write_accuracy_to_summary(writer, iteration, out0, out1, labels):
     accuracies = accuracy_thresholded(out0, out1, labels, thresholds)
     for t, a in zip(thresholds, accuracies):
         writer.add_scalar(
-            tag=f'00/accuracy/threshold_{t}',
+            tag=f'00/accuracy/threshold_{t:.2f}',
             scalar_value=a,
             global_step=iteration
         )
