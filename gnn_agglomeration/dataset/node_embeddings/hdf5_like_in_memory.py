@@ -39,7 +39,7 @@ class Hdf5InMemory(Hdf5LikeSource):
 
                 start = now()
                 logger.info(
-                    f'start loading {data_file}/{ds_name} into memory')
+                    f'start loading {ds_name} into memory')
                 self.in_mem_datasets[array_key] = self._Hdf5LikeSource__read(
                     data_file,
                     self.datasets[array_key],
