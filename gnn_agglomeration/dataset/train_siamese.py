@@ -194,6 +194,9 @@ def run_validation(model, loss_function, labels, dataloader, device, writer, tra
             target=labels
         )
 
+        accuracy = accuracy_thresholded(out0, out1, labels)
+        output_similarities = torch.nn.functional.cosine_similarity(
+            out0, out1, dim=1)
         writer.add_scalar(
             tag='00/loss',
             scalar_value=loss,
@@ -201,8 +204,13 @@ def run_validation(model, loss_function, labels, dataloader, device, writer, tra
         )
         writer.add_scalar(
             tag='00/accuracy',
-            scalar_value=accuracy_thresholded(out0, out1, labels),
+            scalar_value=accuracy,
             global_step=train_iteration + i
+        )
+        writer.add_histogram(
+            '01/output_similarities',
+            output_similarities,
+            train_iteration + i
         )
 
     model.train()
@@ -425,6 +433,7 @@ def train():
         if config_siamese.summary_loss:
             if i % config_siamese.summary_interval == 0:
                 start_summary = now()
+                accuracy = accuracy_thresholded(out0, out1, labels)
                 writer.add_scalar(
                     tag='00/loss',
                     scalar_value=loss,
@@ -435,7 +444,7 @@ def train():
                 start_summary = now()
                 writer.add_scalar(
                     tag='00/accuracy',
-                    scalar_value=accuracy_thresholded(out0, out1, labels),
+                    scalar_value=accuracy,
                     global_step=i
                 )
                 logger.debug(
