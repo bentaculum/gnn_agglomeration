@@ -168,16 +168,18 @@ def output_similarities_split(writer, iteration, out0, out1, labels):
     output_similarities = torch.nn.functional.cosine_similarity(
         out0, out1, dim=1)
 
-    writer.add_histogram(
-        '01/output_similarities/class1',
-        output_similarities[mask],
-        iteration
-    )
-    writer.add_histogram(
-        '01/output_similarities/class-1',
-        output_similarities[~mask],
-        iteration
-    )
+    if len(output_similarities[mask]) > 0:
+        writer.add_histogram(
+            '01/output_similarities/class1',
+            output_similarities[mask],
+            iteration
+        )
+    if len(output_similarities[~mask]) > 0:
+        writer.add_histogram(
+            '01/output_similarities/class-1',
+            output_similarities[~mask],
+            iteration
+        )
 
 
 def accuracy_thresholded(out0, out1, labels, thresholds):
@@ -206,7 +208,8 @@ def accuracy_thresholded(out0, out1, labels, thresholds):
 
 
 def write_accuracy_to_summary(writer, iteration, out0, out1, labels):
-    thresholds = torch.tensor(config_siamese.accuracy_thresholds).float()
+    thresholds = torch.tensor(
+        config_siamese.accuracy_thresholds).float().cuda()
     # precalculate all accuracies before transfering values from gpu to cpu
     accuracies = accuracy_thresholded(out0, out1, labels, thresholds)
     for t, a in zip(thresholds, accuracies):

@@ -103,6 +103,12 @@ p.add('--use_validation', type=str2bool)
 p.add(
     '--validation_config', type=str,
     help='if set, load an extra config file for the validation dataset from that path')
+p.add(
+    '--dump_rag_val', type=str,
+    help='path to dump pickled rag for validation dataset. Set `None` if not desired')
+p.add(
+    '--rag_from_file_val', type=str,
+    help='path to pickled rag for validation dataset. Set `None` if not desired')
 p.add('--validation_samples', type=int)
 p.add('--validation_interval', type=int)
 
