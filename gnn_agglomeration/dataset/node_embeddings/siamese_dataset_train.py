@@ -18,7 +18,7 @@ from .merge_fragments import MergeFragments  # noqa
 from config import config  # noqa
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 # logging.getLogger('gunpowder.nodes').setLevel(logging.DEBUG)
 
 

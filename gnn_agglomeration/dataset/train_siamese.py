@@ -1,5 +1,7 @@
 import logging
 import torch
+torch.multiprocessing.set_sharing_strategy('file_descriptor')  # noqa
+
 from torch.utils import tensorboard
 import numpy as np
 import os
@@ -13,7 +15,7 @@ import re
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 from node_embeddings.config_siamese import config as config_siamese, p as parser_siamese  # noqa
 from config import config, p as parser_ds  # noqa
@@ -365,27 +367,28 @@ def train():
     for i, data in enumerate(dataloader):
         if i % config_siamese.console_update_interval == 0:
             start_console_update = now()
-        start_batch = now()
+        # start_batch = now()
         logger.debug(f'batch {i} ...')
 
         input0, input1, labels = data
-        unique_labels = labels.unique()
-        counts = [len(np.where(labels.numpy() == l.item())[0])
-                  for l in unique_labels]
-        for l, c in zip(unique_labels.tolist(), counts):
-            logger.debug(f'# class {int(l)}: {int(c)}')
+
+        if logger.getEffectiveLevel() <= logging.DEBUG:
+            unique_labels = labels.unique()
+            counts = [len(np.where(labels.numpy() == l.item())[0])
+                      for l in unique_labels]
+            for l, c in zip(unique_labels.tolist(), counts):
+                logger.debug(f'# class {int(l)}: {int(c)}')
 
         # make sure the dimensionality is ok
         # assert input0.dim() == 5, input0.shape
         # assert labels.dim() == 1, labels.shape
 
         start_to_gpu = now()
+        labels = labels.to(device)
         input0 = input0.to(device)
         input1 = input1.to(device)
-        labels = labels.to(device)
         logger.debug(f'tensors to gpu in {now() - start_to_gpu} s')
 
-        optimizer.zero_grad()
         start_forward = now()
         out0, out1 = model(input0, input1)
         logger.debug(f'forward in {now() - start_forward} s')
@@ -411,8 +414,14 @@ def train():
         )
         logger.debug(f'register atexit in {now() - start_register} s')
 
-        # TODO move to subprocess for speed?
-        # Yes. Or aggregate first and write only sometimes
+        start_backward = now()
+        loss.backward()
+        optimizer.step()
+        optimizer.zero_grad()
+        logger.debug(f'backward + step in {now() - start_backward} s')
+
+        utils.log_max_memory_allocated(device)
+
         if config_siamese.summary_loss:
             if i % config_siamese.summary_interval == 0:
                 start_summary = now()
@@ -432,18 +441,11 @@ def train():
                 logger.debug(
                     f'write accuracy to summary in {now() - start_summary} s')
 
-        start_backward = now()
-        loss.backward()
-        optimizer.step()
-        logger.debug(f'backward + step in {now() - start_backward} s')
-
         if config_siamese.summary_detailed:
             write_network_to_summary(
                 writer=writer,
                 iteration=i,
                 model=model)
-
-        utils.log_max_memory_allocated(device)
 
         # print(f'batch {i} done in {now() - start_batch} s', end='\r')
         if i % config_siamese.console_update_interval == config_siamese.console_update_interval - 1 \
