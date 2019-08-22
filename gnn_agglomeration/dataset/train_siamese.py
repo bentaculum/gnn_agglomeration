@@ -206,7 +206,7 @@ def run_validation(model, loss_function, labels, dataloader, device, writer, tra
         )
 
     model.train()
-    print(f'run validation in {now() - start} s', end='\r')
+    logger.info(f'run validation in {now() - start} s')
 
 
 def train():
