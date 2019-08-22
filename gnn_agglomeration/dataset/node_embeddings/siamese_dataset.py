@@ -4,15 +4,10 @@ from gunpowder import *
 import daisy
 import numpy as np
 from time import time as now
-import math
 from abc import ABC, abstractmethod
 import pickle
 
-# TODO how to import from beyond top level path?
 from . import utils  # noqa
-
-# dataset configs for many params
-from config import config  # noqa
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -30,7 +25,8 @@ class SiameseDataset(torch.utils.data.Dataset, ABC):
             in_memory=True,
             rag_block_size=None,
             rag_from_file=None,
-            dump_rag=None):
+            dump_rag=None,
+            config_from_file=None):
         """
         connect to db, load and weed out edges, define gunpowder pipeline
         Args:
@@ -45,6 +41,17 @@ class SiameseDataset(torch.utils.data.Dataset, ABC):
         self.raw_mask_channel = raw_mask_channel
         self.num_workers = num_workers
         self.in_memory = in_memory
+
+        # TODO this is hacky
+        if config_from_file:
+            # load a config from file exclusively
+            from config import p as parser_ds  # noqa
+            self.config = parser_ds.parse_args(args=f'--config_file {config_from_file}')
+        else:
+            # load a config that is mutable via command line
+            from config import config  # noqa
+            self.config = config
+
         assert raw_channel or mask_channel or raw_mask_channel
 
         self.load_rag(
@@ -73,11 +80,11 @@ class SiameseDataset(torch.utils.data.Dataset, ABC):
         logger.debug('ready to connect to RAG db')
         start = now()
         graph_provider = daisy.persistence.MongoDbGraphProvider(
-            db_name=config.db_name,
-            host=config.db_host,
+            db_name=self.config.db_name,
+            host=self.config.db_host,
             mode='r',
-            nodes_collection=config.nodes_collection,
-            edges_collection=config.edges_collection,
+            nodes_collection=self.config.nodes_collection,
+            edges_collection=self.config.edges_collection,
             endpoint_names=['u', 'v'],
             position_attribute=[
                 'center_z',
@@ -87,7 +94,7 @@ class SiameseDataset(torch.utils.data.Dataset, ABC):
 
         # get all edges, including gt_merge_score, as dict of numpy arrays
         start = now()
-        roi = daisy.Roi(offset=config.roi_offset, shape=config.roi_shape)
+        roi = daisy.Roi(offset=self.config.roi_offset, shape=self.config.roi_shape)
         logger.info(roi)
         rag_block_size = daisy.Coordinate(rag_block_size)
         logger.info(f'rag_block_size {rag_block_size}')
@@ -104,7 +111,7 @@ class SiameseDataset(torch.utils.data.Dataset, ABC):
         self.nodes_attrs = {k: nodes_attrs[k] for k in nodes_cols}
 
         edges_cols = [self.node1_field, self.node2_field,
-                      config.new_edge_attr_trinary]
+                      self.config.new_edge_attr_trinary]
         edges_attrs = {k: edges_attrs[k] for k in edges_cols}
 
         logger.debug(
@@ -119,8 +126,8 @@ class SiameseDataset(torch.utils.data.Dataset, ABC):
         )
 
         # filter edges, we only want edges labeled 0 or 1
-        edge_filter = (edges_attrs[config.new_edge_attr_trinary] == 1) | \
-            (edges_attrs[config.new_edge_attr_trinary] == 0)
+        edge_filter = (edges_attrs[self.config.new_edge_attr_trinary] == 1) | \
+            (edges_attrs[self.config.new_edge_attr_trinary] == 0)
 
         for attr, vals in edges_attrs.items():
             edges_attrs[attr] = vals[edge_filter]

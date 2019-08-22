@@ -88,6 +88,9 @@ p.add(
 p.add(
     '--cosine_loss_margin', type=float,
     help='margin for tuning cosine loss on negative samples')
+p.add(
+    '--accuracy_thresholds', type=float, action='append',
+    help='evaludate binary accuracy for each threshold')
 
 p.add(
     '--adam_lr', type=float,
@@ -97,6 +100,9 @@ p.add(
     help='weight decay for adam optimizer')
 
 p.add('--use_validation', type=str2bool)
+p.add(
+    '--validation_config', type=str,
+    help='if set, load an extra config file for the validation dataset from that path')
 p.add('--validation_samples', type=int)
 p.add('--validation_interval', type=int)
 

@@ -9,10 +9,6 @@ import pickle
 
 from .siamese_dataset import SiameseDataset  # noqa
 
-# dataset configs for many params
-from config import config  # noqa
-
-
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 # logging.getLogger('gunpowder.nodes').setLevel(logging.DEBUG)
@@ -34,7 +30,8 @@ class SiameseDatasetInference(SiameseDataset):
             inference_samples='all',
             rag_block_size=None,
             rag_from_file=None,
-            dump_rag=None):
+            dump_rag=None,
+            config_from_file=None):
         """
         connect to db, load and weed out edges, define gunpowder pipeline
         Args:
@@ -53,7 +50,8 @@ class SiameseDatasetInference(SiameseDataset):
             in_memory=in_memory,
             rag_block_size=rag_block_size,
             rag_from_file=rag_from_file,
-            dump_rag=dump_rag
+            dump_rag=dump_rag,
+            config_from_file=config_from_file
         )
 
         # assign dataset length
@@ -70,14 +68,14 @@ class SiameseDatasetInference(SiameseDataset):
 
         self.sources = (
             ZarrSource(
-                config.groundtruth_zarr,
-                datasets={self.raw_key: config.raw_ds_emb},
+                self.config.groundtruth_zarr,
+                datasets={self.raw_key: self.config.raw_ds_emb},
                 array_specs={self.raw_key: ArraySpec(interpolatable=True)}) +
             Normalize(self.raw_key) +
             Pad(self.raw_key, None, value=0),
             ZarrSource(
-                config.fragments_zarr,
-                datasets={self.labels_key: config.fragments_ds_emb},
+                self.config.fragments_zarr,
+                datasets={self.labels_key: self.config.fragments_ds_emb},
                 array_specs={self.labels_key: ArraySpec(interpolatable=False)}) +
             Pad(self.labels_key, None, value=0),
         )
@@ -101,7 +99,7 @@ class SiameseDatasetInference(SiameseDataset):
         """
         offset = np.array(center) - np.array(self.patch_size) / 2
         roi = Roi(offset=offset, shape=self.patch_size)
-        roi = roi.snap_to_grid(Coordinate(config.voxel_size_emb), mode='closest')
+        roi = roi.snap_to_grid(Coordinate(self.config.voxel_size_emb), mode='closest')
         # logger.debug(f'ROI snapped to grid: {roi}')
 
         request = BatchRequest()
@@ -168,8 +166,8 @@ class SiameseDatasetInference(SiameseDataset):
 
     def write_embeddings_to_db(self, node_ids, embeddings, collection_name):
         start = now()
-        client = pymongo.MongoClient(config.db_host)
-        db = client[config.db_name]
+        client = pymongo.MongoClient(self.config.db_host)
+        db = client[self.config.db_name]
 
         logger.info(
             f'''num nodes in ROI {len(self.nodes_attrs[self.id_field])},

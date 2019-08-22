@@ -37,17 +37,17 @@ def save(model, optimizer, model_dir, iteration):
     Returns:
 
     """
-    # find latest state of the model
-    def extract_number(f):
-        s = re.findall(r'\d+', f)
-        return int(s[0]) if s else -1, f
-
-    # delete older models
-    checkpoint_versions = [name for name in os.listdir(model_dir) if (
-        name.endswith('.tar') and name.startswith('iteration'))]
-    if len(checkpoint_versions) >= 3:
-        checkpoint_to_remove = min(checkpoint_versions, key=extract_number)
-        os.remove(osp.join(model_dir, checkpoint_to_remove))
+    # # find latest state of the model
+    # def extract_number(f):
+    #     s = re.findall(r'\d+', f)
+    #     return int(s[0]) if s else -1, f
+    #
+    # # delete older models
+    # checkpoint_versions = [name for name in os.listdir(model_dir) if (
+    #     name.endswith('.tar') and name.startswith('iteration'))]
+    # if len(checkpoint_versions) >= 3:
+    #     checkpoint_to_remove = min(checkpoint_versions, key=extract_number)
+    #     os.remove(osp.join(model_dir, checkpoint_to_remove))
 
     # save the new one
     model_tar = osp.join(model_dir, f'iteration_{iteration}.tar')
@@ -58,6 +58,7 @@ def save(model, optimizer, model_dir, iteration):
     }, model_tar)
 
     # save config files
+    # TODO save validation config as well
     parser_ds.write_config_file(
         parsed_namespace=config,
         output_file_paths=[osp.join(model_dir, 'config.ini')],
@@ -65,7 +66,6 @@ def save(model, optimizer, model_dir, iteration):
     )
     parser_siamese.write_config_file(
         parsed_namespace=config_siamese,
-        # TODO write is reported three times, but seems to work fine
         output_file_paths=[osp.join(model_dir, 'config_siamese.ini')],
         exit_after=False
     )
@@ -163,18 +163,58 @@ def write_network_to_summary(writer, iteration, model):
             pass
 
 
-def accuracy_thresholded(out0, out1, labels):
+def output_similarities_split(writer, iteration, out0, out1, labels):
+    mask = labels == 1
+    output_similarities = torch.nn.functional.cosine_similarity(
+        out0, out1, dim=1)
 
-    # TODO parametrize embedding threshold, range is -1 to 1
+    writer.add_histogram(
+        '01/output_similarities/class1',
+        output_similarities[mask],
+        iteration
+    )
+    writer.add_histogram(
+        '01/output_similarities/class-1',
+        output_similarities[~mask],
+        iteration
+    )
+
+
+def accuracy_thresholded(out0, out1, labels, thresholds):
+    """
+
+    Args:
+        out0:
+        out1:
+        labels:
+        thresholds (torch.tensor): 1d tensor
+
+    Returns:
+
+    """
+    # TODO might want to to do this on gpu
     cosine_similarity = torch.nn.functional.cosine_similarity(
         out0, out1, dim=1)
-    mask = cosine_similarity > 0
-    pred = torch.zeros_like(cosine_similarity)
+    # TODO checks if this works
+    mask = cosine_similarity.unsqueeze(dim=0) > thresholds.unsqueeze(dim=1)
+    pred = torch.zeros_like(mask).float()
     pred[mask] = 1.0
     pred[~mask] = -1.0
-    correct = pred.eq(labels.float()).sum().item()
-    acc = correct / labels.size(0)
+    correct = pred.eq(labels.float()).sum(dim=-1)
+    acc = correct / float(labels.size(0))
     return acc
+
+
+def write_accuracy_to_summary(writer, iteration, out0, out1, labels):
+    thresholds = torch.tensor(config_siamese.accuracy_thresholds).float()
+    # precalculate all accuracies before transfering values from gpu to cpu
+    accuracies = accuracy_thresholded(out0, out1, labels, thresholds)
+    for t, a in zip(thresholds, accuracies):
+        writer.add_scalar(
+            tag=f'00/accuracy/threshold_{t}',
+            scalar_value=a,
+            global_step=iteration
+        )
 
 
 def run_validation(model, loss_function, labels, dataloader, device, writer, train_iteration):
@@ -194,23 +234,25 @@ def run_validation(model, loss_function, labels, dataloader, device, writer, tra
             target=labels
         )
 
-        accuracy = accuracy_thresholded(out0, out1, labels)
-        output_similarities = torch.nn.functional.cosine_similarity(
-            out0, out1, dim=1)
+        val_iteration = train_iteration + i
+        write_accuracy_to_summary(
+            writer=writer,
+            iteration=val_iteration,
+            out0=out0,
+            out1=out1,
+            labels=labels
+        )
+        output_similarities_split(
+            writer=writer,
+            iteration=val_iteration,
+            out0=out0,
+            out1=out1,
+            labels=labels
+        )
         writer.add_scalar(
             tag='00/loss',
             scalar_value=loss,
             global_step=train_iteration + i
-        )
-        writer.add_scalar(
-            tag='00/accuracy',
-            scalar_value=accuracy,
-            global_step=train_iteration + i
-        )
-        writer.add_histogram(
-            '01/output_similarities',
-            output_similarities,
-            train_iteration + i
         )
 
     model.train()
@@ -246,37 +288,42 @@ def train():
     logger.info(f'init dataset in {now() - start} s')
 
     start = now()
+    sampler = torch.utils.data.WeightedRandomSampler(
+        weights=dataset.samples_weights,
+        num_samples=config_siamese.training_samples,
+        replacement=True
+    )
+
+    dataloader = torch.utils.data.DataLoader(
+        dataset=dataset,
+        shuffle=False,
+        sampler=sampler,
+        batch_size=config_siamese.batch_size_train,
+        num_workers=config_siamese.num_workers_dataloader,
+        pin_memory=config_siamese.pin_memory,
+        worker_init_fn=lambda idx: np.random.seed()
+    )
+    logger.info(f'init dataloader in {now() - start} s')
+
     if config_siamese.use_validation:
-        split_size = int(len(dataset.samples_weights) * 0.2)
-        zeros = torch.zeros(split_size)
-        ones = torch.ones(len(dataset.samples_weights) - split_size)
-
-        train_val_indices = torch.cat((zeros, ones))
-        train_val_indices = train_val_indices[torch.randperm(
-            len(train_val_indices))]
-
-        samples_weights_train = train_val_indices.float() * dataset.samples_weights
-        samples_weights_val = (~(train_val_indices.byte())
-                               ).float() * dataset.samples_weights
-
-        sampler = torch.utils.data.WeightedRandomSampler(
-            weights=samples_weights_train,
-            num_samples=config_siamese.training_samples,
-            replacement=True
+        start = now()
+        dataset_val = SiameseDatasetTrain(
+            patch_size=config_siamese.patch_size,
+            raw_channel=config_siamese.raw_channel,
+            mask_channel=config_siamese.mask_channel,
+            raw_mask_channel=config_siamese.raw_mask_channel,
+            num_workers=config.num_workers,
+            in_memory=config_siamese.in_memory,
+            rag_block_size=config_siamese.rag_block_size,
+            rag_from_file=config_siamese.rag_from_file_val,
+            dump_rag=config_siamese.dump_rag_val,
+            snapshots=config_siamese.snapshots,
+            config_from_file=config_siamese.validation_config
         )
-
-        dataloader = torch.utils.data.DataLoader(
-            dataset=dataset,
-            shuffle=False,
-            sampler=sampler,
-            batch_size=config_siamese.batch_size_train,
-            num_workers=config_siamese.num_workers_dataloader,
-            pin_memory=config_siamese.pin_memory,
-            worker_init_fn=lambda idx: np.random.seed()
-        )
+        logger.info(f'init dataset val in {now() - start} s')
 
         sampler_val = torch.utils.data.WeightedRandomSampler(
-            weights=samples_weights_val,
+            weights=dataset_val.samples_weights,
             num_samples=config_siamese.validation_samples,
             replacement=True
         )
@@ -290,24 +337,7 @@ def train():
             pin_memory=config_siamese.pin_memory,
             worker_init_fn=lambda idx: np.random.seed()
         )
-
-    else:
-        sampler = torch.utils.data.WeightedRandomSampler(
-            weights=dataset.samples_weights,
-            num_samples=config_siamese.training_samples,
-            replacement=True
-        )
-
-        dataloader = torch.utils.data.DataLoader(
-            dataset=dataset,
-            shuffle=False,
-            sampler=sampler,
-            batch_size=config_siamese.batch_size_train,
-            num_workers=config_siamese.num_workers_dataloader,
-            pin_memory=config_siamese.pin_memory,
-            worker_init_fn=lambda idx: np.random.seed()
-        )
-    logger.info(f'init dataloader in {now() - start} s')
+        logger.info(f'init dataloader val in {now() - start} s')
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     logger.info(f'device: {device}')
@@ -433,7 +463,17 @@ def train():
         if config_siamese.summary_loss:
             if i % config_siamese.summary_interval == 0:
                 start_summary = now()
-                accuracy = accuracy_thresholded(out0, out1, labels)
+                write_accuracy_to_summary(
+                    writer=writer,
+                    iteration=i,
+                    out0=out0,
+                    out1=out1,
+                    labels=labels
+                )
+                logger.debug(
+                    f'write accuracy to summary in {now() - start_summary} s')
+
+                start_summary = now()
                 writer.add_scalar(
                     tag='00/loss',
                     scalar_value=loss,
@@ -441,14 +481,6 @@ def train():
                 )
                 logger.debug(
                     f'write loss to summary in {now() - start_summary} s')
-                start_summary = now()
-                writer.add_scalar(
-                    tag='00/accuracy',
-                    scalar_value=accuracy,
-                    global_step=i
-                )
-                logger.debug(
-                    f'write accuracy to summary in {now() - start_summary} s')
 
         if config_siamese.summary_detailed:
             write_network_to_summary(

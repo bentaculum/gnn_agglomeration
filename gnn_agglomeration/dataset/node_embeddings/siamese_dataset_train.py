@@ -14,9 +14,6 @@ import pytz
 from .siamese_dataset import SiameseDataset  # noqa
 from .merge_fragments import MergeFragments  # noqa
 
-# dataset configs for many params
-from config import config  # noqa
-
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 # logging.getLogger('gunpowder.nodes').setLevel(logging.DEBUG)
@@ -38,7 +35,8 @@ class SiameseDatasetTrain(SiameseDataset):
             rag_block_size=None,
             rag_from_file=None,
             dump_rag=None,
-            snapshots=False):
+            snapshots=False,
+            config_from_file=None):
         """
         connect to db, load and weed out edges, define gunpowder pipeline
         Args:
@@ -58,15 +56,16 @@ class SiameseDatasetTrain(SiameseDataset):
             in_memory=in_memory,
             rag_block_size=rag_block_size,
             rag_from_file=rag_from_file,
-            dump_rag=dump_rag
+            dump_rag=dump_rag,
+            config_from_file=config_from_file
         )
 
         # assign dataset length
-        self.len = len(self.edges_attrs[config.new_edge_attr_trinary])
+        self.len = len(self.edges_attrs[self.config.new_edge_attr_trinary])
 
         # get weights
         start = now()
-        targets = self.edges_attrs[config.new_edge_attr_trinary]
+        targets = self.edges_attrs[self.config.new_edge_attr_trinary]
         class_sample_count = np.array(
             [len(np.where(targets == t)[0]) for t in np.unique(targets)]
         )
@@ -87,14 +86,14 @@ class SiameseDatasetTrain(SiameseDataset):
 
         self.sources = (
             ZarrSource(
-                config.groundtruth_zarr,
-                datasets={self.raw_key: config.raw_ds_emb},
+                self.config.groundtruth_zarr,
+                datasets={self.raw_key: self.config.raw_ds_emb},
                 array_specs={self.raw_key: ArraySpec(interpolatable=True)}) +
             Normalize(self.raw_key) +
             Pad(self.raw_key, None, value=0),
             ZarrSource(
-                config.fragments_zarr,
-                datasets={self.labels_key: config.fragments_ds_emb},
+                self.config.fragments_zarr,
+                datasets={self.labels_key: self.config.fragments_ds_emb},
                 array_specs={self.labels_key: ArraySpec(interpolatable=False)}) +
             Pad(self.labels_key, None, value=0),
         )
@@ -107,7 +106,7 @@ class SiameseDatasetTrain(SiameseDataset):
 
         # 5 control points (4 intervals) per axis
         adaptive_control_point_spacing = np.array(
-            self.patch_size)/(4 * np.array(config.voxel_size_emb, dtype=np.int_))
+            self.patch_size)/(4 * np.array(self.config.voxel_size_emb, dtype=np.int_))
         logger.info(
             f'ElasticAugment control point spacing: {adaptive_control_point_spacing}')
         adaptive_jitter_sigma = adaptive_control_point_spacing / 16
@@ -148,7 +147,7 @@ class SiameseDatasetTrain(SiameseDataset):
         center_u, center_v = center
         roi = Roi(offset=(0, 0, 0), shape=self.patch_size)
         roi = roi.snap_to_grid(Coordinate(
-            config.voxel_size_emb), mode='closest')
+            self.config.voxel_size_emb), mode='closest')
 
         request = BatchRequest()
         request.thaw()
@@ -159,11 +158,11 @@ class SiameseDatasetTrain(SiameseDataset):
         if self.raw_channel or self.raw_mask_channel:
             request[self.raw_key] = ArraySpec(
                 roi=roi,
-                voxel_size=Coordinate(config.voxel_size_emb))
+                voxel_size=Coordinate(self.config.voxel_size_emb))
         if self.mask_channel or self.raw_mask_channel:
             request[self.labels_key] = ArraySpec(
                 roi=roi,
-                voxel_size=Coordinate(config.voxel_size_emb))
+                voxel_size=Coordinate(self.config.voxel_size_emb))
 
         batch = self.batch_provider.request_batch(request)
 
@@ -227,7 +226,7 @@ class SiameseDatasetTrain(SiameseDataset):
         """
         start_getitem = now()
 
-        edge_score = self.edges_attrs[config.new_edge_attr_trinary][index]
+        edge_score = self.edges_attrs[self.config.new_edge_attr_trinary][index]
 
         # get the two incident nodes
         node1_id = self.edges_attrs[self.node1_field][index]
@@ -306,11 +305,11 @@ class SiameseDatasetTrain(SiameseDataset):
                     offset = np.array(centers[i]) - np.array(self.patch_size)/2
                     roi = Roi(offset=offset, shape=self.patch_size)
                     roi = roi.snap_to_grid(Coordinate(
-                        config.voxel_size_emb), mode='closest')
+                        self.config.voxel_size_emb), mode='closest')
 
                     dataset.attrs['offset'] = roi.get_offset()
                     dataset.attrs['resolution'] = Coordinate(
-                        config.voxel_size_emb)
+                        self.config.voxel_size_emb)
                     dataset.attrs['value_range'] = (
                         np.asscalar(block.min()),
                         np.asscalar(block.max())
