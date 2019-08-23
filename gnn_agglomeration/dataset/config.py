@@ -119,7 +119,7 @@ p.add(
 
 config, remaining_argv = p.parse_known_args()
 sys.argv = [sys.argv[0], *remaining_argv]
-logger.debug(f"\n{p.format_values()}")
+logger.info(f"\n{p.format_values()}")
 
 pw_parser = configparser.ConfigParser()
 pw_parser.read(config.db_host)

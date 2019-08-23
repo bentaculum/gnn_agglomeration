@@ -3,7 +3,7 @@ import logging
 import sys
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 def str2bool(v):
@@ -25,7 +25,7 @@ def list_of_ints(v):
 p = configargparse.ArgParser(
     default_config_files=['node_embeddings/config_siamese.ini'])
 
-p.add('--config_file_siamese', is_config_file=True,
+p.add('--siamese_config_file', is_config_file=True,
       help='file path to config that overwrites the default configs')
 
 p.add('--runs_dir', type=str)
@@ -127,4 +127,4 @@ p.add(
 
 config, remaining_argv = p.parse_known_args()
 sys.argv = [sys.argv[0], *remaining_argv]
-logger.debug(f"\n{p.format_values()}")
+logger.info(f"\n{p.format_values()}")

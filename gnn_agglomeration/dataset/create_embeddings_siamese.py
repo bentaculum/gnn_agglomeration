@@ -1,10 +1,15 @@
 import logging
 import torch
+torch.multiprocessing.set_sharing_strategy('file_descriptor')  # noqa
 from torch.utils import tensorboard
 import numpy as np
 from time import time as now
 import datetime
 import pytz
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 from node_embeddings.config_siamese import config as config_siamese  # noqa
 from config import config  # noqa
@@ -12,10 +17,6 @@ from config import config  # noqa
 from node_embeddings.siamese_dataset_inference import SiameseDatasetInference  # noqa
 from node_embeddings.siamese_vgg_3d import SiameseVgg3d  # noqa
 from node_embeddings import utils  # noqa
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 def create_embeddings():

@@ -46,11 +46,15 @@ class SiameseDataset(torch.utils.data.Dataset, ABC):
         if config_from_file:
             # load a config from file exclusively
             from config import p as parser_ds  # noqa
-            self.config = parser_ds.parse_args(args=f'--config_file {config_from_file}')
+            self.config = parser_ds.parse_args(
+                args=f'--config_file {config_from_file}')
+            logger.info(f'load dataset config from file {config_from_file}')
         else:
             # load a config that is mutable via command line
             from config import config  # noqa
             self.config = config
+            logger.info(f'load mutable dataset config')
+        logger.info(f'dataset config:\n{self.config}')
 
         assert raw_channel or mask_channel or raw_mask_channel
 
@@ -94,7 +98,8 @@ class SiameseDataset(torch.utils.data.Dataset, ABC):
 
         # get all edges, including gt_merge_score, as dict of numpy arrays
         start = now()
-        roi = daisy.Roi(offset=self.config.roi_offset, shape=self.config.roi_shape)
+        roi = daisy.Roi(offset=self.config.roi_offset,
+                        shape=self.config.roi_shape)
         logger.info(roi)
         rag_block_size = daisy.Coordinate(rag_block_size)
         logger.info(f'rag_block_size {rag_block_size}')
