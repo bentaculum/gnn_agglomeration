@@ -189,8 +189,8 @@ def accuracy_thresholded(out0, out1, labels, threshold):
     pred = torch.zeros_like(cosine_similarity)
     pred[mask] = 1.0
     pred[~mask] = -1.0
-    correct = pred.eq(labels.float()).sum()
-    acc = correct / float(labels.size(0))
+    correct = pred.eq(labels.float()).sum().item()
+    acc = correct / labels.size(0)
     return acc
 
 
