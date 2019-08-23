@@ -7,39 +7,24 @@ from time import time as now
 import datetime
 import pytz
 
-logging.basicconfig(level=logging.info)
-logger = logging.getlogger(__name__)
-logger.setlevel(logging.info)
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 from node_embeddings.config_siamese import config as config_siamese  # noqa
 from config import config  # noqa
 
-from node_embeddings.siamese_dataset_inference import siamesedatasetinference  # noqa
-from node_embeddings.siamese_vgg_3d import siamesevgg3d  # noqa
+from node_embeddings.siamese_dataset_inference import SiameseDatasetInference  # noqa
+from node_embeddings.siamese_vgg_3d import SiameseVgg3d  # noqa
 from node_embeddings import utils  # noqa
-
-
-def embeddings_to_unit_sphere(x):
-    """
-
-    Args:
-        x (list of numpy arrays):
-
-    Returns:
-        2d numpy array (num_nodes x embedding_size)
-
-    """
-    x = np.array(x)
-    norms = np.linalg.norm(x=x, axis=1, keepdims=True)
-    return x/norms
 
 
 def create_embeddings():
     timestamp = datetime.datetime.now(
-        pytz.timezone('us/eastern')).strftime('%y%m%dt%h%m%s.%f%z')
+        pytz.timezone('US/Eastern')).strftime('%Y%m%dT%H%M%S.%f%z')
 
     start = now()
-    dataset = siamesedatasetinference(
+    dataset = SiameseDatasetInference(
         patch_size=config_siamese.patch_size,
         raw_channel=config_siamese.raw_channel,
         mask_channel=config_siamese.mask_channel,
@@ -54,9 +39,9 @@ def create_embeddings():
     logger.info(f'init dataset in {now() - start} s')
 
     start = now()
-    dataloader = torch.utils.data.dataloader(
+    dataloader = torch.utils.data.DataLoader(
         dataset=dataset,
-        shuffle=false,
+        shuffle=False,
         batch_size=config_siamese.batch_size_eval,
         num_workers=config_siamese.num_workers_dataloader,
         pin_memory=config_siamese.pin_memory,
@@ -70,7 +55,7 @@ def create_embeddings():
 
     start = now()
 
-    model = siamesevgg3d(
+    model = SiameseVgg3d(
         input_size=np.array(config_siamese.patch_size) /
         np.array(config.voxel_size_emb),
         input_fmaps=int(config_siamese.raw_channel) +  # noqa
@@ -128,7 +113,7 @@ def create_embeddings():
 
         if torch.cuda.is_available():
             logger.debug(
-                f'max gpu memory allocated: {torch.cuda.max_memory_allocated(device=device)/(2**30)} gib')
+                f'max GPU memory allocated: {torch.cuda.max_memory_allocated(device=device)/(2**30)} GiB')
 
         node_ids.extend(list(node_ids_batch.numpy()))
         embeddings.extend(list(out.cpu().numpy()))
@@ -140,10 +125,6 @@ def create_embeddings():
         logger.info(f'batch {i} in {now() - start_batch} s')
 
     logger.info(f'inference loop took {now() - start_inference} s')
-
-    start_norm = now()
-    embeddings = embeddings_to_unit_sphere(embeddings)
-    logger.info(f'project embeddings to unit sphere in {now() - start_norm} s')
     dataset.write_embeddings_to_db(
         node_ids=node_ids,
         embeddings=embeddings,
