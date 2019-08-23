@@ -97,6 +97,7 @@ def create_embeddings():
     node_ids = []
     embeddings = []
 
+    start_inference = now()
     logger.info('start inference loop')
     for i, data in enumerate(dataloader):
         start_batch = now()
@@ -122,6 +123,7 @@ def create_embeddings():
 
         logger.info(f'batch {i} in {now() - start_batch} s')
 
+    logger.info(f'inference loop took {now() - start_inference} s')
     dataset.write_embeddings_to_db(
         node_ids=node_ids,
         embeddings=embeddings,
