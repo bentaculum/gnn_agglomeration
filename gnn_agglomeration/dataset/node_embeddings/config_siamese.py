@@ -89,7 +89,7 @@ p.add(
     '--cosine_loss_margin', type=float,
     help='margin for tuning cosine loss on negative samples')
 p.add(
-    '--accuracy_thresholds', type=float, action='append',
+    '--accuracy_threshold', type=float,
     help='evaludate binary accuracy for each threshold')
 
 p.add(

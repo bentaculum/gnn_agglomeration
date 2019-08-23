@@ -182,42 +182,26 @@ def output_similarities_split(writer, iteration, out0, out1, labels):
         )
 
 
-def accuracy_thresholded(out0, out1, labels, thresholds):
-    """
-
-    Args:
-        out0:
-        out1:
-        labels:
-        thresholds (torch.tensor): 1d tensor
-
-    Returns:
-
-    """
-    # TODO might want to to do this on gpu
+def accuracy_thresholded(out0, out1, labels, threshold):
     cosine_similarity = torch.nn.functional.cosine_similarity(
         out0, out1, dim=1)
-    # TODO checks if this works
-    mask = cosine_similarity.unsqueeze(dim=0) > thresholds.unsqueeze(dim=1)
-    pred = torch.zeros_like(mask).float()
+    mask = cosine_similarity > threshold
+    pred = torch.zeros_like(cosine_similarity)
     pred[mask] = 1.0
     pred[~mask] = -1.0
-    correct = pred.eq(labels.float()).sum(dim=-1)
+    correct = pred.eq(labels.float()).sum()
     acc = correct / float(labels.size(0))
     return acc
 
 
 def write_accuracy_to_summary(writer, iteration, out0, out1, labels):
-    thresholds = torch.tensor(
-        config_siamese.accuracy_thresholds).float().cuda()
-    # precalculate all accuracies before transfering values from gpu to cpu
-    accuracies = accuracy_thresholded(out0, out1, labels, thresholds)
-    for t, a in zip(thresholds, accuracies):
-        writer.add_scalar(
-            tag=f'00/accuracy/threshold_{t:.2f}',
-            scalar_value=a,
-            global_step=iteration
-        )
+    threshold = config_siamese.accuracy_threshold
+    accuracy = accuracy_thresholded(out0, out1, labels, threshold)
+    writer.add_scalar(
+        tag=f'00/accuracy/threshold_{threshold:.2f}',
+        scalar_value=accuracy,
+        global_step=iteration
+    )
 
 
 def run_validation(model, loss_function, labels, dataloader, device, writer, train_iteration):
