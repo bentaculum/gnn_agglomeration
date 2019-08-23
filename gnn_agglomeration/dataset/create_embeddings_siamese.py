@@ -6,16 +6,16 @@ from time import time as now
 import datetime
 import pytz
 
-from node_embeddings.config_siamese import config as config_siamese, p as parser_siamese  # noqa
+from node_embeddings.config_siamese import config as config_siamese  # noqa
 from config import config  # noqa
 
 from node_embeddings.siamese_dataset_inference import SiameseDatasetInference  # noqa
 from node_embeddings.siamese_vgg_3d import SiameseVgg3d  # noqa
 from node_embeddings import utils  # noqa
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 def create_embeddings():
@@ -100,11 +100,11 @@ def create_embeddings():
     logger.info('start inference loop')
     for i, data in enumerate(dataloader):
         start_batch = now()
-        logger.info(f'batch {i} ...')
+        logger.debug(f'batch {i} ...')
         patches, node_ids_batch = data
 
         # make sure the dimensionality is ok
-        assert patches.dim() == 5, patches.shape
+        # assert patches.dim() == 5, patches.shape
 
         patches = patches.to(device)
         out = model.forward_once(patches)
@@ -120,7 +120,7 @@ def create_embeddings():
         if samples_count >= samples_limit:
             break
 
-        logger.debug(f'batch {i} in {now() - start_batch} s')
+        logger.info(f'batch {i} in {now() - start_batch} s')
 
     dataset.write_embeddings_to_db(
         node_ids=node_ids,

@@ -59,14 +59,15 @@ def save(model, optimizer, model_dir, iteration):
 
     # save config files
     # TODO save validation config as well
-    parser_ds.write_config_file(
-        parsed_namespace=config,
-        output_file_paths=[osp.join(model_dir, 'config.ini')],
-        exit_after=False
-    )
+    # TODO check if config files get nicely separated
     parser_siamese.write_config_file(
         parsed_namespace=config_siamese,
         output_file_paths=[osp.join(model_dir, 'config_siamese.ini')],
+        exit_after=False
+    )
+    parser_ds.write_config_file(
+        parsed_namespace=config,
+        output_file_paths=[osp.join(model_dir, 'config.ini')],
         exit_after=False
     )
 

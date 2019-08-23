@@ -99,7 +99,8 @@ class SiameseDatasetInference(SiameseDataset):
         """
         offset = np.array(center) - np.array(self.patch_size) / 2
         roi = Roi(offset=offset, shape=self.patch_size)
-        roi = roi.snap_to_grid(Coordinate(self.config.voxel_size_emb), mode='closest')
+        roi = roi.snap_to_grid(Coordinate(
+            self.config.voxel_size_emb), mode='closest')
         # logger.debug(f'ROI snapped to grid: {roi}')
 
         request = BatchRequest()
@@ -185,4 +186,4 @@ class SiameseDatasetInference(SiameseDataset):
                  'embedding': bson.Binary(pickle.dumps(e))})
         collection.insert_many(insertion_elems, ordered=False)
         logger.info(
-            f'write embeddings to db in {now() - start}s')
+            f'write embeddings to db, collection {collection.name} in {now() - start}s')
