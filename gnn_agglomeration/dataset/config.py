@@ -7,7 +7,10 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 p = configargparse.ArgParser(
-    default_config_files=['configs/config_hemi_mtlsd_400k_roi_1.ini'])
+    default_config_files=['configs/config_hemi_mtlsd_400k_roi_1.ini'],
+    allow_abbrev=False
+)
+
 p.add('--config_file', is_config_file=True,
       help='file path to config that overwrites the default configs')
 

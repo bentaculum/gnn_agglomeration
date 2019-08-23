@@ -23,7 +23,9 @@ def list_of_ints(v):
 
 
 p = configargparse.ArgParser(
-    default_config_files=['node_embeddings/config_siamese.ini'])
+    default_config_files=['node_embeddings/config_siamese.ini'],
+    allow_abbrev=False
+)
 
 p.add('--siamese_config_file', is_config_file=True,
       help='file path to config that overwrites the default configs')

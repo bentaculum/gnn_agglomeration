@@ -21,7 +21,9 @@ class SortingHelpFormatter(argparse.HelpFormatter):
 class Config:
     def __init__(self):
         self.parser = argparse.ArgumentParser(
-            formatter_class=SortingHelpFormatter)
+            formatter_class=SortingHelpFormatter,
+            allow_abbrev=False
+        )
         self.default = {}
 
         self.parser.add_argument(
