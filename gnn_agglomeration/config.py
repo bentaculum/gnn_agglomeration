@@ -74,7 +74,7 @@ class Config:
             choices=['Cartesian', 'LocalCartesian',
                      'Distance', 'Polar', 'Spherical'],
             help='define the edge attributes (pseudo coordinates)')
-        self.default['data_transform'] = 'Spherical'
+        self.default['data_transform'] = 'Cartesian'
 
         self.parser.add_argument(
             '--theta_max',
@@ -239,8 +239,8 @@ class Config:
         self.parser.add_argument(
             '--non_linearity',
             type=str,
-            help='Activation function from torch.nn.functional, used for hidden layers, e.g. relu | sigmoid | tanh')
-        self.default['non_linearity'] = 'leaky_relu'
+            help='Activation function from torch.nn.functional, used for hidden layers, e.g. relu | sigmoid | tanh | leaky_relu')
+        self.default['non_linearity'] = 'sigmoid'
 
         self.parser.add_argument(
             '--batch_size_train',
@@ -347,7 +347,7 @@ class Config:
             '--clip_grad',
             type=str2bool,
             help='whether to use gradient clipping')
-        self.default['clip_grad'] = True
+        self.default['clip_grad'] = False
 
         self.parser.add_argument(
             '--clip_value',
@@ -544,26 +544,26 @@ class Config:
             '--db_name_train',
             type=str,
             help='name of the used mongodb for training')
-        self.default['db_name_train'] = 'gnn_agglomeration_hemi_vanilla_400k_roi_2'
+        self.default['db_name_train'] = 'gnn_agglomeration_hemi_mtlsd_400k_roi_2'
 
         self.parser.add_argument(
             '--db_name_val',
             type=str,
             help='name of the used mongodb for validation')
-        self.default['db_name_val'] = 'gnn_agglomeration_hemi_vanilla_400k_roi_1'
+        self.default['db_name_val'] = 'gnn_agglomeration_hemi_mtlsd_400k_roi_1'
 
         self.parser.add_argument(
             '--db_name_test',
             type=str,
             help='name of the used mongodb for test')
-        # self.default['db_name_test'] = 'gnn_agglomeration_hemi_vanilla_400k_roi_3'
-        self.default['db_name_test'] = 'gnn_agglomeration_hemi_vanilla_400k_roi_1'
+        # self.default['db_name_test'] = 'gnn_agglomeration_hemi_mtlsd_400k_roi_3'
+        self.default['db_name_test'] = 'gnn_agglomeration_hemi_mtlsd_400k_roi_1'
 
         self.parser.add_argument(
             '--dataset_path_train',
             type=str,
             help='the directory to read the training dataset from')
-        self.default['dataset_path_train'] = 'data/hemi/12_micron_cube/default_train'
+        self.default['dataset_path_train'] = 'data/hemi/22_micron_cube/default_train'
 
         self.parser.add_argument(
             '--dataset_path_val',
@@ -575,7 +575,8 @@ class Config:
             '--dataset_path_test',
             type=str,
             help='the directory to read the test dataset from')
-        self.default['dataset_path_test'] = 'data/hemi/12_micron_cube/default_test'
+        # self.default['dataset_path_test'] = 'data/hemi/17_micron_cube/default_test'
+        self.default['dataset_path_test'] = 'data/hemi/12_micron_cube/debug_test'
 
         self.parser.add_argument(
             '--train_roi_offset',
@@ -636,6 +637,8 @@ class Config:
             nargs=3,
             help='fixed block size for creating pyg graphs')
         self.default['block_size'] = [750, 750, 750]
+        # desired
+        # self.default['block_size'] = [3000, 3000, 3000]
 
         self.parser.add_argument(
             '--block_fit',
@@ -652,6 +655,8 @@ class Config:
             nargs=3,
             help='padding to create an outer mask that guarantees context for all targets the contribute to the loss')
         self.default['block_padding'] = [750, 750, 750]
+        # desired
+        # self.default['block_padding'] = [1500, 1500, 1500]
 
         self.parser.add_argument(
             '--db_host',
@@ -671,24 +676,23 @@ class Config:
             help='name of mongodb collection for RAG edges')
         self.default['edges_collection'] = 'edges_hist_quant_50'
 
-        # TODO set default values for embeddings collections once settle for a certain set of embeddings
         self.parser.add_argument(
             '--embeddings_collection_train',
             type=str,
             help='name of mondogb collection for RAG node embeddings train')
-        self.default['embeddings_collection_train'] = None
+        self.default['embeddings_collection_train'] = 'nodes_embeddings_setup01_300k'
 
         self.parser.add_argument(
             '--embeddings_collection_val',
             type=str,
             help='name of mondogb collection for RAG node embeddings val')
-        self.default['embeddings_collection_val'] = None
+        self.default['embeddings_collection_val'] = 'nodes_embeddings_setup01_300k'
 
         self.parser.add_argument(
             '--embeddings_collection_test',
             type=str,
             help='name of mondogb collection for RAG node embeddings test')
-        self.default['embeddings_collection_test'] = None
+        self.default['embeddings_collection_test'] = 'nodes_embeddings_setup01_300k'
 
 
         self.parser.add_argument(
@@ -740,7 +744,8 @@ class Config:
             type=positive_int,
             nargs=3,
             help='maximal absolute translation for each dimension, in nanometers')
-        self.default['augment_translate_limit'] = [20, 20, 20]
+        # should be multiples of 8
+        self.default['augment_translate_limit'] = [32, 32, 32]
 
         self.parser.add_argument(
             '--edge_attr_noise_std',
@@ -770,14 +775,14 @@ class Config:
             '--gt_merge_score_field',
             type=str,
             help='DB field in edges collection that contains the ground truth score')
-        self.default['gt_merge_score_field'] = 'gt_merge_score_vanilla'
+        self.default['gt_merge_score_field'] = 'gt_merge_score'
 
         self.parser.add_argument(
             '--merge_labeled_field',
             type=str,
             help='''DB field in edges collection that contains the gt masking
             which accounts for edges with unknown ground truth''')
-        self.default['merge_labeled_field'] = 'merge_labeled_vanilla'
+        self.default['merge_labeled_field'] = 'merge_labeled'
 
         self.parser.add_argument(
             '--out_dimensionality',

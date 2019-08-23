@@ -1,6 +1,7 @@
 import torch_geometric.transforms as T
 
 from .unit_edge_attr_gaussian_noise import UnitEdgeAttrGaussianNoise
+from .node_embeddings_transform import NodeEmbeddingsTransform
 
 
 class AugmentHemibrain:
@@ -14,10 +15,11 @@ class AugmentHemibrain:
     def __init__(self, config):
         rotations = [T.RandomRotate(180, axis=i) for i in range(3)]
         translation = T.RandomTranslate(config.augment_translate_limit)
-        merge_score_noise = UnitEdgeAttrGaussianNoise(
-            mu=0, sigma=config.edge_attr_noise_std)
+        # merge_score_noise = UnitEdgeAttrGaussianNoise(
+        #     mu=0, sigma=config.edge_attr_noise_std)
+        # embeddings_transform = NodeEmbeddingsTransform(translate=config.embeddings_translate_limit)
         self.transform = T.Compose(
-            [*rotations, translation, merge_score_noise])
+            [*rotations, translation])
 
     def __call__(self, data):
         return self.transform(data)
