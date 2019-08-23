@@ -27,7 +27,7 @@ p = configargparse.ArgParser(
     allow_abbrev=False
 )
 
-p.add('--siamese_config_file', is_config_file=True,
+p.add('--config_file_siamese', is_config_file=True,
       help='file path to config that overwrites the default configs')
 
 p.add('--runs_dir', type=str)
