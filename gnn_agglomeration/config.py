@@ -41,8 +41,8 @@ class Config:
         self.parser.add_argument(
             '--self_loops',
             type=str2bool,
-            help='whether the random graph should have reflexive edges')
-        self.default['self_loops'] = False
+            help='whether all nodes in the RAG will have artificial self-loops')
+        self.default['self_loops'] = True
 
         self.parser.add_argument(
             '--euclidian_dimensionality',

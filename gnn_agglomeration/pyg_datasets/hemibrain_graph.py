@@ -65,7 +65,7 @@ class HemibrainGraph(Data, ABC):
         # remove config property so Data object can be saved with torch
         del self.config
 
-    def parse_rag_excerpt(self, nodes_list, edges_list, embeddings):
+    def parse_rag_excerpt(self, nodes_list, edges_list, embeddings, all_nodes):
 
         # TODO parametrize the used names
         id_field = 'id'
@@ -77,6 +77,22 @@ class HemibrainGraph(Data, ABC):
 
         node_attrs = utils.to_np_arrays(nodes_list)
         edges_attrs = utils.to_np_arrays(edges_list)
+
+        start = now()
+        u_in = np.isin(edges_attrs[node1_field], node_attrs[id_field])
+        # sanity check: all u nodes should be contained in the nodes extracted by mongodb
+        assert np.sum(~u_in) == 0
+
+        # TODO this is dirty. clean up
+        v_in = np.isin(edges_attrs[node2_field], node_attrs[id_field])
+        missing_node_ids = np.unique(edges_attrs[node2_field][v_in])
+        for i in missing_node_ids:
+            node_attrs[id_field] = np.append(node_attrs[id_field], i)
+            node_attrs['center_z'] = np.append(node_attrs['center_z'], all_nodes[i]['center_z'])
+            node_attrs['center_y'] = np.append(node_attrs['center_y'], all_nodes[i]['center_y'])
+            node_attrs['center_x'] = np.append(node_attrs['center_x'], all_nodes[i]['center_x'])
+
+        logger.debug(f'add missing nodes to node_attrs in {now() - start} s')
 
         # drop edges for which one of the incident nodes is not in the
         # extracted node set
@@ -99,9 +115,9 @@ class HemibrainGraph(Data, ABC):
             x = torch.ones(len(node_attrs[id_field]), 1, dtype=torch.float)
         else:
             # TODO this is for debugging. Later, I should have an embedding for each node
-            embeddings_list = [embeddings[i] if i in embeddings else np.random.rand(10) for i in
-                               node_attrs[id_field]]
-            # embeddings_list = [embeddings[i] for i in node_attrs[id_field]]
+            # embeddings_list = [embeddings[i] if i in embeddings else np.random.rand(10) for i in
+            #                    node_attrs[id_field]]
+            embeddings_list = [embeddings[i] for i in node_attrs[id_field]]
             x = torch.tensor(embeddings_list, dtype=torch.float)
         logger.info(f'load embeddings from dict in {now() - start} s')
 
@@ -149,13 +165,33 @@ class HemibrainGraph(Data, ABC):
         # pyg works with directed edges, duplicate each edge here
         edge_index_undir = np.array(
             [edges_attrs[node1_field], edges_attrs[node2_field]]).transpose()
+        edge_attr_undir = edges_attrs[merge_score_field]
+
+        # add edges, together with a dummy merge score. extend mask, edgewise label
+        if self.config.self_loops:
+            num_nodes = len(node_attrs[id_field])
+            loops = np.stack([np.arange(num_nodes, dtype=np.int64), np.arange(num_nodes, dtype=np.int64)])
+            edge_index_undir = np.concatenate([edge_index_undir, loops])
+
+            edge_attr_undir = np.concatenate([edge_attr_undir, np.zeros(num_nodes)], axis=0)
+
+            edges_attrs[merge_labeled_field] = np.concatenate(
+                [edges_attrs[merge_labeled_field],
+                 np.zeros(num_nodes)]
+            )
+
+            edges_attrs[gt_merge_score_field] = np.concatenate(
+                [edges_attrs[gt_merge_score_field],
+                 np.zeros(num_nodes)]
+            )
+
         edge_index_dir = np.repeat(edge_index_undir, 2, axis=0)
         edge_index_dir[1::2, :] = np.flip(edge_index_dir[1::2, :], axis=1)
         edge_index = torch.tensor(edge_index_dir.astype(
             np.int64).transpose(), dtype=torch.long)
 
         edge_attr_undir = np.expand_dims(
-            edges_attrs[merge_score_field], axis=1)
+            edge_attr_undir, axis=1)
         edge_attr_dir = np.repeat(edge_attr_undir, 2, axis=0)
         edge_attr = torch.tensor(edge_attr_dir, dtype=torch.float)
 

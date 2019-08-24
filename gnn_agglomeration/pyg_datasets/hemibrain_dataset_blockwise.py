@@ -127,6 +127,7 @@ class HemibrainDatasetBlockwise(HemibrainDataset):
             graph.read_and_process(
                 graph_provider=self.graph_provider,
                 embeddings=self.embeddings,
+                all_nodes=self.all_nodes,
                 block_offset=outer_offset,
                 block_shape=outer_shape,
                 inner_block_offset=inner_offset,

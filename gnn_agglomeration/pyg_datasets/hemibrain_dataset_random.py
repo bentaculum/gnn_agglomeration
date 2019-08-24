@@ -7,7 +7,7 @@ from .hemibrain_graph_unmasked import HemibrainGraphUnmasked
 from .hemibrain_graph_masked import HemibrainGraphMasked
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class HemibrainDatasetRandom(HemibrainDataset):
@@ -39,6 +39,7 @@ class HemibrainDatasetRandom(HemibrainDataset):
             graph.read_and_process(
                 graph_provider=self.graph_provider,
                 embeddings=self.embeddings,
+                all_nodes=self.all_nodes,
                 block_offset=outer_offset,
                 block_shape=outer_shape,
                 inner_block_offset=total_offset,

@@ -45,6 +45,7 @@ class HemibrainDataset(Dataset, ABC):
 
         self.connect_to_db()
         self.load_node_embeddings()
+        self.load_all_nodes()
         self.prepare()
 
         data_augmentation = globals()[config.data_augmentation](config=config)
@@ -54,12 +55,37 @@ class HemibrainDataset(Dataset, ABC):
         super(HemibrainDataset, self).__init__(
             root=root, transform=transform, pre_transform=None)
 
+    def load_all_nodes(self):
+        """
+        Needed to add node position to edges that go out of the cube
+        """
+        start = now()
+        with open(self.config.db_host, 'r') as f:
+            pw_parser = configparser.ConfigParser()
+            pw_parser.read_file(f)
+
+        client = pymongo.MongoClient(pw_parser['DEFAULT']['db_host'])
+        db = client[self.db_name]
+        collection = db[self.config.nodes_collection]
+
+        # TODO parametrize field names
+        self.all_nodes = {}
+        for line in collection.find():
+            self.all_nodes[line['id']] = {
+                'center_z': line['center_z'],
+                'center_y': line['center_y'],
+                'center_x': line['center_x']
+            }
+
+        logger.info(f'load all nodes from db in {now() - start} s')
+
     def load_node_embeddings(self):
 
         if self.embeddings_collection is None:
             self.embeddings = None
             return
 
+        start = now()
         with open(self.config.db_host, 'r') as f:
             pw_parser = configparser.ConfigParser()
             pw_parser.read_file(f)
@@ -72,6 +98,8 @@ class HemibrainDataset(Dataset, ABC):
         self.embeddings = {}
         for line in collection.find():
             self.embeddings[line['id']] = pickle.loads(line['embedding'])
+
+        logger.info(f'load all node embeddings in {now() - start} s')
 
     def prepare(self):
         pass
@@ -188,6 +216,7 @@ class HemibrainDataset(Dataset, ABC):
         pass
 
     def write_outputs_to_db(self, outputs_dict, collection_name):
+        logger.info('writing to db ...')
         start = now()
         outputs_dict = {(min(k), max(k)): v for k, v in outputs_dict.items()}
         logger.info(f'lower id first in all edges in outputs_dict in {now() - start} s')
@@ -215,6 +244,7 @@ class HemibrainDataset(Dataset, ABC):
         edges_cols = [node1_field, node2_field]
         orig_edge_attrs = {k: orig_edge_attrs[k] for k in edges_cols}
 
+        logger.info(f'edges before dropping edges going out of the dataset: {len(orig_edge_attrs[node1_field])}')
         # drop edges at the border
         utils.drop_outgoing_edges(
             node_attrs=orig_node_attrs,
@@ -223,6 +253,7 @@ class HemibrainDataset(Dataset, ABC):
             node1_field=node1_field,
             node2_field=node2_field
         )
+        logger.info(f'edges after dropping edges going out of the dataset: {len(orig_edge_attrs[node1_field])}')
         logger.info(f'load original RAG, drop edges in {now() - start} s')
 
         # lower id in all edges first
