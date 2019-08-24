@@ -2,11 +2,12 @@ import torch
 import logging
 import daisy
 import time
+from time import time as now
 
 from .hemibrain_graph import HemibrainGraph
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class HemibrainGraphMasked(HemibrainGraph):
@@ -32,6 +33,7 @@ class HemibrainGraphMasked(HemibrainGraph):
 
         assert self.config is not None
 
+        start_read_and_process = now()
         start = time.time()
         roi = daisy.Roi(list(block_offset), list(block_shape))
         node_attrs = graph_provider.read_nodes(roi=roi)
@@ -60,6 +62,8 @@ class HemibrainGraphMasked(HemibrainGraph):
                 list(inner_block_shape)),
             mask=mask)
         logger.debug(f'mask target edges in {time.time() - start} s')
+
+        logger.debug(f'read_and_process in {now() - start_read_and_process} s')
 
         super().assert_graph()
 
