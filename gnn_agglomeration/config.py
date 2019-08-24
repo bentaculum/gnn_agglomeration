@@ -789,7 +789,7 @@ class Config:
             '--out_dimensionality',
             type=positive_int,
             help='number of dimensions for output vector on each node')
-        self.default['out_dimensionality'] = 3
+        self.default['out_dimensionality'] = 6
 
     def localhost(self):
         return {
