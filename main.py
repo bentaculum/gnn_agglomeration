@@ -107,17 +107,17 @@ def main(_config, _run, _log):
             roi_shape=config.val_roi_shape,
             save_processed=config.save_processed_val
         )
-
-        _log.info('Preparing test dataset ...')
-        test_dataset = globals()[config.dataset_type_test](
-            root=config.dataset_abs_path_test,
-            config=config,
-            db_name=config.db_name_test,
-            embeddings_collection=config.embeddings_collection_test,
-            roi_offset=config.test_roi_offset,
-            roi_shape=config.test_roi_shape,
-            save_processed=config.save_processed_test
-        )
+        if config.final_test_pass:
+            _log.info('Preparing test dataset ...')
+            test_dataset = globals()[config.dataset_type_test](
+                root=config.dataset_abs_path_test,
+                config=config,
+                db_name=config.db_name_test,
+                embeddings_collection=config.embeddings_collection_test,
+                roi_offset=config.test_roi_offset,
+                roi_shape=config.test_roi_shape,
+                save_processed=config.save_processed_test
+            )
 
     else:
         dataset = globals()[config.dataset_type_train](
@@ -445,7 +445,7 @@ def main(_config, _run, _log):
             test_loss = validation_loss
             test_metric = epoch_metric_val
             _log.info(
-                f'Mean validation loss ({test_dataset.__len__()} samples): {test_loss:.3f}')
+                f'Mean validation loss ({validation_dataset.__len__()} samples): {test_loss:.3f}')
             _log.info(
                 f'Mean accuracy on validation set: {test_metric:.3f}\n')
 
