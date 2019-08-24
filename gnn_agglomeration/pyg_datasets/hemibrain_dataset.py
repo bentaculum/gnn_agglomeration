@@ -18,7 +18,7 @@ from ..data_transforms import *
 from gnn_agglomeration import utils
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 # hack to make daisy logging indep from from sacred logging
 logging.getLogger(
     'daisy.persistence.mongodb_graph_provider').setLevel(logging.INFO)
@@ -209,7 +209,10 @@ class HemibrainDataset(Dataset, ABC):
         if self.save_processed:
             return torch.load(self.processed_paths[idx])
         else:
-            return self.get_from_db(idx)
+            start = now()
+            g = self.get_from_db(idx)
+            logger.debug(f'get graph from db in {now() - start} s')
+            return g
 
     @abstractmethod
     def get_from_db(self, idx):

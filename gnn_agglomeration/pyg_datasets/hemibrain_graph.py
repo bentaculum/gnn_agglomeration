@@ -58,12 +58,14 @@ class HemibrainGraph(Data, ABC):
         """
         check whether bi-directed edges are next to each other in edge_index
         """
+        start = now()
         uv = self.edge_index[:, 0::2]
         vu = torch.flip(self.edge_index, dims=[0])[:, 1::2]
 
         assert torch.equal(uv, vu)
         # remove config property so Data object can be saved with torch
         del self.config
+        logger.debug(f'assert graph in {now() - start} s')
 
     def parse_rag_excerpt(self, nodes_list, edges_list, embeddings, all_nodes):
 
@@ -97,16 +99,7 @@ class HemibrainGraph(Data, ABC):
 
         logger.debug(f'add missing nodes to node_attrs in {now() - start} s')
 
-        # drop edges for which one of the incident nodes is not in the
-        # extracted node set
-        edges_attrs = utils.drop_outgoing_edges(
-            node_attrs=node_attrs,
-            edge_attrs=edges_attrs,
-            id_field=id_field,
-            node1_field=node1_field,
-            node2_field=node2_field
-        )
-
+        # TODO probably not necessary anymore
         # If all edges were removed in the step above, raise a ValueError
         # that is caught later on
         if len(edges_attrs[node1_field]) == 0:
