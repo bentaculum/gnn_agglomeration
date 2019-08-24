@@ -10,7 +10,7 @@ from funlib.segment.arrays import replace_values
 from gnn_agglomeration import utils
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class HemibrainGraph(Data, ABC):
@@ -88,9 +88,12 @@ class HemibrainGraph(Data, ABC):
         missing_node_ids = np.unique(edges_attrs[node2_field][v_in])
         for i in missing_node_ids:
             node_attrs[id_field] = np.append(node_attrs[id_field], i)
-            node_attrs['center_z'] = np.append(node_attrs['center_z'], all_nodes[i]['center_z'])
-            node_attrs['center_y'] = np.append(node_attrs['center_y'], all_nodes[i]['center_y'])
-            node_attrs['center_x'] = np.append(node_attrs['center_x'], all_nodes[i]['center_x'])
+            node_attrs['center_z'] = np.append(
+                node_attrs['center_z'], all_nodes[i]['center_z'])
+            node_attrs['center_y'] = np.append(
+                node_attrs['center_y'], all_nodes[i]['center_y'])
+            node_attrs['center_x'] = np.append(
+                node_attrs['center_x'], all_nodes[i]['center_x'])
 
         logger.debug(f'add missing nodes to node_attrs in {now() - start} s')
 
@@ -164,16 +167,20 @@ class HemibrainGraph(Data, ABC):
         # edge index requires dimensionality of (2,e)
         # pyg works with directed edges, duplicate each edge here
         edge_index_undir = np.array(
-            [edges_attrs[node1_field], edges_attrs[node2_field]]).transpose()
+            [edges_attrs[node1_field], edges_attrs[node2_field]])
         edge_attr_undir = edges_attrs[merge_score_field]
 
         # add edges, together with a dummy merge score. extend mask, edgewise label
         if self.config.self_loops:
+            start_self_loops = now()
             num_nodes = len(node_attrs[id_field])
-            loops = np.stack([np.arange(num_nodes, dtype=np.int64), np.arange(num_nodes, dtype=np.int64)])
-            edge_index_undir = np.concatenate([edge_index_undir, loops])
+            loops = np.stack(
+                [np.arange(num_nodes, dtype=np.int64), np.arange(num_nodes, dtype=np.int64)])
+            edge_index_undir = np.concatenate(
+                [edge_index_undir, loops], axis=1)
 
-            edge_attr_undir = np.concatenate([edge_attr_undir, np.zeros(num_nodes)], axis=0)
+            edge_attr_undir = np.concatenate(
+                [edge_attr_undir, np.zeros(num_nodes)], axis=0)
 
             edges_attrs[merge_labeled_field] = np.concatenate(
                 [edges_attrs[merge_labeled_field],
@@ -184,7 +191,9 @@ class HemibrainGraph(Data, ABC):
                 [edges_attrs[gt_merge_score_field],
                  np.zeros(num_nodes)]
             )
+            logger.debug(f'add self loops in {now() - start} s')
 
+        edge_index_undir = edge_index_undir.transpose()
         edge_index_dir = np.repeat(edge_index_undir, 2, axis=0)
         edge_index_dir[1::2, :] = np.flip(edge_index_dir[1::2, :], axis=1)
         edge_index = torch.tensor(edge_index_dir.astype(
