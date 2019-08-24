@@ -115,7 +115,7 @@ class HemibrainGraph(Data, ABC):
             #                    node_attrs[id_field]]
             embeddings_list = [embeddings[i] for i in node_attrs[id_field]]
             x = torch.tensor(embeddings_list, dtype=torch.float)
-        logger.info(f'load embeddings from dict in {now() - start} s')
+        logger.debug(f'load embeddings from dict in {now() - start} s')
 
         node_ids_np = node_attrs[id_field].astype(np.int64)
         node_ids = torch.tensor(node_ids_np, dtype=torch.long)
