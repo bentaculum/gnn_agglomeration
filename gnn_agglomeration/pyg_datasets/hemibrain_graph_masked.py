@@ -7,7 +7,7 @@ from time import time as now
 from .hemibrain_graph import HemibrainGraph
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class HemibrainGraphMasked(HemibrainGraph):

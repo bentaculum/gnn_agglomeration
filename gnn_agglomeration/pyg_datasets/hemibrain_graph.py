@@ -10,7 +10,7 @@ from funlib.segment.arrays import replace_values
 from gnn_agglomeration import utils
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class HemibrainGraph(Data, ABC):

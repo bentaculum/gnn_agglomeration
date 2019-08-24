@@ -544,8 +544,8 @@ class Config:
             '--db_name_train',
             type=str,
             help='name of the used mongodb for training')
-        # self.default['db_name_train'] = 'gnn_agglomeration_hemi_mtlsd_400k_roi_2'
-        self.default['db_name_train'] = 'gnn_agglomeration_hemi_mtlsd_400k_roi_1'
+        self.default['db_name_train'] = 'gnn_agglomeration_hemi_mtlsd_400k_roi_2'
+        # self.default['db_name_train'] = 'gnn_agglomeration_hemi_mtlsd_400k_roi_1'
 
         self.parser.add_argument(
             '--db_name_val',
@@ -557,15 +557,15 @@ class Config:
             '--db_name_test',
             type=str,
             help='name of the used mongodb for test')
-        # self.default['db_name_test'] = 'gnn_agglomeration_hemi_mtlsd_400k_roi_3'
-        self.default['db_name_test'] = 'gnn_agglomeration_hemi_mtlsd_400k_roi_1'
+        self.default['db_name_test'] = 'gnn_agglomeration_hemi_mtlsd_400k_roi_3'
+        # self.default['db_name_test'] = 'gnn_agglomeration_hemi_mtlsd_400k_roi_1'
 
         self.parser.add_argument(
             '--dataset_path_train',
             type=str,
             help='the directory to read the training dataset from')
-        # self.default['dataset_path_train'] = 'data/hemi/22_micron_cube/default_train'
-        self.default['dataset_path_train'] = 'data/hemi/12_micron_cube/default_train'
+        self.default['dataset_path_train'] = 'data/hemi/22_micron_cube/default_train'
+        # self.default['dataset_path_train'] = 'data/hemi/12_micron_cube/default_train'
 
         self.parser.add_argument(
             '--dataset_path_val',
@@ -577,24 +577,24 @@ class Config:
             '--dataset_path_test',
             type=str,
             help='the directory to read the test dataset from')
-        # self.default['dataset_path_test'] = 'data/hemi/17_micron_cube/default_test'
-        self.default['dataset_path_test'] = 'data/hemi/12_micron_cube/debug_test'
+        self.default['dataset_path_test'] = 'data/hemi/17_micron_cube/default_test'
+        # self.default['dataset_path_test'] = 'data/hemi/12_micron_cube/debug_test'
 
         self.parser.add_argument(
             '--train_roi_offset',
             type=positive_int,
             nargs=3,
             help='ROI absolute position of lower vertex')
-        # self.default['train_roi_offset'] = [150400, 192000, 214400]
-        self.default['train_roi_offset'] = [140800, 205120, 198400]
+        self.default['train_roi_offset'] = [150400, 192000, 214400]
+        # self.default['train_roi_offset'] = [140800, 205120, 198400]
 
         self.parser.add_argument(
             '--train_roi_shape',
             type=positive_int,
             nargs=3,
             help='ROI size, starting at roi_offset')
-        self.default['train_roi_shape'] = [11800, 11800, 11800]
-        # self.default['train_roi_shape'] = [21800, 21800, 21800]
+        # self.default['train_roi_shape'] = [11800, 11800, 11800]
+        self.default['train_roi_shape'] = [21800, 21800, 21800]
 
         self.parser.add_argument(
             '--val_roi_offset',
@@ -610,8 +610,8 @@ class Config:
             nargs=3,
             help='ROI size, starting at roi_offset')
         # self.default['val_roi_shape'] = [1180, 11800, 11800]
-        # self.default['val_roi_shape'] = [11800, 11800, 11800]
-        self.default['val_roi_shape'] = [3000, 3000, 3000]
+        self.default['val_roi_shape'] = [11800, 11800, 11800]
+        # self.default['val_roi_shape'] = [3000, 3000, 3000]
 
         self.parser.add_argument(
             '--test_roi_offset',
@@ -619,8 +619,8 @@ class Config:
             nargs=3,
             help='ROI absolute position of lower vertex')
         # self.default['test_roi_offset'] = [140800 + 9 * 1180, 205120, 198400]
-        # self.default['test_roi_offset'] = [153680, 200000, 179200]
-        self.default['test_roi_offset'] = [140800, 205120, 198400]
+        self.default['test_roi_offset'] = [153680, 200000, 179200]
+        # self.default['test_roi_offset'] = [140800, 205120, 198400]
 
         self.parser.add_argument(
             '--test_roi_shape',
@@ -628,8 +628,8 @@ class Config:
             nargs=3,
             help='ROI size, starting at roi_offset')
         # self.default['test_roi_shape'] = [1180, 11800, 11800]
-        # self.default['test_roi_shape'] = [16800, 16800, 16800]
-        self.default['test_roi_shape'] = [11800, 11800, 11800]
+        self.default['test_roi_shape'] = [16800, 16800, 16800]
+        # self.default['test_roi_shape'] = [11800, 11800, 11800]
 
         #########################
 
@@ -638,7 +638,7 @@ class Config:
             type=positive_int,
             nargs=3,
             help='fixed block size for creating pyg graphs')
-        self.default['block_size'] = [750, 750, 750]
+        self.default['block_size'] = [1500, 1500, 1500]
         # desired
         # self.default['block_size'] = [3000, 3000, 3000]
 
@@ -656,9 +656,7 @@ class Config:
             type=positive_int,
             nargs=3,
             help='padding to create an outer mask that guarantees context for all targets the contribute to the loss')
-        self.default['block_padding'] = [750, 750, 750]
-        # desired
-        # self.default['block_padding'] = [1500, 1500, 1500]
+        self.default['block_padding'] = [1500, 1500, 1500]
 
         self.parser.add_argument(
             '--db_host',
