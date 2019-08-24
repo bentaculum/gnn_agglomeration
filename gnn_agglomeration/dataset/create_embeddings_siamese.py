@@ -19,6 +19,18 @@ from node_embeddings.siamese_vgg_3d import SiameseVgg3d  # noqa
 from node_embeddings import utils  # noqa
 
 
+def embeddings_to_unit_sphere(x):
+    """
+     Args:
+        x (list of numpy arrays):
+     Returns:
+        2d numpy array (num_nodes x embedding_size)
+     """
+    x = np.array(x)
+    norms = np.linalg.norm(x=x, axis=1, keepdims=True)
+    return x/norms
+
+
 def create_embeddings():
     timestamp = datetime.datetime.now(
         pytz.timezone('US/Eastern')).strftime('%Y%m%dT%H%M%S.%f%z')
@@ -125,6 +137,11 @@ def create_embeddings():
         logger.info(f'batch {i} in {now() - start_batch} s')
 
     logger.info(f'inference loop took {now() - start_inference} s')
+
+    start_norm = now()
+    embeddings = embeddings_to_unit_sphere(embeddings)
+    logger.info(f'project embeddings to unit sphere in {now() - start_norm} s')
+
     dataset.write_embeddings_to_db(
         node_ids=node_ids,
         embeddings=embeddings,
