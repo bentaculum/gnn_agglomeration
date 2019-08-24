@@ -65,7 +65,7 @@ class Config:
         self.parser.add_argument(
             '--kernel_size',
             type=positive_int,
-            help='Attention: # of heads, Splines: # of control points, GMM: # of mixture components')
+            help='Attention: -, Splines: # of control points, GMM: # of mixture components')
         self.default['kernel_size'] = 2
 
         self.parser.add_argument(
@@ -258,20 +258,20 @@ class Config:
             '--hidden_layers',
             type=nonnegative_int,
             help='number of hidden layers')
-        self.default['hidden_layers'] = 3
+        self.default['hidden_layers'] = 4
 
         self.parser.add_argument(
             '--hidden_units',
             type=positive_int,
             nargs='+',
             help='number of units per hidden layer in the GNN')
-        self.default['hidden_units'] = [4, 4, 4, 4]
+        self.default['hidden_units'] = [4, 4, 4, 4, 2]
 
         self.parser.add_argument(
             '--attention_heads',
             nargs='+',
             help='number of attention heads per hidden layer in the GNN')
-        self.default['attention_heads'] = [8, 4, 2, 1]
+        self.default['attention_heads'] = [8, 4, 2, 1, 1]
 
         self.parser.add_argument(
             '--use_bias',
@@ -335,7 +335,7 @@ class Config:
             '--adam_weight_decay',
             type=unit_float,
             help='Weight decay for ADAM optimizer')
-        self.default['adam_weight_decay'] = 0.0001
+        self.default['adam_weight_decay'] = 0.0
 
         self.parser.add_argument(
             '--batch_norm',
@@ -378,20 +378,20 @@ class Config:
             '--att_layers',
             type=positive_int,
             help='Attention NN: number of layers')
-        self.default['att_layers'] = 7
+        self.default['att_layers'] = 5
 
         self.parser.add_argument(
             '--att_layer_dims',
             type=positive_int,
             nargs='+',
             help='Attention NN: list of layer dimensions')
-        self.default['att_layer_dims'] = [32, 32, 16, 16, 8, 8, 1]
+        self.default['att_layer_dims'] = [32, 16, 8, 4, 1]
 
         self.parser.add_argument(
             '--att_non_linearity',
             type=str,
-            help='Attention NN: torch.nn.functional non linearity to use e.g. relu')
-        self.default['att_non_linearity'] = 'leaky_relu'
+            help='Attention NN: torch.nn.functional non linearity to use e.g. leaky_relu')
+        self.default['att_non_linearity'] = 'sigmoid'
 
         self.parser.add_argument(
             '--att_batch_norm',
@@ -404,7 +404,7 @@ class Config:
             type=unit_float,
             nargs='+',
             help='Attention NN: dropout probabilites during training for the input layer and all the hidden layers')
-        self.default['att_dropout_probs'] = [0, 0.2, 0.2, 0.2, 0.2, 0, 0]
+        self.default['att_dropout_probs'] = [0, 0, 0, 0, 0]
 
         self.parser.add_argument(
             '--att_bias',
@@ -544,8 +544,8 @@ class Config:
             '--db_name_train',
             type=str,
             help='name of the used mongodb for training')
-        self.default['db_name_train'] = 'gnn_agglomeration_hemi_mtlsd_400k_roi_2'
-        # self.default['db_name_train'] = 'gnn_agglomeration_hemi_mtlsd_400k_roi_1'
+        # self.default['db_name_train'] = 'gnn_agglomeration_hemi_mtlsd_400k_roi_2'
+        self.default['db_name_train'] = 'gnn_agglomeration_hemi_mtlsd_400k_roi_1'
 
         self.parser.add_argument(
             '--db_name_val',
@@ -564,8 +564,8 @@ class Config:
             '--dataset_path_train',
             type=str,
             help='the directory to read the training dataset from')
-        self.default['dataset_path_train'] = 'data/hemi/22_micron_cube/default_train'
-        # self.default['dataset_path_train'] = 'data/hemi/12_micron_cube/default_train'
+        # self.default['dataset_path_train'] = 'data/hemi/22_micron_cube/default_train'
+        self.default['dataset_path_train'] = 'data/hemi/12_micron_cube/default_train'
 
         self.parser.add_argument(
             '--dataset_path_val',
@@ -585,16 +585,16 @@ class Config:
             type=positive_int,
             nargs=3,
             help='ROI absolute position of lower vertex')
-        self.default['train_roi_offset'] = [150400, 192000, 214400]
-        # self.default['train_roi_offset'] = [140800, 205120, 198400]
+        # self.default['train_roi_offset'] = [150400, 192000, 214400]
+        self.default['train_roi_offset'] = [140800, 205120, 198400]
 
         self.parser.add_argument(
             '--train_roi_shape',
             type=positive_int,
             nargs=3,
             help='ROI size, starting at roi_offset')
-        # self.default['train_roi_shape'] = [11800, 11800, 11800]
-        self.default['train_roi_shape'] = [21800, 21800, 21800]
+        self.default['train_roi_shape'] = [11800, 11800, 11800]
+        # self.default['train_roi_shape'] = [21800, 21800, 21800]
 
         self.parser.add_argument(
             '--val_roi_offset',
@@ -705,7 +705,7 @@ class Config:
             '--num_workers',
             type=int,
             help='number of workers for tasks that are split into python subprocesses')
-        self.default['num_workers'] = 5
+        self.default['num_workers'] = 32
 
         self.parser.add_argument(
             '--dataloader_pin_memory',
@@ -716,20 +716,20 @@ class Config:
         self.parser.add_argument(
             '--save_processed_train',
             type=str2bool,
-            help='whether to store the processed training dataset to file')
-        self.default['save_processed_train'] = False
+            help='whether to store the processed out-of-mem training dataset to file')
+        self.default['save_processed_train'] = True
 
         self.parser.add_argument(
             '--save_processed_val',
             type=str2bool,
-            help='whether to store the processed validation dataset to file')
-        self.default['save_processed_val'] = False
+            help='whether to store the processed out-of-mem validation dataset to file')
+        self.default['save_processed_val'] = True
 
         self.parser.add_argument(
             '--save_processed_test',
             type=str2bool,
-            help='whether to store the processed test dataset to file')
-        self.default['save_processed_test'] = False
+            help='whether to store the processed out-of-mem test dataset to file')
+        self.default['save_processed_test'] = True
 
         self.parser.add_argument(
             '--data_augmentation',
