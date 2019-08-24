@@ -112,7 +112,8 @@ class HemibrainDataset(Dataset, ABC):
         offset_padded = np.array(offset) - np.array(self.config.block_padding)
         shape_padded = np.array(shape) + 2 * \
             np.array(self.config.block_padding)
-        logger.debug(f'offset padded: {offset_padded}, shape padded: {shape_padded}')
+        logger.debug(
+            f'offset padded: {offset_padded}, shape padded: {shape_padded}')
         return self.crop_block(offset_padded, shape_padded)
 
     def crop_block(self, offset, shape):
@@ -136,7 +137,8 @@ class HemibrainDataset(Dataset, ABC):
             self.roi_offset + self.roi_shape,
             cropped_offset + cropped_shape) - cropped_offset
 
-        logger.debug(f'offset cropped: {cropped_offset}, shape cropped: {cropped_shape}')
+        logger.debug(
+            f'offset cropped: {cropped_offset}, shape cropped: {cropped_shape}')
         return cropped_offset, cropped_shape
 
     def connect_to_db(self):
@@ -191,8 +193,8 @@ class HemibrainDataset(Dataset, ABC):
         logger.info(f'processed {self.len} in {time.time() - start}s')
 
         # with open(
-            # os.path.join(
-                # self.config.dataset_abs_path, 'config.json'), 'w') as f:
+        # os.path.join(
+        # self.config.dataset_abs_path, 'config.json'), 'w') as f:
         #     json.dump(vars(self.config), f)
 
     def _download(self):
@@ -222,7 +224,8 @@ class HemibrainDataset(Dataset, ABC):
         logger.info('writing to db ...')
         start = now()
         outputs_dict = {(min(k), max(k)): v for k, v in outputs_dict.items()}
-        logger.info(f'lower id first in all edges in outputs_dict in {now() - start} s')
+        logger.info(
+            f'lower id first in all edges in outputs_dict in {now() - start} s')
 
         start = now()
         roi = daisy.Roi(list(self.roi_offset), list(self.roi_shape))
@@ -247,7 +250,8 @@ class HemibrainDataset(Dataset, ABC):
         edges_cols = [node1_field, node2_field]
         orig_edge_attrs = {k: orig_edge_attrs[k] for k in edges_cols}
 
-        logger.info(f'edges before dropping edges going out of the dataset: {len(orig_edge_attrs[node1_field])}')
+        logger.info(
+            f'edges before dropping edges going out of the dataset: {len(orig_edge_attrs[node1_field])}')
         # drop edges at the border
         utils.drop_outgoing_edges(
             node_attrs=orig_node_attrs,
@@ -256,7 +260,8 @@ class HemibrainDataset(Dataset, ABC):
             node1_field=node1_field,
             node2_field=node2_field
         )
-        logger.info(f'edges after dropping edges going out of the dataset: {len(orig_edge_attrs[node1_field])}')
+        logger.info(
+            f'edges after dropping edges going out of the dataset: {len(orig_edge_attrs[node1_field])}')
         logger.info(f'load original RAG, drop edges in {now() - start} s')
 
         # lower id in all edges first
@@ -264,7 +269,8 @@ class HemibrainDataset(Dataset, ABC):
         for i, t in enumerate(zip(orig_edge_attrs[node1_field], orig_edge_attrs[node2_field])):
             orig_edge_attrs[node1_field][i] = min(t)
             orig_edge_attrs[node2_field][i] = max(t)
-        logger.info(f'lower id first in all edges in orig_edge_attrs in {now() - start} s')
+        logger.info(
+            f'lower id first in all edges in orig_edge_attrs in {now() - start} s')
 
         logger.info(
             f'num edges in ROI {len(orig_edge_attrs[node1_field])}, num outputs {len(outputs_dict)}')
@@ -278,11 +284,13 @@ class HemibrainDataset(Dataset, ABC):
         for e_tuple in zip(orig_edge_attrs[node1_field], orig_edge_attrs[node2_field]):
             if e_tuple not in outputs_dict:
                 # TODO this is just for debugging, terrible style
-                u_idx = np.where(orig_node_attrs[id_field] == [e_tuple[0]])[0][0]
+                u_idx = np.where(orig_node_attrs[id_field] == [
+                                 e_tuple[0]])[0][0]
                 u_pos = (orig_node_attrs['center_z'][u_idx],
                          orig_node_attrs['center_y'][u_idx],
                          orig_node_attrs['center_x'][u_idx])
-                v_idx = np.where(orig_node_attrs[id_field] == [e_tuple[1]])[0][0]
+                v_idx = np.where(orig_node_attrs[id_field] == [
+                                 e_tuple[1]])[0][0]
                 v_pos = (orig_node_attrs['center_z'][v_idx],
                          orig_node_attrs['center_y'][v_idx],
                          orig_node_attrs['center_x'][v_idx])

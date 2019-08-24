@@ -52,7 +52,8 @@ class HemibrainGraphMasked(HemibrainGraph):
             self.pos, \
             self.node_ids, \
             mask, \
-            self.y = self.parse_rag_excerpt(node_attrs, edge_attrs, embeddings, all_nodes)
+            self.y = self.parse_rag_excerpt(
+                node_attrs, edge_attrs, embeddings, all_nodes)
         logger.debug(f'parse rag excerpt in {time.time() - start} s')
 
         start = time.time()

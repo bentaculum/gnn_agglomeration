@@ -85,17 +85,29 @@ class HemibrainGraph(Data, ABC):
         # sanity check: all u nodes should be contained in the nodes extracted by mongodb
         assert np.sum(~u_in) == 0
 
-        # TODO this is dirty. clean up
         v_in = np.isin(edges_attrs[node2_field], node_attrs[id_field])
         missing_node_ids = np.unique(edges_attrs[node2_field][v_in])
+        list_id_field = []
+        list_center_z = []
+        list_center_y = []
+        list_center_x = []
         for i in missing_node_ids:
-            node_attrs[id_field] = np.append(node_attrs[id_field], i)
-            node_attrs['center_z'] = np.append(
-                node_attrs['center_z'], all_nodes[i]['center_z'])
-            node_attrs['center_y'] = np.append(
-                node_attrs['center_y'], all_nodes[i]['center_y'])
-            node_attrs['center_x'] = np.append(
-                node_attrs['center_x'], all_nodes[i]['center_x'])
+            list_id_field.append(i)
+            list_center_z.append(all_nodes[i]['center_z'])
+            list_center_y.append(all_nodes[i]['center_y'])
+            list_center_x.append(all_nodes[i]['center_x'])
+        node_attrs[id_field] = np.concatenate(
+            (node_attrs[id_field], np.array(list_id_field))
+        )
+        node_attrs['center_z'] = np.concatenate(
+            (node_attrs['center_z'], np.array(list_center_z))
+        )
+        node_attrs['center_y'] = np.concatenate(
+            (node_attrs['center_y'], np.array(list_center_y))
+        )
+        node_attrs['center_x'] = np.concatenate(
+            (node_attrs['center_x'], np.array(list_center_x))
+        )
 
         logger.debug(f'add missing nodes to node_attrs in {now() - start} s')
 
@@ -106,16 +118,16 @@ class HemibrainGraph(Data, ABC):
             raise ValueError(
                 f'Removed all edges in ROI, as one node is outside of ROI for each edge')
 
-        start = now()
         if embeddings is None:
             x = torch.ones(len(node_attrs[id_field]), 1, dtype=torch.float)
         else:
             # TODO this is for debugging. Later, I should have an embedding for each node
             # embeddings_list = [embeddings[i] if i in embeddings else np.random.rand(10) for i in
             #                    node_attrs[id_field]]
+            start = now()
             embeddings_list = [embeddings[i] for i in node_attrs[id_field]]
             x = torch.tensor(embeddings_list, dtype=torch.float)
-        logger.debug(f'load embeddings from dict in {now() - start} s')
+            logger.debug(f'load embeddings from dict in {now() - start} s')
 
         node_ids_np = node_attrs[id_field].astype(np.int64)
         node_ids = torch.tensor(node_ids_np, dtype=torch.long)
