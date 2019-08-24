@@ -54,7 +54,7 @@ class Config:
             '--feature_dimensionality',
             type=positive_int,
             help='Dimension of the feature space, used in data.x')
-        self.default['feature_dimensionality'] = 1
+        self.default['feature_dimensionality'] = 6
 
         self.parser.add_argument(
             '--pseudo_dimensionality',
