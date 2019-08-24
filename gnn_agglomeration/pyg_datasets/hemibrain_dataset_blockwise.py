@@ -1,13 +1,14 @@
 import torch
 import numpy as np
 import logging
+from time import time as now
 
 from .hemibrain_dataset import HemibrainDataset
 from .hemibrain_graph_unmasked import HemibrainGraphUnmasked
 from .hemibrain_graph_masked import HemibrainGraphMasked
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class HemibrainDatasetBlockwise(HemibrainDataset):
@@ -115,6 +116,7 @@ class HemibrainDatasetBlockwise(HemibrainDataset):
         are local attributes
         """
 
+        start = now()
         # TODO remove duplicate code
 
         # Get precomputed block offset, pad the block
@@ -133,6 +135,7 @@ class HemibrainDatasetBlockwise(HemibrainDataset):
                 inner_block_offset=inner_offset,
                 inner_block_shape=self.block_shapes[idx],
             )
+            logger.debug(f'get_from_db in {now() - start} s')
             return graph
         except ValueError as e:
             # TODO this might lead to unnecessary redundancy,
