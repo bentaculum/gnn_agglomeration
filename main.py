@@ -258,6 +258,7 @@ def main(_config, _run, _log):
             f'Total number of parameters: {total_params}')
 
         if config.final_training_pass:
+            # TODO seems to be buggy at the moment
             # train loss
             final_loss_train = 0.0
             final_metric_train = 0.0
@@ -268,13 +269,13 @@ def main(_config, _run, _log):
             for data_ft in data_loader_train:
                 data_ft = data_ft.to(device)
                 out_ft = model(data_ft)
-                utils.log_max_memory_allocated(_log, device)
                 final_loss_train += model.loss(out_ft,
                                                data_ft.y,
                                                data_ft.mask).item() * data_ft.num_nodes
                 final_metric_train += model.out_to_metric(
                     out_ft, data_ft.y) * data_ft.num_nodes
                 final_nr_nodes_train += data_ft.num_nodes
+                utils.log_max_memory_allocated(_log, device)
             final_loss_train /= final_nr_nodes_train
             final_metric_train /= final_nr_nodes_train
 

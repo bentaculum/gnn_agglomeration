@@ -3,6 +3,7 @@ torch.multiprocessing.set_sharing_strategy('file_system')
 import logging  # noqa
 from torch_geometric.data import InMemoryDataset  # noqa
 import time  # noqa
+from time import time as now  # noqa
 import multiprocessing  # noqa
 import numpy as np  # noqa
 
@@ -62,11 +63,12 @@ class HemibrainDatasetRandomInMemory(InMemoryDataset, HemibrainDatasetRandom):
             iterable=range(self.len))
         pool.close()
         pool.join()
+        logger.info(f'processed {self.len} in {time.time() - start}s')
 
         # strange multiprocessing syntax
+        start = now()
         data_list = data_mapresult.get()
-
-        logger.info(f'processed {self.len} in {time.time() - start}s')
+        logger.info('get results from multiprocessing in {now() - start} s')
 
         if self.pre_filter is not None:
             data_list = [data for data in data_list if self.pre_filter(data)]

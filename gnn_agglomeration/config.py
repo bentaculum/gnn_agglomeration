@@ -323,7 +323,7 @@ class Config:
             type=unit_float,
             nargs='+',
             help='dropout probabilites during training for the input layer and all the hidden layers')
-        self.default['dropout_probs'] = [0.3, 0.3, 0.0, 0.0]
+        self.default['dropout_probs'] = [0.0, 0.0, 0.0, 0.0, 0.0]
 
         self.parser.add_argument(
             '--adam_lr',
@@ -610,8 +610,8 @@ class Config:
             nargs=3,
             help='ROI size, starting at roi_offset')
         # self.default['val_roi_shape'] = [1180, 11800, 11800]
-        self.default['val_roi_shape'] = [11800, 11800, 11800]
-        # self.default['val_roi_shape'] = [3000, 3000, 3000]
+        # self.default['val_roi_shape'] = [11800, 11800, 11800]
+        self.default['val_roi_shape'] = [3000, 3000, 3000]
 
         self.parser.add_argument(
             '--test_roi_offset',
