@@ -225,7 +225,7 @@ def main(_config, _run, _log):
     _log.info(f'nr params: {total_params}')
     _run.log_scalar('nr_params', total_params, config.training_epochs)
     _log.info(f'Model ready in {now() - start_load_model} s')
-    utils.log_max_memory_allocated(_log, device)
+    utils.log_max_memory_allocated(device)
 
     # save config to file and store in DB
     config_filepath = os.path.join(config.run_abs_path, 'config.json')
@@ -279,7 +279,7 @@ def main(_config, _run, _log):
                 final_metric_train += model.out_to_metric(
                     out_ft, data_ft.y, data_ft.mask) * data_ft.mask.sum().item()
                 final_nr_nodes_train += data_ft.mask.sum().item()
-                utils.log_max_memory_allocated(_log, device)
+                utils.log_max_memory_allocated(device)
             final_loss_train /= final_nr_nodes_train
             final_metric_train /= final_nr_nodes_train
 
@@ -327,7 +327,7 @@ def main(_config, _run, _log):
                     f'batch {i}: num nodes {data_fe.num_nodes}, num edges {data_fe.num_edges}')
                 data_fe = data_fe.to(device)
                 out_fe = model(data_fe)
-                utils.log_max_memory_allocated(_log, device)
+                utils.log_max_memory_allocated(device)
 
                 if config.write_to_db:
                     start = time.time()
@@ -510,7 +510,7 @@ def main(_config, _run, _log):
             model.optimizer.step()
             # clear the gradient variables of the model
             model.optimizer.zero_grad()
-            utils.log_max_memory_allocated(_log, device)
+            utils.log_max_memory_allocated(device)
 
             model.print_current_loss(epoch, batch_i, _log)
 
@@ -563,7 +563,7 @@ def main(_config, _run, _log):
             data = data.to(device)
             out = model(data)
             loss = model.loss(out, data.y, data.mask)
-            utils.log_max_memory_allocated(_log, device)
+            utils.log_max_memory_allocated(device)
             # model.print_current_loss(
             # epoch, 'validation {}'.format(batch_i), _log)
             validation_loss += loss.item() * data.mask.sum().item()

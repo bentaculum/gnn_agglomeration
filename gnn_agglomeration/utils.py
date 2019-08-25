@@ -67,7 +67,7 @@ def to_np_arrays(list_of_dicts):
     return d
 
 
-def log_max_memory_allocated(_log, device):
+def log_max_memory_allocated(device):
     if torch.cuda.is_available():
         logger.debug(
             f'max GPU memory allocated: {torch.cuda.max_memory_allocated(device=device) / (2**30):.3f} GiB')
