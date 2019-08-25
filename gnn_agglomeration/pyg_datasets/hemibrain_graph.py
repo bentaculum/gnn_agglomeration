@@ -110,13 +110,7 @@ class HemibrainGraph(Data, ABC):
         )
 
         logger.debug(f'add missing nodes to node_attrs in {now() - start} s')
-
-        # TODO probably not necessary anymore
-        # If all edges were removed in the step above, raise a ValueError
-        # that is caught later on
-        if len(edges_attrs[node1_field]) == 0:
-            raise ValueError(
-                f'Removed all edges in ROI, as one node is outside of ROI for each edge')
+        logger.info(f'parse graph with {len(node_attrs[id_field])} nodes, {len(edges_attrs[node1_field])} edges')
 
         if embeddings is None:
             x = torch.ones(len(node_attrs[id_field]), 1, dtype=torch.float)

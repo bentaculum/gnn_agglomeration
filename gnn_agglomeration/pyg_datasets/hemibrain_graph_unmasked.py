@@ -39,6 +39,10 @@ class HemibrainGraphUnmasked(HemibrainGraph):
         if len(edge_attrs) == 0:
             raise ValueError('No edges found in roi %s' % roi)
 
+        if len(edge_attrs) > self.config.max_edges:
+            raise ValueError(
+                f'extracted graph has {len(edge_attrs)} edges, but the limit is set to {self.config.max_edges}')
+
         self.edge_index, \
             self.edge_attr, \
             self.x, \

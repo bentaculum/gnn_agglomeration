@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 import logging
+import daisy
 from time import time as now
 
 from .hemibrain_dataset import HemibrainDataset
@@ -123,6 +124,9 @@ class HemibrainDatasetBlockwise(HemibrainDataset):
         inner_offset = self.block_offsets[idx]
         outer_offset, outer_shape = self.pad_block(
             inner_offset, self.block_shapes[idx])
+
+        logger.info(
+            f'get graph {idx} from {daisy.Roi(outer_offset, outer_shape)}')
 
         graph = globals()[self.config.graph_type](config=self.config)
         try:

@@ -4,7 +4,7 @@ import numpy as np
 import logging
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 def drop_outgoing_edges(node_attrs, edge_attrs, id_field, node1_field, node2_field):

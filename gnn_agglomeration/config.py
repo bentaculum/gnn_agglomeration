@@ -669,6 +669,12 @@ class Config:
         self.default['block_padding'] = [1500, 1500, 1500]
 
         self.parser.add_argument(
+            '--max_edges',
+            type=int,
+            help='limit number of edges per graph to avoid out of memory errors on GPU')
+        self.default['max_edges'] = 200000
+
+        self.parser.add_argument(
             '--db_host',
             type=str,
             help='path to mongoDB connection file')

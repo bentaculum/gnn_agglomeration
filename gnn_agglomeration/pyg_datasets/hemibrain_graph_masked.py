@@ -45,15 +45,19 @@ class HemibrainGraphMasked(HemibrainGraph):
         if len(edge_attrs) == 0:
             raise ValueError('No edges found in roi %s' % roi)
 
+        if len(edge_attrs) > self.config.max_edges:
+            raise ValueError(
+                f'extracted graph has {len(edge_attrs)} edges, but the limit is set to {self.config.max_edges}')
+
         start = time.time()
         self.edge_index, \
-            self.edge_attr, \
-            self.x, \
-            self.pos, \
-            self.node_ids, \
-            mask, \
-            self.y = self.parse_rag_excerpt(
-                node_attrs, edge_attrs, embeddings, all_nodes)
+        self.edge_attr, \
+        self.x, \
+        self.pos, \
+        self.node_ids, \
+        mask, \
+        self.y = self.parse_rag_excerpt(
+            node_attrs, edge_attrs, embeddings, all_nodes)
         logger.debug(f'parse rag excerpt in {time.time() - start} s')
 
         start = time.time()
@@ -71,7 +75,7 @@ class HemibrainGraphMasked(HemibrainGraph):
     def mask_target_edges(self, inner_roi, mask):
         lower_limit = torch.tensor(inner_roi.get_offset(), dtype=torch.float)
         upper_limit = lower_limit + \
-            torch.tensor(inner_roi.get_shape(), dtype=torch.float)
+                      torch.tensor(inner_roi.get_shape(), dtype=torch.float)
 
         nodes_in = torch.all(
             self.pos > lower_limit,
