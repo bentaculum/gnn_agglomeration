@@ -528,9 +528,9 @@ def main(_config, _run, _log):
                 np.savez(
                     os.path.join(outputs_dir, 'train',
                                  f'epoch_{epoch}_batch_{batch_i}'),
-                    out=out.cpu().numpy(),
-                    labels=data.y.cpu().numpy(),
-                    mask=data.mask.cpu().numpy()
+                    out=out.detach().cpu().numpy(),
+                    labels=data.y.detach().cpu().numpy(),
+                    mask=data.mask.detach().cpu().numpy()
                 )
 
             if config.summary_per_batch:
@@ -586,9 +586,9 @@ def main(_config, _run, _log):
                 np.savez(
                     os.path.join(outputs_dir, 'val',
                                  f'epoch_{epoch}_batch_{batch_i}'),
-                    out=out.cpu.numpy(),
-                    labels=data.y.cpu().numpy(),
-                    mask=data.mask.cpu().numpy()
+                    out=out.detach().cpu().numpy(),
+                    labels=data.y.detach().cpu().numpy(),
+                    mask=data.mask.detach().cpu().numpy()
                 )
 
             if config.summary_per_batch:
