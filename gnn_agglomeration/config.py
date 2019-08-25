@@ -495,7 +495,7 @@ class Config:
             '--checkpoint_interval',
             type=positive_int,
             help='how often to save a checkpoint of the model that can be used for restarting')
-        self.default['checkpoint_interval'] = 2
+        self.default['checkpoint_interval'] = 10
 
         self.parser.add_argument(
             '--machine',
