@@ -69,7 +69,7 @@ class HemibrainDatasetRandomInMemory(InMemoryDataset, HemibrainDatasetRandom):
         # strange multiprocessing syntax
         start = now()
         data_list = data_mapresult.get()
-        logger.info('get results from multiprocessing in {now() - start} s')
+        logger.info(f'get results from multiprocessing in {now() - start} s')
 
         if self.pre_filter is not None:
             data_list = [data for data in data_list if self.pre_filter(data)]

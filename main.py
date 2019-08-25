@@ -1,5 +1,7 @@
 import torch  # noqa
 torch.multiprocessing.set_sharing_strategy('file_system')
+# with cudnn enabled, validation with fixed params breaks
+# cudnn speedups for PyG seem to be negligible anyway
 torch.backends.cudnn.enabled = False
 
 import sacred  # noqa
