@@ -161,7 +161,7 @@ def main(_config, _run, _log):
     data_loader_train = DataLoader(
         train_dataset,
         batch_size=config.batch_size_train,
-        shuffle=False,
+        shuffle=True,
         num_workers=config.num_workers,
         pin_memory=config.dataloader_pin_memory,
         worker_init_fn=lambda idx: np.random.seed()
