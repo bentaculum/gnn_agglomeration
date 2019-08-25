@@ -85,8 +85,7 @@ class HemibrainDatasetRandomInMemory(InMemoryDataset, HemibrainDatasetRandom):
 
     def get(self, idx):
         data = InMemoryDataset.get(self, idx)
-        # max_edges is for PyG, which has directed edges and TODO self loops
-        if data.num_edges * 2 > self.config.max_edges:
+        if data.num_edges > self.config.max_edges:
             logger.warning(
                 f'graph {idx} has {data.num_edges} edges, but the limit is set to {self.config.max_edges}.'
                 f'\nDuplicating previous graph')
