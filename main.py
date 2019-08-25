@@ -158,10 +158,22 @@ def main(_config, _run, _log):
     else:
         _log.info(f'current device: cpu')
 
+    data_sampler_train = torch.utils.data.RandomSampler(
+        data_source=train_dataset,
+        replacement=True,
+        num_samples=config.epoch_samples_train
+    )
+    data_sampler_val = torch.utils.data.RandomSampler(
+        data_source=validation_dataset,
+        replacement=True,
+        num_samples=config.epoch_samples_train
+    )
+
     data_loader_train = DataLoader(
         train_dataset,
         batch_size=config.batch_size_train,
-        shuffle=True,
+        shuffle=False,
+        sampler=data_sampler_train,
         num_workers=config.num_workers,
         pin_memory=config.dataloader_pin_memory,
         worker_init_fn=lambda idx: np.random.seed()
@@ -170,6 +182,7 @@ def main(_config, _run, _log):
         validation_dataset,
         batch_size=config.batch_size_eval,
         shuffle=False,
+        sampler=data_sampler_val,
         num_workers=config.num_workers,
         worker_init_fn=lambda idx: np.random.seed()
     )

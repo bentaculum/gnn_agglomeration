@@ -173,7 +173,7 @@ class Config:
             '--log_per_epoch_only',
             type=str2bool,
             help='minimal logging, only the loss and the metric')
-        self.default['log_per_epoch_only'] = False
+        self.default['log_per_epoch_only'] = True
 
         self.parser.add_argument(
             '--log_namespaces',
@@ -241,6 +241,18 @@ class Config:
             type=positive_int,
             help='Number of random graphs to create, if a new dataset is created')
         self.default['samples'] = 4096
+
+        self.parser.add_argument(
+            '--epoch_samples_train',
+            type=positive_int,
+            help='number of training samples drawn by the RandomSampler per epoch')
+        self.default['epoch_samples_train'] = 4096
+
+        self.parser.add_argument(
+            '--epoch_samples_val',
+            type=positive_int,
+            help='number of validation samples drawn by the RandomSampler per epoch')
+        self.defaul['epoch_samples_val'] = 20
 
         self.parser.add_argument(
             '--standardize_targets',
