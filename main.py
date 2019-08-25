@@ -521,8 +521,9 @@ def main(_config, _run, _log):
 
             if batch_i % config.outputs_interval == 0:
                 np.savez(
-                    os.path.join(outputs_dir, 'train', f'epoch_{epoch}_batch_{batch_i}'),
-                    out=out.cpu.numpy(),
+                    os.path.join(outputs_dir, 'train',
+                                 f'epoch_{epoch}_batch_{batch_i}'),
+                    out=out.cpu().numpy(),
                     labels=data.y.cpu().numpy(),
                     mask=data.mask.cpu().numpy()
                 )
@@ -573,7 +574,8 @@ def main(_config, _run, _log):
 
             if batch_i % config.outputs_interval == 0:
                 np.savez(
-                    os.path.join(outputs_dir, 'val', f'epoch_{epoch}_batch_{batch_i}'),
+                    os.path.join(outputs_dir, 'val',
+                                 f'epoch_{epoch}_batch_{batch_i}'),
                     out=out.cpu.numpy(),
                     labels=data.y.cpu().numpy(),
                     mask=data.mask.cpu().numpy()
