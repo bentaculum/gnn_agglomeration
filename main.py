@@ -72,7 +72,8 @@ def main(_config, _run, _log):
         # make dir structure in temp dir
         os.makedirs(summary_dir)
         os.makedirs(model_dir)
-        os.makedirs(outputs_dir)
+        os.makedirs(os.path.join(outputs_dir, 'train'))
+        os.makedirs(os.path.join(outputs_dir, 'val'))
 
     # Pass the path of tensorboardX summaries to sacred
     if config.write_summary:
