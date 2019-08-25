@@ -1,3 +1,4 @@
+import torch
 import torch.nn.functional as F
 
 from .model_type import ModelType
