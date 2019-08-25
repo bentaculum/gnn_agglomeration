@@ -660,7 +660,7 @@ class Config:
             type=positive_int,
             nargs=3,
             help='fixed block size for creating pyg graphs')
-        self.default['block_size'] = [1500, 1500, 1500]
+        self.default['block_size'] = [2000, 2000, 2000]
         # desired
         # self.default['block_size'] = [3000, 3000, 3000]
 
@@ -678,7 +678,7 @@ class Config:
             type=positive_int,
             nargs=3,
             help='padding to create an outer mask that guarantees context for all targets the contribute to the loss')
-        self.default['block_padding'] = [1500, 1500, 1500]
+        self.default['block_padding'] = [1000, 1000, 1000]
 
         self.parser.add_argument(
             '--max_edges',

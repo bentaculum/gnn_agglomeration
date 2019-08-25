@@ -167,7 +167,7 @@ def main(_config, _run, _log):
     data_sampler_val = torch.utils.data.RandomSampler(
         data_source=validation_dataset,
         replacement=True,
-        num_samples=config.epoch_samples_train
+        num_samples=config.epoch_samples_val
     )
 
     data_loader_train = DataLoader(
