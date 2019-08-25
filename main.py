@@ -520,6 +520,11 @@ def main(_config, _run, _log):
             nr_nodes_train += data.mask.sum().item()
 
             if batch_i % config.outputs_interval == 0:
+                if isinstance(out, tuple):
+                    # first dim: u,v second dim: num_edges, third dim = number of output node features
+                    # store pairs of node embeddings
+                    out = torch.stack([out[0], out[1]], dim=0)
+
                 np.savez(
                     os.path.join(outputs_dir, 'train',
                                  f'epoch_{epoch}_batch_{batch_i}'),
@@ -573,6 +578,11 @@ def main(_config, _run, _log):
             nr_nodes_val += data.mask.sum().item()
 
             if batch_i % config.outputs_interval == 0:
+                if isinstance(out, tuple):
+                    # first dim: u,v second dim: num_edges, third dim = number of output node features
+                    # store pairs of node embeddings
+                    out = torch.stack([out[0], out[1]], dim=0)
+
                 np.savez(
                     os.path.join(outputs_dir, 'val',
                                  f'epoch_{epoch}_batch_{batch_i}'),
