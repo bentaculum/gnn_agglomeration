@@ -246,7 +246,7 @@ class Config:
             '--epoch_samples_train',
             type=positive_int,
             help='number of training samples drawn by the RandomSampler per epoch')
-        self.default['epoch_samples_train'] = 2048
+        self.default['epoch_samples_train'] = 4096
 
         self.parser.add_argument(
             '--epoch_samples_val',
@@ -289,13 +289,13 @@ class Config:
             type=positive_int,
             nargs='+',
             help='number of units per hidden layer in the GNN')
-        self.default['hidden_units'] = [4, 4, 4, 4, 2]
+        self.default['hidden_units'] = [8, 8, 8, 8, 8]
 
         self.parser.add_argument(
             '--attention_heads',
             nargs='+',
             help='number of attention heads per hidden layer in the GNN')
-        self.default['attention_heads'] = [8, 4, 2, 1, 1]
+        self.default['attention_heads'] = [8, 8, 4, 2, 1]
 
         self.parser.add_argument(
             '--use_bias',
@@ -660,7 +660,7 @@ class Config:
             type=positive_int,
             nargs=3,
             help='fixed block size for creating pyg graphs')
-        self.default['block_size'] = [2000, 2000, 2000]
+        self.default['block_size'] = [1500, 1500, 1500]
         # desired
         # self.default['block_size'] = [3000, 3000, 3000]
 
@@ -679,12 +679,14 @@ class Config:
             nargs=3,
             help='padding to create an outer mask that guarantees context for all targets the contribute to the loss')
         self.default['block_padding'] = [1000, 1000, 1000]
+        # desired
+        # self.default['block_padding'] = [1500, 1500, 1500]
 
         self.parser.add_argument(
             '--max_edges',
             type=int,
             help='limit number of edges per graph to avoid out of memory errors on GPU')
-        self.default['max_edges'] = 180000
+        self.default['max_edges'] = 130000
 
         self.parser.add_argument(
             '--db_host',
