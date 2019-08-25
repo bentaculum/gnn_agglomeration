@@ -39,9 +39,10 @@ class HemibrainGraphUnmasked(HemibrainGraph):
         if len(edge_attrs) == 0:
             raise ValueError('No edges found in roi %s' % roi)
 
-        if len(edge_attrs) > self.config.max_edges:
+        # PyG doubles all edges, there * 2 here
+        if len(edge_attrs) * 2 > self.config.max_edges:
             raise ValueError(
-                f'extracted graph has {len(edge_attrs)} edges, but the limit is set to {self.config.max_edges}')
+                f'extracted graph has {len(edge_attrs) * 2} edges, but the limit is set to {self.config.max_edges}')
 
         self.edge_index, \
             self.edge_attr, \
@@ -50,6 +51,10 @@ class HemibrainGraphUnmasked(HemibrainGraph):
             self.node_ids, \
             self.mask, \
             self.y = self.parse_rag_excerpt(node_attrs, edge_attrs, embeddings, all_nodes)
+
+        if self.edge_index.size(1) > self.config.max_edges:
+            raise ValueError(
+                f'extracted graph has {self.edge_index.size(1)} edges, but the limit is set to {self.config.max_edges}')
 
         self.roi_mask = torch.ones_like(self.mask, dtype=torch.uint8)
 

@@ -45,9 +45,6 @@ class HemibrainGraphMasked(HemibrainGraph):
         if len(edge_attrs) == 0:
             raise ValueError('No edges found in roi %s' % roi)
 
-        if len(edge_attrs) > self.config.max_edges:
-            raise ValueError(
-                f'extracted graph has {len(edge_attrs)} edges, but the limit is set to {self.config.max_edges}')
 
         start = time.time()
         self.edge_index, \
@@ -59,6 +56,10 @@ class HemibrainGraphMasked(HemibrainGraph):
         self.y = self.parse_rag_excerpt(
             node_attrs, edge_attrs, embeddings, all_nodes)
         logger.debug(f'parse rag excerpt in {time.time() - start} s')
+
+        if self.edge_index.size(1) > self.config.max_edges:
+            raise ValueError(
+                f'extracted graph has {self.edge_index.size(1)} edges, but the limit is set to {self.config.max_edges}')
 
         start = time.time()
         self.mask, self.roi_mask = self.mask_target_edges(
