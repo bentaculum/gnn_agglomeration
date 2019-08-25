@@ -1,13 +1,11 @@
-from gnn_agglomeration import utils
-import sacred
-from sacred.observers import MongoObserver, TelegramObserver
-from sacred.stflow import LogFileWriter
-import logging
-
-import torch
-
-# TODO what does this do exactly?
+import torch  # noqa
 torch.multiprocessing.set_sharing_strategy('file_system')
+torch.backends.cudnn.enabled = False
+
+import sacred  # noqa
+from sacred.observers import MongoObserver, TelegramObserver  # noqa
+from sacred.stflow import LogFileWriter  # noqa
+import logging  # noqa
 
 import os  # noqa
 import shutil  # noqa
@@ -26,6 +24,7 @@ import datetime  # noqa
 import pytz  # noqa
 from funlib.segment.arrays import replace_values  # noqa
 
+from gnn_agglomeration import utils  # noqa
 from gnn_agglomeration.pyg_datasets import *  # noqa
 from gnn_agglomeration.nn.models import *  # noqa
 
