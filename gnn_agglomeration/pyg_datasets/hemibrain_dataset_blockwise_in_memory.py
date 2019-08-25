@@ -81,3 +81,13 @@ class HemibrainDatasetBlockwiseInMemory(
 
     def _process(self):
         InMemoryDataset._process(self)
+
+    def get(self, idx):
+        data = InMemoryDataset.get(self, idx)
+        if data.num_edges > self.config.max_edges:
+            logger.warning(
+                f'graph {idx} has {data.num_edges} edges, but the limit is set to {self.config.max_edges}.'
+                f'\nDuplicating previous graph')
+            return self.get((idx - 1) % self.__len__())
+        else:
+            return data

@@ -144,10 +144,4 @@ class HemibrainDatasetBlockwise(HemibrainDataset):
         except ValueError as e:
             # TODO this might lead to unnecessary redundancy,
             logger.warning(f'{e}, duplicating previous graph')
-            if idx > 0:
-                return self.get_from_db(idx - 1)
-            else:
-                raise NotImplementedError(
-                    f'Error for last block in block-wise loading: {e}'
-                    'Cannot replace the first block if it is empty'
-                )
+            return self.get_from_db((idx - 1) % self.__len__())
