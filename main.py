@@ -488,6 +488,7 @@ def main(_config, _run, _log):
         nr_nodes_train = 0
         _log.info('epoch {} ...'.format(epoch))
         for batch_i, data in enumerate(data_loader_train):
+            start_batch = now()
 
             # mask is half as long as num edges, because it is not directed
             _log.info(
@@ -561,6 +562,7 @@ def main(_config, _run, _log):
                 )
 
             model.train_batch_iteration += 1
+            _log.debug(f'batch {batch_i} in {now() - start_batch} s')
 
         epoch_loss /= nr_nodes_train
         epoch_metric_train /= nr_nodes_train
