@@ -10,7 +10,6 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
-
 class GnnModel(torch.nn.Module, ABC):
     def __init__(self,
                  config,
@@ -122,12 +121,14 @@ class GnnModel(torch.nn.Module, ABC):
             self.current_writer = self.train_writer
             for param in self.trainable_parameters:
                 param.requires_grad = True
-            logger.debug(f'activate train mode, make {sum(p.numel() for p in self.trainable_parameters)} params trainable')
+            logger.info(
+                f'activate train mode, make {sum(p.numel() for p in self.trainable_parameters)} params trainable')
         else:
             self.current_writer = self.val_writer
             for param in self.trainable_parameters:
                 param.requires_grad = False
-            logger.debug(f'activate eval mode, fix {sum(p.numel() for p in self.trainable_parameters)} params')
+            logger.info(
+                f'activate eval mode, fix {sum(p.numel() for p in self.trainable_parameters)} params')
 
         return ret
 

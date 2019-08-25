@@ -252,7 +252,7 @@ class Config:
             '--epoch_samples_val',
             type=positive_int,
             help='number of validation samples drawn by the RandomSampler per epoch')
-        self.defaul['epoch_samples_val'] = 20
+        self.default['epoch_samples_val'] = 20
 
         self.parser.add_argument(
             '--standardize_targets',
