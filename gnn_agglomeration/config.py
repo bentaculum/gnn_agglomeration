@@ -246,7 +246,7 @@ class Config:
             '--epoch_samples_train',
             type=positive_int,
             help='number of training samples drawn by the RandomSampler per epoch')
-        self.default['epoch_samples_train'] = 4096
+        self.default['epoch_samples_train'] = 2048
 
         self.parser.add_argument(
             '--epoch_samples_val',
