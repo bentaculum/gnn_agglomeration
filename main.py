@@ -535,12 +535,12 @@ def main(_config, _run, _log):
                 )
 
             if config.summary_per_batch:
-                val_writer.add_scalar(
+                train_writer.add_scalar(
                     '00/weighted_loss',
                     loss.item(),
                     epoch * data_loader_train.__len__() + batch_i
                 )
-                val_writer.add_scalar(
+                train_writer.add_scalar(
                     '00/weighted_accuracy',
                     model.out_to_metric(out, data.y, data.mask),
                     epoch * data_loader_train.__len__() + batch_i
