@@ -11,7 +11,8 @@ class CosineEmbeddingLossProblem(ModelType):
 
         # TODO this is only true if there is no fc layer on top of each node after the GNN
         if self.config.att_heads_concat:
-            self.out_channels = self.config.hidden_units[-1] * self.config.attention_heads[-1]
+            self.out_channels = self.config.hidden_units[-1] * \
+                self.config.attention_heads[-1]
         else:
             self.out_channels = self.config.hidden_units[-1]
 
@@ -57,5 +58,5 @@ class CosineEmbeddingLossProblem(ModelType):
     def metric(self, predictions, targets, mask):
         weighted_equal = predictions.eq(targets.float()).float() * mask.float()
         correct = weighted_equal.sum().item()
-        acc = correct / mask.sum().item()
+        acc = correct / (mask.sum().item() + torch.finfo(torch.float).tiny)
         return acc

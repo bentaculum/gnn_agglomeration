@@ -39,9 +39,10 @@ class RegressionProblem(ModelType):
 
     def metric(self, predictions, targets, mask):
         # TODO test this
-        weighted_equal = torch.squeeze(predictions).eq(targets.float()).float() * mask.float()
+        weighted_equal = torch.squeeze(predictions).eq(
+            targets.float()).float() * mask.float()
         correct = weighted_equal.sum().item()
-        acc = correct / mask.sum()
+        acc = correct / (mask.sum().item() + torch.finfo(torch.float).tiny)
         return acc
 
     def predictions_to_list(self, predictions):

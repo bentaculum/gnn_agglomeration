@@ -33,5 +33,5 @@ class ClassificationProblem(ModelType):
     def metric(self, predictions, targets, mask):
         weighted_equal = predictions.eq(targets.float()).float() * mask.float()
         correct = weighted_equal.sum().item()
-        acc = correct / mask.sum()
+        acc = correct / (mask.sum().item() + torch.finfo(torch.float).tiny)
         return acc
