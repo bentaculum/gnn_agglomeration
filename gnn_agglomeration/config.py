@@ -483,7 +483,7 @@ class Config:
             '--checkpoint_interval',
             type=positive_int,
             help='how often to save a checkpoint of the model that can be used for restarting')
-        self.default['checkpoint_interval'] = 10
+        self.default['checkpoint_interval'] = 2
 
         self.parser.add_argument(
             '--machine',
@@ -556,8 +556,8 @@ class Config:
             '--db_name_train',
             type=str,
             help='name of the used mongodb for training')
-        # self.default['db_name_train'] = 'gnn_agglomeration_hemi_mtlsd_400k_roi_2'
-        self.default['db_name_train'] = 'gnn_agglomeration_hemi_mtlsd_400k_roi_1'
+        self.default['db_name_train'] = 'gnn_agglomeration_hemi_mtlsd_400k_roi_2'
+        # self.default['db_name_train'] = 'gnn_agglomeration_hemi_mtlsd_400k_roi_1'
 
         self.parser.add_argument(
             '--db_name_val',
@@ -576,8 +576,8 @@ class Config:
             '--dataset_path_train',
             type=str,
             help='the directory to read the training dataset from')
-        # self.default['dataset_path_train'] = 'data/hemi/22_micron_cube/default_train'
-        self.default['dataset_path_train'] = 'data/hemi/12_micron_cube/default_train'
+        self.default['dataset_path_train'] = 'data/hemi/22_micron_cube/default_train'
+        # self.default['dataset_path_train'] = 'data/hemi/12_micron_cube/default_train'
 
         self.parser.add_argument(
             '--dataset_path_val',
@@ -597,16 +597,16 @@ class Config:
             type=positive_int,
             nargs=3,
             help='ROI absolute position of lower vertex')
-        # self.default['train_roi_offset'] = [150400, 192000, 214400]
-        self.default['train_roi_offset'] = [140800, 205120, 198400]
+        self.default['train_roi_offset'] = [150400, 192000, 214400]
+        # self.default['train_roi_offset'] = [140800, 205120, 198400]
 
         self.parser.add_argument(
             '--train_roi_shape',
             type=positive_int,
             nargs=3,
             help='ROI size, starting at roi_offset')
-        self.default['train_roi_shape'] = [11800, 11800, 11800]
-        # self.default['train_roi_shape'] = [21800, 21800, 21800]
+        self.default['train_roi_shape'] = [21800, 21800, 21800]
+        # self.default['train_roi_shape'] = [11800, 11800, 11800]
 
         self.parser.add_argument(
             '--val_roi_offset',
@@ -621,9 +621,9 @@ class Config:
             type=positive_int,
             nargs=3,
             help='ROI size, starting at roi_offset')
+        self.default['val_roi_shape'] = [11800, 11800, 11800]
         # self.default['val_roi_shape'] = [1180, 11800, 11800]
-        # self.default['val_roi_shape'] = [11800, 11800, 11800]
-        self.default['val_roi_shape'] = [3000, 3000, 3000]
+        # self.default['val_roi_shape'] = [3000, 3000, 3000]
 
         self.parser.add_argument(
             '--test_roi_offset',
@@ -632,7 +632,6 @@ class Config:
             help='ROI absolute position of lower vertex')
         # self.default['test_roi_offset'] = [140800 + 9 * 1180, 205120, 198400]
         self.default['test_roi_offset'] = [153680, 200000, 179200]
-        # self.default['test_roi_offset'] = [140800, 205120, 198400]
 
         self.parser.add_argument(
             '--test_roi_shape',
@@ -641,7 +640,6 @@ class Config:
             help='ROI size, starting at roi_offset')
         # self.default['test_roi_shape'] = [1180, 11800, 11800]
         self.default['test_roi_shape'] = [16800, 16800, 16800]
-        # self.default['test_roi_shape'] = [11800, 11800, 11800]
 
         #########################
 
@@ -795,6 +793,7 @@ class Config:
             which accounts for edges with unknown ground truth''')
         self.default['merge_labeled_field'] = 'merge_labeled'
 
+        # TODO this is not being used right now
         self.parser.add_argument(
             '--out_dimensionality',
             type=positive_int,

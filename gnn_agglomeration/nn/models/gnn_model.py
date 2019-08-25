@@ -187,16 +187,16 @@ class GnnModel(torch.nn.Module, ABC):
         """
         Should only be called after the end of a training+validation epoch
         """
-        # delete older models
-        load_model_dir = os.path.join(
-            self.config.root_dir,
-            self.config.run_abs_path,
-            self.config.model_dir)
-        checkpoint_versions = [name for name in os.listdir(load_model_dir) if (
-            name.endswith('.tar') and name.startswith('epoch'))]
-        if len(checkpoint_versions) >= 3:
-            checkpoint_versions.sort()
-            os.remove(os.path.join(load_model_dir, checkpoint_versions[0]))
+        # # delete older models
+        # load_model_dir = os.path.join(
+        #     self.config.root_dir,
+        #     self.config.run_abs_path,
+        #     self.config.model_dir)
+        # checkpoint_versions = [name for name in os.listdir(load_model_dir) if (
+        #     name.endswith('.tar') and name.startswith('epoch'))]
+        # if len(checkpoint_versions) >= 3:
+        #     checkpoint_versions.sort()
+        #     os.remove(os.path.join(load_model_dir, checkpoint_versions[0]))
 
         # save the new one
         torch.save({
