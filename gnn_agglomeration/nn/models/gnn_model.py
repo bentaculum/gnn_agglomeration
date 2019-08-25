@@ -72,17 +72,21 @@ class GnnModel(torch.nn.Module, ABC):
     def out_to_one_dim(self, out):
         return self.model_type.out_to_one_dim(out=out)
 
-    def metric(self, predictions, targets):
-        return self.model_type.metric(predictions=predictions, targets=targets)
+    def metric(self, predictions, targets, mask):
+        return self.model_type.metric(
+            predictions=predictions,
+            targets=targets,
+            mask=mask
+        )
 
     def evaluate_metric(self, data):
         out = self.forward(data)
         pred = self.out_to_predictions(out)
         return self.metric(pred, data.y)
 
-    def out_to_metric(self, out, targets):
+    def out_to_metric(self, out, targets, mask):
         pred = self.out_to_predictions(out)
-        return self.metric(pred, targets)
+        return self.metric(pred, targets, mask)
 
     def predictions_to_list(self, predictions):
         return self.model_type.predictions_to_list(predictions=predictions)

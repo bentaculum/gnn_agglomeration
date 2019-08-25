@@ -37,9 +37,11 @@ class RegressionProblem(ModelType):
     def out_to_one_dim(self, out):
         return out.squeeze()
 
-    def metric(self, predictions, targets):
-        correct = torch.squeeze(predictions).eq(targets).sum().item()
-        acc = correct / targets.size(0)
+    def metric(self, predictions, targets, mask):
+        # TODO test this
+        weighted_equal = torch.squeeze(predictions).eq(targets.float()).float() * mask.float()
+        correct = weighted_equal.sum().item()
+        acc = correct / mask.sum()
         return acc
 
     def predictions_to_list(self, predictions):

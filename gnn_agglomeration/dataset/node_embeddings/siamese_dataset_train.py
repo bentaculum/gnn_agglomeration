@@ -66,6 +66,8 @@ class SiameseDatasetTrain(SiameseDataset):
         # get weights
         start = now()
         targets = self.edges_attrs[self.config.new_edge_attr_trinary]
+
+        # TODO np.unique should do the same
         class_sample_count = np.array(
             [len(np.where(targets == t)[0]) for t in np.unique(targets)]
         )

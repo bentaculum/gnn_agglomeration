@@ -65,10 +65,14 @@ def main(_config, _run, _log):
         model_dir = os.path.join(config.run_abs_path, config.model_dir)
         if os.path.isdir(model_dir):
             shutil.rmtree(model_dir)
+        outputs_dir = os.path.join(config.run_abs_path, config.outputs_dir)
+        if os.path.isdir(outputs_dir):
+            shutil.rmtree(outputs_dir)
 
         # make dir structure in temp dir
         os.makedirs(summary_dir)
         os.makedirs(model_dir)
+        os.makedirs(outputs_dir)
 
     # Pass the path of tensorboardX summaries to sacred
     if config.write_summary:
@@ -271,10 +275,10 @@ def main(_config, _run, _log):
                 out_ft = model(data_ft)
                 final_loss_train += model.loss(out_ft,
                                                data_ft.y,
-                                               data_ft.mask).item() * data_ft.num_nodes
+                                               data_ft.mask).item() * data_ft.mask.sum().item()
                 final_metric_train += model.out_to_metric(
-                    out_ft, data_ft.y) * data_ft.num_nodes
-                final_nr_nodes_train += data_ft.num_nodes
+                    out_ft, data_ft.y, data_ft.mask) * data_ft.mask.sum().item()
+                final_nr_nodes_train += data_ft.mask.sum().item()
                 utils.log_max_memory_allocated(_log, device)
             final_loss_train /= final_nr_nodes_train
             final_metric_train /= final_nr_nodes_train
@@ -370,10 +374,10 @@ def main(_config, _run, _log):
                         f'writing outputs to dict in {time.time() - start}s')
 
                 test_loss += model.loss(out_fe, data_fe.y,
-                                        data_fe.mask).item() * data_fe.num_nodes
+                                        data_fe.mask).item() * data_fe.mask.sum().item()
                 test_metric += model.out_to_metric(out_fe,
-                                                   data_fe.y) * data_fe.num_nodes
-                nr_nodes_test += data_fe.num_nodes
+                                                   data_fe.y, data_fe.mask) * data_fe.mask.sum().item()
+                nr_nodes_test += data_fe.mask.sum().item()
                 pred = model.out_to_predictions(out_fe)
                 test_predictions.extend(model.predictions_to_list(pred))
                 test_targets.extend(data_fe.y.tolist())
@@ -439,7 +443,7 @@ def main(_config, _run, _log):
                         run=_run,
                         acc=model.out_to_metric(
                             out_p,
-                            g.y),
+                            g.y, g.mask),
                         logger=_log)
         else:
             # report validation loss of last epoch
@@ -483,15 +487,6 @@ def main(_config, _run, _log):
             out = model(data)
 
             loss = model.loss(out, data.y, data.mask)
-            model.print_current_loss(epoch, batch_i, _log)
-
-            epoch_loss += loss.item() * data.num_nodes
-            epoch_metric_train += model.out_to_metric(
-                out, data.y) * data.num_nodes
-            nr_nodes_train += data.num_nodes
-
-            # clear the gradient variables of the model
-            model.optimizer.zero_grad()
 
             _log.debug('backward pass')
             loss.backward()
@@ -513,7 +508,37 @@ def main(_config, _run, _log):
                     )
 
             model.optimizer.step()
+            # clear the gradient variables of the model
+            model.optimizer.zero_grad()
             utils.log_max_memory_allocated(_log, device)
+
+            model.print_current_loss(epoch, batch_i, _log)
+
+            epoch_loss += loss.item() * data.mask.sum().item()
+            epoch_metric_train += model.out_to_metric(
+                out, data.y, data.mask) * data.mask.sum().item()
+            nr_nodes_train += data.mask.sum().item()
+
+            if batch_i % config.outputs_interval == 0:
+                np.savez(
+                    os.path.join(outputs_dir, 'train', f'epoch_{epoch}_batch_{batch_i}'),
+                    out=out.cpu.numpy(),
+                    labels=data.y.cpu().numpy(),
+                    mask=data.mask.cpu().numpy()
+                )
+
+            if config.summary_per_batch:
+                val_writer.add_scalar(
+                    '00/weighted_loss',
+                    loss.item(),
+                    epoch * data_loader_train.__len__() + batch_i
+                )
+                val_writer.add_scalar(
+                    '00/weighted_accuracy',
+                    model.out_to_metric(out, data.y, data.mask),
+                    epoch * data_loader_train.__len__() + batch_i
+                )
+
             model.train_batch_iteration += 1
 
         epoch_loss /= nr_nodes_train
@@ -537,14 +562,35 @@ def main(_config, _run, _log):
         for batch_i, data in enumerate(data_loader_validation):
             data = data.to(device)
             out = model(data)
-            utils.log_max_memory_allocated(_log, device)
             loss = model.loss(out, data.y, data.mask)
+            utils.log_max_memory_allocated(_log, device)
             # model.print_current_loss(
             # epoch, 'validation {}'.format(batch_i), _log)
-            validation_loss += loss.item() * data.num_nodes
+            validation_loss += loss.item() * data.mask.sum().item()
             epoch_metric_val += model.out_to_metric(
-                out, data.y) * data.num_nodes
-            nr_nodes_val += data.num_nodes
+                out, data.y, data.mask) * data.mask.sum().item()
+            nr_nodes_val += data.mask.sum().item()
+
+            if batch_i % config.outputs_interval == 0:
+                np.savez(
+                    os.path.join(outputs_dir, 'val', f'epoch_{epoch}_batch_{batch_i}'),
+                    out=out.cpu.numpy(),
+                    labels=data.y.cpu().numpy(),
+                    mask=data.mask.cpu().numpy()
+                )
+
+            if config.summary_per_batch:
+                val_writer.add_scalar(
+                    '00/weighted_loss',
+                    loss.item(),
+                    epoch * data_loader_train.__len__() + batch_i
+                )
+                val_writer.add_scalar(
+                    '00/weighted_accuracy',
+                    model.out_to_metric(out, data.y, data.mask),
+                    epoch * data_loader_train.__len__() + batch_i
+                )
+
             model.val_batch_iteration += 1
 
         # The numbering of train and val does not correspond 1-to-1!

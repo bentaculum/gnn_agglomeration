@@ -84,4 +84,5 @@ class HemibrainGraphMasked(HemibrainGraph):
         edge_index_u = self.edge_index[0, 0::2]
         inner_mask = nodes_in[edge_index_u]
 
-        return (inner_mask & mask.byte()).float(), inner_mask.byte()
+        # inner mask is needed for inference
+        return inner_mask.float() * mask, inner_mask.byte()

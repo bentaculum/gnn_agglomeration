@@ -140,6 +140,18 @@ class Config:
         self.default['summary_dir'] = 'summary'
 
         self.parser.add_argument(
+            '--outputs_dir',
+            type=str,
+            help='relative directory to save raw outputs from network')
+        self.default['outputs_dir'] = 'outputs'
+
+        self.parser.add_argument(
+            '--outputs_interval',
+            type=int,
+            help='interval to write batch outputs to file')
+        self.default['outputs_interval'] = 100
+
+        self.parser.add_argument(
             '--write_summary',
             type=str2bool,
             help='option to use tensorboardx to monitor the training')
@@ -788,6 +800,9 @@ class Config:
             type=positive_int,
             help='number of dimensions for output vector on each node')
         self.default['out_dimensionality'] = 6
+
+        self.parser.add_argument('--summary_per_batch', type=str2bool)
+        self.default['summary_per_batch'] = True
 
     def localhost(self):
         return {

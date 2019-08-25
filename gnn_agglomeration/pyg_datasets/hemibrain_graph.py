@@ -229,6 +229,15 @@ class HemibrainGraph(Data, ABC):
 
         return edge_index, edge_attr, x, pos, node_ids, mask, y
 
+    def class_balance_mask(self):
+        # this assumes classes are integers starting at 0
+        # only look at the labels that contribute to that loss
+        used_y = self.y * self.mask
+        labels, counts = torch.unique(used_y, return_counts=True)
+        weights = 1.0 / ((counts.float() / counts.sum()) * len(labels))
+        self.mask = self.mask * weights[self.y]
+        logger.info(f'weighted mask {self.mask}')
+
     # TODO update this
     def plot_predictions(self, config, pred, graph_nr, run, acc, logger):
         pass
