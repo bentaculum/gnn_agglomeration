@@ -36,18 +36,16 @@ class CosineEmbeddingLossProblem(ModelType):
         targets = (~(targets.byte())).float()
         targets = targets * 2 - 1
 
-        # TODO parametrize margin
         return F.cosine_embedding_loss(
             input1=inputs[0],
             input2=inputs[1],
             target=targets,
             reduction='none',
-            margin=0.5)
+            margin=self.config.cosine_loss_margin)
 
     def out_to_predictions(self, out):
-        # TODO parametrize embedding threshold
         cosine_similarity = F.cosine_similarity(out[0], out[1], dim=1)
-        pred = (~(cosine_similarity > 0)).float()
+        pred = (~(cosine_similarity > self.config.cosine_threshold)).float()
         return pred
 
     def out_to_one_dim(self, out):

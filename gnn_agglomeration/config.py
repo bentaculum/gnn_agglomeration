@@ -686,7 +686,7 @@ class Config:
             '--max_edges',
             type=int,
             help='limit number of edges per graph to avoid out of memory errors on GPU')
-        self.default['max_edges'] = 130000
+        self.default['max_edges'] = 125000
 
         self.parser.add_argument(
             '--db_host',
@@ -819,6 +819,18 @@ class Config:
             type=positive_int,
             help='number of dimensions for output vector on each node')
         self.default['out_dimensionality'] = 6
+
+        self.parser.add_argument(
+            '--cosine_loss_margin',
+            type=float,
+            help='margin for pytorch CosineEmbeddingLoss')
+        self.default['cosine_loss_margin'] = 0.5
+
+        self.parser.add_argument(
+            '--cosine_threshold',
+            type=float,
+            help='binary threshold for cosine similarity')
+        self.default['cosine_threshold'] = 0.75
 
         self.parser.add_argument('--summary_per_batch', type=str2bool)
         self.default['summary_per_batch'] = True
