@@ -568,8 +568,8 @@ class Config:
             '--db_name_train',
             type=str,
             help='name of the used mongodb for training')
-        # self.default['db_name_train'] = 'gnn_agglomeration_hemi_mtlsd_400k_roi_2'
-        self.default['db_name_train'] = 'gnn_agglomeration_hemi_mtlsd_400k_roi_1'
+        self.default['db_name_train'] = 'gnn_agglomeration_hemi_mtlsd_400k_roi_2'
+        # self.default['db_name_train'] = 'gnn_agglomeration_hemi_mtlsd_400k_roi_1'
 
         self.parser.add_argument(
             '--db_name_val',
@@ -588,8 +588,8 @@ class Config:
             '--dataset_path_train',
             type=str,
             help='the directory to read the training dataset from')
-        # self.default['dataset_path_train'] = 'data/hemi/22_micron_cube/default_train'
-        self.default['dataset_path_train'] = 'data/hemi/debug/12_micron_cube/default_train'
+        self.default['dataset_path_train'] = 'data/hemi/22_micron_cube/default_train'
+        # self.default['dataset_path_train'] = 'data/hemi/12_micron_cube/default_train'
 
         self.parser.add_argument(
             '--dataset_path_val',
@@ -609,16 +609,16 @@ class Config:
             type=positive_int,
             nargs=3,
             help='ROI absolute position of lower vertex')
-        # self.default['train_roi_offset'] = [150400, 192000, 214400]
-        self.default['train_roi_offset'] = [140800, 205120, 198400]
+        self.default['train_roi_offset'] = [150400, 192000, 214400]
+        # self.default['train_roi_offset'] = [140800, 205120, 198400]
 
         self.parser.add_argument(
             '--train_roi_shape',
             type=positive_int,
             nargs=3,
             help='ROI size, starting at roi_offset')
-        # self.default['train_roi_shape'] = [21800, 21800, 21800]
-        self.default['train_roi_shape'] = [11800, 11800, 11800]
+        self.default['train_roi_shape'] = [21800, 21800, 21800]
+        # self.default['train_roi_shape'] = [11800, 11800, 11800]
 
         self.parser.add_argument(
             '--val_roi_offset',
