@@ -83,9 +83,6 @@ class HemibrainDatasetRandomInMemory(InMemoryDataset, HemibrainDatasetRandom):
     def _process(self):
         InMemoryDataset._process(self)
 
-    def __len__(self):
-        HemibrainDatasetRandom.__len__(self)
-
     def get(self, idx):
         data = InMemoryDataset.get(self, idx)
         if data.num_edges > self.config.max_edges:
