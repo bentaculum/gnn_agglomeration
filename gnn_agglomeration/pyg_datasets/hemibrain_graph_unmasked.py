@@ -56,6 +56,7 @@ class HemibrainGraphUnmasked(HemibrainGraph):
             raise ValueError(
                 f'extracted graph has {self.edge_index.size(1)} edges, but the limit is set to {self.config.max_edges}')
 
+        self.class_balance_mask()
         self.roi_mask = torch.ones_like(self.mask, dtype=torch.uint8)
 
         super().assert_graph()

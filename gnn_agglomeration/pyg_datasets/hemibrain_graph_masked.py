@@ -67,6 +67,9 @@ class HemibrainGraphMasked(HemibrainGraph):
                 list(inner_block_offset),
                 list(inner_block_shape)),
             mask=mask)
+
+        self.class_balance_mask()
+
         logger.debug(f'mask target edges in {time.time() - start} s')
 
         logger.debug(f'read_and_process in {now() - start_read_and_process} s')
