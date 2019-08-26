@@ -200,6 +200,9 @@ def main(_config, _run, _log):
     else:
         _log.info('Loading model {} ...'.format(config.load_model))
         # find latest state of model
+        _log.info(f'root dir {config.root_dir}')
+        _log.info(f'run_abs_path {config.run_abs_path}')
+        _log.info(f'model_dir {config.model_dir}')
         load_model_dir = os.path.join(
             config.root_dir, config.run_abs_path, config.model_dir)
         checkpoint_versions = [name for name in os.listdir(

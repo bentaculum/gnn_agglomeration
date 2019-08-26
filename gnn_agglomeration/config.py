@@ -883,15 +883,17 @@ class Config:
 
                 rel_run_path = runs[-1]
                 config_cmd['load_model'] = runs[-1]
+                config_filepath = os.path.join(
+                    self.default['root_dir'],
+                    self.default['run_path'],
+                    rel_run_path,
+                    'config.json')
             else:
-                rel_run_path = config_cmd['load_model']
+                rel_run_path = config_cmd['load_model'].split('/')[-1]
+                config_filepath = os.path.join(
+                    config_cmd['load_model'],
+                    'config.json')
 
-            # TODO not test for latest model loading
-            config_filepath = os.path.join(
-                # self.default['root_dir'],
-                # self.default['run_path'],
-                rel_run_path,
-                'config.json')
             self.overwrite_defaults(config_filepath)
             config = self.update_defaults_with_cmd_args(config_cmd)
 
