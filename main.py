@@ -622,6 +622,15 @@ def main(_config, _run, _log):
                     model.out_to_metric(out, data.y, data.mask),
                     epoch * data_loader_train.__len__() + batch_i
                 )
+                # for cosine embedding loss
+                if isinstance(out, tuple):
+                    utils.output_similarities_split(
+                        writer=val_writer,
+                        iteration=epoch * data_loader_train.__len__() + batch_i,
+                        out0=out[0],
+                        out1=out[1],
+                        labels=data.y
+                    )
 
             model.val_batch_iteration += 1
 

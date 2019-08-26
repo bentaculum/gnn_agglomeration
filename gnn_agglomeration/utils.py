@@ -72,3 +72,23 @@ def log_max_memory_allocated(device):
         logger.debug(
             f'max GPU memory allocated: {torch.cuda.max_memory_allocated(device=device) / (2**30):.3f} GiB')
         torch.cuda.reset_max_memory_allocated(device=device)
+
+
+def output_similarities_split(writer, iteration, out0, out1, labels):
+    mask = labels == 1
+    output_similarities = torch.nn.functional.cosine_similarity(
+        out0, out1, dim=1)
+
+    if len(output_similarities[mask]) > 0:
+        writer.add_histogram(
+            '01/output_similarities/class1',
+            output_similarities[mask],
+            iteration
+        )
+    if len(output_similarities[~mask]) > 0:
+        writer.add_histogram(
+            '01/output_similarities/class-1',
+            output_similarities[~mask],
+            iteration
+        )
+
