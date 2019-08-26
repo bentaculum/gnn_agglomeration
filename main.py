@@ -59,14 +59,14 @@ def main(_config, _run, _log):
         os.makedirs(config.run_abs_path)
 
     # clear old stuff from the run dir, if it's not a restart
+    summary_dir = os.path.join(config.run_abs_path, config.summary_dir)
+    model_dir = os.path.join(config.run_abs_path, config.model_dir)
+    outputs_dir = os.path.join(config.run_abs_path, config.outputs_dir)
     if not config.load_model:
-        summary_dir = os.path.join(config.run_abs_path, config.summary_dir)
         if os.path.isdir(summary_dir):
             shutil.rmtree(summary_dir)
-        model_dir = os.path.join(config.run_abs_path, config.model_dir)
         if os.path.isdir(model_dir):
             shutil.rmtree(model_dir)
-        outputs_dir = os.path.join(config.run_abs_path, config.outputs_dir)
         if os.path.isdir(outputs_dir):
             shutil.rmtree(outputs_dir)
 
