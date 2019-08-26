@@ -85,7 +85,7 @@ class HemibrainGraph(Data, ABC):
         # sanity check: all u nodes should be contained in the nodes extracted by mongodb
         assert np.sum(~u_in) == 0
 
-        v_in = np.isin(edges_attrs[node2_field], node_attrs[id_field])
+        v_in = np.isin(edges_attrs[node2_field], node_attrs[id_field], invert=True)
         missing_node_ids = np.unique(edges_attrs[node2_field][v_in])
         list_id_field = []
         list_center_z = []
