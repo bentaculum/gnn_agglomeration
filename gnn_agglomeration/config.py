@@ -848,7 +848,7 @@ class Config:
         }
 
     def overwrite_defaults(self, config_filepath):
-        with open(config_filepath) as json_file:
+        with open(config_filepath, 'r') as json_file:
             self.default.update(json.load(json_file))
 
     def update_defaults_with_cmd_args(self, config):
