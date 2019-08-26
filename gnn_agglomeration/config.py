@@ -886,9 +886,10 @@ class Config:
             else:
                 rel_run_path = config_cmd['load_model']
 
+            # TODO not test for latest model loading
             config_filepath = os.path.join(
-                self.default['root_dir'],
-                self.default['run_path'],
+                # self.default['root_dir'],
+                # self.default['run_path'],
                 rel_run_path,
                 'config.json')
             self.overwrite_defaults(config_filepath)
