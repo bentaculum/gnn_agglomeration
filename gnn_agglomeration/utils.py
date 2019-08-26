@@ -75,20 +75,22 @@ def log_max_memory_allocated(device):
 
 
 def output_similarities_split(writer, iteration, out0, out1, labels):
-    mask = labels == 1
+    mask_split = labels == 1
+    mask_merge = labels == 0
+    assert torch.all(mask_split | mask_merge)
     output_similarities = torch.nn.functional.cosine_similarity(
         out0, out1, dim=1)
 
-    if len(output_similarities[mask]) > 0:
+    if len(output_similarities[mask_split]) > 0:
         writer.add_histogram(
-            '01/output_similarities/class1',
-            output_similarities[mask],
+            '01/output_similarities/split_similarity_should_be_-1',
+            output_similarities[mask_split],
             iteration
         )
-    if len(output_similarities[~mask]) > 0:
+    if len(output_similarities[~mask_split]) > 0:
         writer.add_histogram(
-            '01/output_similarities/class-1',
-            output_similarities[~mask],
+            '01/output_similarities/merge_similarity_should_be_1',
+            output_similarities[~mask_split],
             iteration
         )
 
