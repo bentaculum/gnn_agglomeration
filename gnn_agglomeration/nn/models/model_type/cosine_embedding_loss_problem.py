@@ -49,8 +49,13 @@ class CosineEmbeddingLossProblem(ModelType):
         return pred
 
     def out_to_one_dim(self, out):
-        one_dim = F.cosine_similarity(out[0], out[1])
-        return torch.clamp(one_dim, min=-1.0, max=1.0)
+        # Transform back to space from 0 to 1
+        cosine_sim = F.cosine_similarity(out[0], out[1])
+        cosine_sim = torch.clamp(cosine_sim, min=-1.0, max=1.0)
+
+        # go from 1 = merge, -1 = split cosine similarity to
+        # 0 = merge, 1 = split values for RAG db
+        return -((cosine_sim - 1) * 0.5)
 
     def predictions_to_list(self, predictions):
         return predictions.tolist()
