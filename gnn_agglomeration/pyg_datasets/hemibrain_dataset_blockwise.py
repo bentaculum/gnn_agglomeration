@@ -105,10 +105,13 @@ class HemibrainDatasetBlockwise(HemibrainDataset):
 
         # check whether the entire ROI seems to be covered by the created blocks
         lower_corner_idx = np.array(self.block_offsets).sum(axis=1).argmin()
-        assert np.array_equal(self.block_offsets[lower_corner_idx], self.roi_offset)
-        upper_corner_idx = (np.array(self.block_offsets) + np.array(self.block_shapes)).sum(axis=1).argmax()
         assert np.array_equal(
-            self.block_offsets[upper_corner_idx] + self.block_shapes[upper_corner_idx],
+            self.block_offsets[lower_corner_idx], self.roi_offset)
+        upper_corner_idx = (np.array(self.block_offsets) +
+                            np.array(self.block_shapes)).sum(axis=1).argmax()
+        assert np.array_equal(
+            self.block_offsets[upper_corner_idx] +
+                self.block_shapes[upper_corner_idx],
             self.roi_offset + self.roi_shape)
 
     def get_from_db(self, idx):
@@ -144,4 +147,4 @@ class HemibrainDatasetBlockwise(HemibrainDataset):
         except ValueError as e:
             # TODO this might lead to unnecessary redundancy,
             logger.warning(f'{e}, duplicating previous graph')
-            return self.get_from_db((idx - 1) % self.__len__())
+            return self.get_from_db((idx - 1) % self.len))
