@@ -54,17 +54,17 @@ class HemibrainDatasetBlockwise(HemibrainDataset):
 
                     if self.config.block_fit == 'shrink':
                         block_offset_new = (
-                                np.array(self.roi_offset) +
-                                np.array([i, j, k]) *
-                                np.array(self.config.block_size)
+                            np.array(self.roi_offset) +
+                            np.array([i, j, k]) *
+                            np.array(self.config.block_size)
                         ).astype(np.int_)
 
                         block_shape_new = (
-                                np.minimum(
-                                    block_offset_new +
-                                    np.array(self.config.block_size),
-                                    self.roi_offset + self.roi_shape
-                                ) - block_offset_new
+                            np.minimum(
+                                block_offset_new +
+                                np.array(self.config.block_size),
+                                self.roi_offset + self.roi_shape
+                            ) - block_offset_new
                         ).astype(np.int_)
 
                     elif self.config.block_fit == 'overlap':
@@ -111,7 +111,7 @@ class HemibrainDatasetBlockwise(HemibrainDataset):
                             np.array(self.block_shapes)).sum(axis=1).argmax()
         assert np.array_equal(
             self.block_offsets[upper_corner_idx] +
-                self.block_shapes[upper_corner_idx],
+            self.block_shapes[upper_corner_idx],
             self.roi_offset + self.roi_shape)
 
     def get_from_db(self, idx):
@@ -147,4 +147,5 @@ class HemibrainDatasetBlockwise(HemibrainDataset):
         except ValueError as e:
             # TODO this might lead to unnecessary redundancy,
             logger.warning(f'{e}, duplicating previous graph')
-            return self.get_from_db((idx - 1) % self.len))
+            logger.info(f'self.len {self.len}')
+            return self.get_from_db((idx - 1) % self.len)
