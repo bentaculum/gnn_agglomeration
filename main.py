@@ -312,8 +312,13 @@ def main(_config, _run, _log):
             _log.info(f'final training pass in {time.time() - start:.3f}s')
         else:
             # report training loss of last epoch
-            final_loss_train = epoch_loss
-            final_metric_train = epoch_metric_train
+            try:
+                final_loss_train = epoch_loss
+                final_metric_train = epoch_metric_train
+            except NameError as e:
+                _log.warning(e)
+                final_loss_train = 0.0
+                final_metric_train = 0.0
 
         _log.info(
             f'Mean train loss ({train_dataset.__len__()} samples): {final_loss_train:.3f}')
@@ -357,7 +362,7 @@ def main(_config, _run, _log):
                     # mask outputs
                     edges = edges[data_fe.roi_mask.byte()].cpu(
                     ).numpy().astype(np.int64)
-                    out_1d = out_1d[data_fe.roi_mask.byte()].cpu()
+                    out_1d = out_1d[data_fe.roi_mask.byte()].cpu().numpy()
 
                     if len(edges) == 0:
                         _log.warning(
