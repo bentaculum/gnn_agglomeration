@@ -50,13 +50,14 @@ class HemibrainGraphUnmasked(HemibrainGraph):
             self.pos, \
             self.node_ids, \
             self.mask, \
-            self.y = self.parse_rag_excerpt(node_attrs, edge_attrs, embeddings, all_nodes)
+            self.y = self.parse_rag_excerpt(
+                node_attrs, edge_attrs, embeddings, all_nodes)
 
         if self.edge_index.size(1) > self.config.max_edges:
             raise ValueError(
                 f'extracted graph has {self.edge_index.size(1)} edges, but the limit is set to {self.config.max_edges}')
 
-        self.class_balance_mask()
+        self.mask = self.class_balance_mask(y=self.y, mask=self.mask)
         self.roi_mask = torch.ones_like(self.mask, dtype=torch.uint8)
 
-        super().assert_graph()
+        self.assert_graph()

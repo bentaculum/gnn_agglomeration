@@ -110,7 +110,8 @@ class HemibrainGraph(Data, ABC):
         )
 
         logger.debug(f'add missing nodes to node_attrs in {now() - start} s')
-        logger.info(f'parse graph with {len(node_attrs[id_field])} nodes, {len(edges_attrs[node1_field])} edges')
+        logger.info(
+            f'parse graph with {len(node_attrs[id_field])} nodes, {len(edges_attrs[node1_field])} edges')
 
         if embeddings is None:
             x = torch.ones(len(node_attrs[id_field]), 1, dtype=torch.float)
@@ -223,14 +224,31 @@ class HemibrainGraph(Data, ABC):
 
         return edge_index, edge_attr, x, pos, node_ids, mask, y
 
-    def class_balance_mask(self):
-        # this assumes classes are integers starting at 0
-        # only look at the labels that contribute to that loss
-        used_y = self.y * self.mask
-        labels, counts = torch.unique(used_y, return_counts=True)
-        weights = 1.0 / ((counts.float() / counts.sum()) * len(labels))
-        self.mask = self.mask * weights[self.y]
-        logger.info(f'weighted mask {self.mask}')
+    def class_balance_mask(self, y, mask):
+        start = now()
+        y = y.numpy()
+        mask = mask.numpy()
+        used_y = y[mask.astype(np.bool)]
+        # numpy unique labels are sorted
+        labels, counts = np.unique(used_y, return_counts=True)
+        logger.debug(f'labels {labels}, counts {counts}')
+
+        # TODO this is still dirty, not general purpose
+        if len(labels) == 1:
+            logger.debug('only one class in batch, no reweighting performed')
+            return torch.tensor(mask, dtype=torch.float)
+        if labels.min() != 0 or labels.max() != len(labels) - 1:
+            raise NotImplementedError(
+                'weight balancing only for contiguous labels starting at 0')
+
+        weights = 1.0 / ((counts.astype(np.float32) /
+                          counts.sum()) * len(labels))
+        weights = weights.astype(np.float32)
+        weighted_y = weights[y.astype(np.int_)]
+        weighted_mask = mask * weighted_y
+
+        logger.debug(f'perform class balancing on mask in {now() - start}')
+        return torch.tensor(weighted_mask, dtype=torch.float)
 
     # TODO update this
     def plot_predictions(self, config, pred, graph_nr, run, acc, logger):
