@@ -88,7 +88,6 @@ class HemibrainDatasetBlockwiseInMemory(
             logger.warning(
                 f'graph {idx} has {data.num_edges} edges, but the limit is set to {self.config.max_edges}.'
                 f'\nDuplicating previous graph')
-            logger.info(f'self.len {self.len}')
             return self.get((idx - 1) % self.len)
         else:
             return data

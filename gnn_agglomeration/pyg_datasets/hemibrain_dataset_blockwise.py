@@ -147,5 +147,4 @@ class HemibrainDatasetBlockwise(HemibrainDataset):
         except ValueError as e:
             # TODO this might lead to unnecessary redundancy,
             logger.warning(f'{e}, duplicating previous graph')
-            logger.info(f'self.len {self.len}')
             return self.get_from_db((idx - 1) % self.len)
