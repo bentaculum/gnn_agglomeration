@@ -49,7 +49,8 @@ class CosineEmbeddingLossProblem(ModelType):
         return pred
 
     def out_to_one_dim(self, out):
-        return F.cosine_similarity(out[0], out[1])
+        one_dim = F.cosine_similarity(out[0], out[1])
+        return torch.clamp(one_dim, min=-1.0, max=1.0)
 
     def predictions_to_list(self, predictions):
         return predictions.tolist()
