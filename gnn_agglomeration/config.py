@@ -686,7 +686,7 @@ class Config:
             '--max_edges',
             type=int,
             help='limit number of edges per graph to avoid out of memory errors on GPU')
-        self.default['max_edges'] = 125000
+        self.default['max_edges'] = 120000
 
         self.parser.add_argument(
             '--db_host',
