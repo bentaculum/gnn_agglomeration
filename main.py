@@ -337,7 +337,7 @@ def main(_config, _run, _log):
             )
             test_loss = 0.0
             test_metric = 0.0
-            nr_nodes_test = 0
+            edge_weights_test = 0
             test_predictions = []
             test_targets = []
 
@@ -408,12 +408,12 @@ def main(_config, _run, _log):
                                         data_fe.mask).item() * data_fe.mask.sum().item()
                 test_metric += model.out_to_metric(out_fe,
                                                    data_fe.y, data_fe.mask) * data_fe.mask.sum().item()
-                nr_nodes_test += data_fe.mask.sum().item()
+                edge_weights_test += data_fe.mask.sum().item()
                 pred = model.out_to_predictions(out_fe)
                 test_predictions.extend(model.predictions_to_list(pred))
                 test_targets.extend(data_fe.y.tolist())
-            test_loss /= nr_nodes_test
-            test_metric /= nr_nodes_test
+            test_loss /= edge_weights_test
+            test_metric /= edge_weights_test
 
             _run.log_scalar('loss_test', test_loss, config.training_epochs)
             _run.log_scalar('accuracy_test', test_metric,
@@ -506,7 +506,7 @@ def main(_config, _run, _log):
         model.train()
         epoch_loss = 0.0
         epoch_metric_train = 0.0
-        nr_nodes_train = 0
+        edge_weights_train = 0
         _log.info('epoch {} ...'.format(epoch))
         for batch_i, data in enumerate(data_loader_train):
             start_batch = now()
@@ -554,7 +554,7 @@ def main(_config, _run, _log):
             epoch_loss += loss.item() * data.mask.sum().item()
             epoch_metric_train += model.out_to_metric(
                 out, data.y, data.mask) * data.mask.sum().item()
-            nr_nodes_train += data.mask.sum().item()
+            edge_weights_train += data.mask.sum().item()
 
             if batch_i % config.outputs_interval == 0:
                 if isinstance(out, tuple):
@@ -585,8 +585,8 @@ def main(_config, _run, _log):
             model.train_batch_iteration += 1
             _log.debug(f'batch {batch_i} in {now() - start_batch} s')
 
-        epoch_loss /= nr_nodes_train
-        epoch_metric_train /= nr_nodes_train
+        epoch_loss /= edge_weights_train
+        epoch_metric_train /= edge_weights_train
 
         if config.write_summary:
             train_writer.add_scalar('_per_epoch/loss', epoch_loss, epoch)
@@ -602,7 +602,7 @@ def main(_config, _run, _log):
         model.eval()
         validation_loss = 0.0
         epoch_metric_val = 0.0
-        nr_nodes_val = 0
+        edge_weights_val = 0
         for batch_i, data in enumerate(data_loader_validation):
             data = data.to(device)
             out = model(data)
@@ -613,7 +613,7 @@ def main(_config, _run, _log):
             validation_loss += loss.item() * data.mask.sum().item()
             epoch_metric_val += model.out_to_metric(
                 out, data.y, data.mask) * data.mask.sum().item()
-            nr_nodes_val += data.mask.sum().item()
+            edge_weights_val += data.mask.sum().item()
 
             if batch_i % config.outputs_interval == 0:
                 if isinstance(out, tuple):
@@ -656,8 +656,8 @@ def main(_config, _run, _log):
         # Here we skip some numbers for maintaining loose correspondence
         model.val_batch_iteration = model.train_batch_iteration
 
-        validation_loss /= nr_nodes_val
-        epoch_metric_val /= nr_nodes_val
+        validation_loss /= edge_weights_val
+        epoch_metric_val /= edge_weights_val
 
         if config.write_summary:
             val_writer.add_scalar('_per_epoch/loss', validation_loss, epoch)
