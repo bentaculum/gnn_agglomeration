@@ -353,7 +353,7 @@ class Config:
             '--adam_lr',
             type=unit_float,
             help='Learning rate for ADAM optimizer')
-        self.default['adam_lr'] = 0.0001
+        self.default['adam_lr'] = 0.001
 
         self.parser.add_argument(
             '--adam_weight_decay',
