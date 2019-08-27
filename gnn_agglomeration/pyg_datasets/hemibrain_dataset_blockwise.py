@@ -9,7 +9,7 @@ from .hemibrain_graph_unmasked import HemibrainGraphUnmasked
 from .hemibrain_graph_masked import HemibrainGraphMasked
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class HemibrainDatasetBlockwise(HemibrainDataset):
