@@ -734,7 +734,7 @@ class Config:
             '--num_workers',
             type=int,
             help='number of workers for tasks that are split into python subprocesses')
-        self.default['num_workers'] = 32
+        self.default['num_workers'] = 1
 
         self.parser.add_argument(
             '--dataloader_pin_memory',
