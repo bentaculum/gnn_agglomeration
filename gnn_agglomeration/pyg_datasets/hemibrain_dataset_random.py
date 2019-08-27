@@ -47,6 +47,6 @@ class HemibrainDatasetRandom(HemibrainDataset):
                 inner_block_shape=self.config.block_size
             )
             return graph
-        except ValueError as e:
+        except (ValueError, AssertionError) as e:
             logger.warning(f'{e}, getting graph from another random block')
             return self.get_from_db(idx)

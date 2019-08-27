@@ -18,7 +18,7 @@ from ..data_transforms import *
 from gnn_agglomeration import utils
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 # hack to make daisy logging indep from from sacred logging
 logging.getLogger(
     'daisy.persistence.mongodb_graph_provider').setLevel(logging.INFO)

@@ -57,7 +57,7 @@ class HemibrainGraphMasked(HemibrainGraph):
         logger.debug(f'parse rag excerpt in {time.time() - start} s')
 
         if self.edge_index.size(1) > self.config.max_edges:
-            raise ValueError(
+            raise AssertionError(
                 f'extracted graph has {self.edge_index.size(1)} edges, but the limit is set to {self.config.max_edges}')
 
         start = time.time()

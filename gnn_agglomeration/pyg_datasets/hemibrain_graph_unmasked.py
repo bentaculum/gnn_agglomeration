@@ -41,7 +41,7 @@ class HemibrainGraphUnmasked(HemibrainGraph):
 
         # PyG doubles all edges, there * 2 here
         if len(edge_attrs) * 2 > self.config.max_edges:
-            raise ValueError(
+            raise AssertionError(
                 f'extracted graph has {len(edge_attrs) * 2} edges, but the limit is set to {self.config.max_edges}')
 
         self.edge_index, \

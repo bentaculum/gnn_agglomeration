@@ -92,6 +92,7 @@ class HemibrainGraph(Data, ABC):
         list_center_y = []
         list_center_x = []
         for i in missing_node_ids:
+            logger.debug(f'append node {i} to node_attrs')
             list_id_field.append(i)
             list_center_z.append(all_nodes[i]['center_z'])
             list_center_y.append(all_nodes[i]['center_y'])
