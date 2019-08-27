@@ -268,7 +268,7 @@ def main(_config, _run, _log):
 
         with tarfile.open(summary_compressed, mode='w:gz') as archive:
             archive.add(summary_dir_exit, arcname='summary', recursive=True)
-        _run.add_artifact(filename=summary_compressed, name='summary.tar.gz')
+        # _run.add_artifact(filename=summary_compressed, name='summary.tar.gz')
 
         model.eval()
         model.current_writer = None
