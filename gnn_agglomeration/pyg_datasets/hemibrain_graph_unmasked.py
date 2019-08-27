@@ -40,11 +40,6 @@ class HemibrainGraphUnmasked(HemibrainGraph):
         if len(edge_attrs) == 0:
             raise ValueError('No edges found in roi %s' % roi)
 
-        # PyG doubles all edges, there * 2 here
-        if len(edge_attrs) * 2 > self.config.max_edges:
-            raise TooManyEdgesException(
-                f'extracted graph has {len(edge_attrs) * 2} edges, but the limit is set to {self.config.max_edges}')
-
         self.edge_index, \
             self.edge_attr, \
             self.x, \

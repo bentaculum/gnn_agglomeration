@@ -54,17 +54,17 @@ class HemibrainDatasetBlockwise(HemibrainDataset):
 
                     if self.config.block_fit == 'shrink':
                         block_offset_new = (
-                            np.array(self.roi_offset, dtype=np.int_) +
-                            np.array([i, j, k], dtype=np.int_) *
-                            np.array(self.config.block_size, dtype=np.int_)
+                                np.array(self.roi_offset, dtype=np.int_) +
+                                np.array([i, j, k], dtype=np.int_) *
+                                np.array(self.config.block_size, dtype=np.int_)
                         ).astype(np.int_)
 
                         block_shape_new = (
-                            np.minimum(
-                                block_offset_new +
-                                np.array(self.config.block_size, dtype=np.int_),
-                                np.array(self.roi_offset, dtype=np.int_) + np.array(self.roi_shape, dtype=np.int_)
-                            ) - block_offset_new
+                                np.minimum(
+                                    block_offset_new +
+                                    np.array(self.config.block_size, dtype=np.int_),
+                                    np.array(self.roi_offset, dtype=np.int_) + np.array(self.roi_shape, dtype=np.int_)
+                                ) - block_offset_new
                         ).astype(np.int_)
 
                     elif self.config.block_fit == 'overlap':
@@ -136,19 +136,21 @@ class HemibrainDatasetBlockwise(HemibrainDataset):
             f'get graph {idx} from {daisy.Roi(outer_offset, outer_shape)}')
 
         graph = globals()[self.config.graph_type](config=self.config)
-        try:
-            graph.read_and_process(
-                graph_provider=self.graph_provider,
-                embeddings=self.embeddings,
-                all_nodes=self.all_nodes,
-                block_offset=outer_offset,
-                block_shape=outer_shape,
-                inner_block_offset=inner_offset,
-                inner_block_shape=self.block_shapes[idx],
-            )
-            logger.debug(f'get_from_db in {now() - start} s')
-            return graph
-        except ValueError as e:
-            # TODO this might lead to unnecessary redundancy,
-            logger.warning(f'{e}, duplicating previous graph')
-            return self.get_from_db((idx - 1) % self.len)
+        # try:
+
+        graph.read_and_process(
+            graph_provider=self.graph_provider,
+            embeddings=self.embeddings,
+            all_nodes=self.all_nodes,
+            block_offset=outer_offset,
+            block_shape=outer_shape,
+            inner_block_offset=inner_offset,
+            inner_block_shape=self.block_shapes[idx],
+        )
+
+        # logger.debug(f'get_from_db in {now() - start} s')
+        # return graph
+        # except ValueError as e:
+        #     TODO this might lead to unnecessary redundancy,
+        # logger.warning(f'{e}, duplicating previous graph')
+        # return self.get_from_db((idx - 1) % self.len)
