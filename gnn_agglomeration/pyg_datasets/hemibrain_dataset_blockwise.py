@@ -34,7 +34,7 @@ class HemibrainDatasetBlockwise(HemibrainDataset):
             (np.array(
                 self.roi_shape) /
              np.array(
-                 self.config.block_size))).astype(int)
+                 self.config.block_size))).astype(np.int_)
         logger.debug(f'blocks per dim: {blocks_per_dim}')
 
         self.len = int(np.prod(blocks_per_dim))
@@ -54,27 +54,27 @@ class HemibrainDatasetBlockwise(HemibrainDataset):
 
                     if self.config.block_fit == 'shrink':
                         block_offset_new = (
-                            np.array(self.roi_offset) +
-                            np.array([i, j, k]) *
-                            np.array(self.config.block_size)
+                            np.array(self.roi_offset, dtype=np.int_) +
+                            np.array([i, j, k], dtype=np.int_) *
+                            np.array(self.config.block_size, dtype=np.int_)
                         ).astype(np.int_)
 
                         block_shape_new = (
                             np.minimum(
                                 block_offset_new +
-                                np.array(self.config.block_size),
-                                self.roi_offset + self.roi_shape
+                                np.array(self.config.block_size, dtype=np.int_),
+                                np.array(self.roi_offset, dtype=np.int_) + np.array(self.roi_shape, dtype=np.int_)
                             ) - block_offset_new
                         ).astype(np.int_)
 
                     elif self.config.block_fit == 'overlap':
                         block_offset_new = np.minimum(
-                            np.array(self.roi_offset) +
-                            np.array([i, j, k]) *
+                            np.array(self.roi_offset, dtype=np.int_) +
+                            np.array([i, j, k], dtype=np.int_) *
                             np.array(self.config.block_size, dtype=np.int_),
-                            np.array(self.roi_offset) +
-                            np.array(self.roi_shape) -
-                            np.array(self.config.block_size)
+                            np.array(self.roi_offset, dtype=np.int_) +
+                            np.array(self.roi_shape, dtype=np.int_) -
+                            np.array(self.config.block_size, dtype=np.int_)
                         ).astype(np.int_)
                         block_shape_new = np.array(
                             self.config.block_size, dtype=np.int_)
@@ -86,19 +86,19 @@ class HemibrainDatasetBlockwise(HemibrainDataset):
 
                     # lower corner
                     assert np.all(block_offset_new >=
-                                  np.array(self.roi_offset))
+                                  np.array(self.roi_offset, dtype=np.int_))
 
                     # shape
                     assert np.all(block_shape_new <= np.array(
-                        self.config.block_size))
+                        self.config.block_size, dtype=np.int_))
 
                     # upper corner
                     assert np.all(
                         block_offset_new +
                         block_shape_new <= np.array(
-                            self.roi_offset) +
+                            self.roi_offset, dtype=np.int_) +
                         np.array(
-                            self.roi_shape))
+                            self.roi_shape, dtype=np.int_))
 
                     self.block_offsets.append(block_offset_new)
                     self.block_shapes.append(block_shape_new)
@@ -108,15 +108,15 @@ class HemibrainDatasetBlockwise(HemibrainDataset):
             logger.debug(daisy.Roi(offset=o, shape=s))
 
         # check whether the entire ROI seems to be covered by the created blocks
-        lower_corner_idx = np.array(self.block_offsets).sum(axis=1).argmin()
+        lower_corner_idx = np.array(self.block_offsets, dtype=np.int_).sum(axis=1).argmin()
         assert np.array_equal(
-            self.block_offsets[lower_corner_idx], self.roi_offset)
-        upper_corner_idx = (np.array(self.block_offsets) +
-                            np.array(self.block_shapes)).sum(axis=1).argmax()
+            self.block_offsets[lower_corner_idx], np.array(self.roi_offset, dtype=np.int_))
+        upper_corner_idx = (np.array(self.block_offsets, dtype=np.int_) +
+                            np.array(self.block_shapes, dtype=np.int_)).sum(axis=1).argmax()
         assert np.array_equal(
             self.block_offsets[upper_corner_idx] +
             self.block_shapes[upper_corner_idx],
-            self.roi_offset + self.roi_shape)
+            np.array(self.roi_offset, dtype=np.int_) + np.array(self.roi_shape, dtype=np.int_))
 
     def get_from_db(self, idx):
         """

@@ -38,8 +38,8 @@ class HemibrainDataset(Dataset, ABC):
         self.config = config
         self.db_name = db_name
         self.embeddings_collection = embeddings_collection
-        self.roi_offset = np.array(roi_offset)
-        self.roi_shape = np.array(roi_shape)
+        self.roi_offset = np.array(roi_offset, dtype=np.int_)
+        self.roi_shape = np.array(roi_shape, dtype=np.int_)
         self.len = length
         self.save_processed = save_processed
 
@@ -109,9 +109,9 @@ class HemibrainDataset(Dataset, ABC):
         Enlarge the block with padding in all dimensions.
         Crop the enlarged block if the new block is not contained in the ROI
         """
-        offset_padded = np.array(offset) - np.array(self.config.block_padding)
-        shape_padded = np.array(shape) + 2 * \
-            np.array(self.config.block_padding)
+        offset_padded = np.array(offset, dtype=np.int_) - np.array(self.config.block_padding, dtype=np.int_)
+        shape_padded = np.array(shape, dtype=np.int_) + 2 * \
+            np.array(self.config.block_padding, dtype=np.int_)
         logger.debug(
             f'offset padded: {offset_padded}, shape padded: {shape_padded}')
         return self.crop_block(offset_padded, shape_padded)
