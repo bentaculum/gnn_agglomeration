@@ -9,7 +9,7 @@ from .hemibrain_graph_unmasked import HemibrainGraphUnmasked
 from .hemibrain_graph_masked import HemibrainGraphMasked
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 class HemibrainDatasetBlockwise(HemibrainDataset):
@@ -102,6 +102,10 @@ class HemibrainDatasetBlockwise(HemibrainDataset):
 
                     self.block_offsets.append(block_offset_new)
                     self.block_shapes.append(block_shape_new)
+
+        logger.debug('generated blocks')
+        for o, s in zip(self.block_offsets, self.block_shapes):
+            logger.debug(daisy.Roi(offset=o, shape=s))
 
         # check whether the entire ROI seems to be covered by the created blocks
         lower_corner_idx = np.array(self.block_offsets).sum(axis=1).argmin()
