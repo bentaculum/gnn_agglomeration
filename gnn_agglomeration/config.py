@@ -293,6 +293,7 @@ class Config:
 
         self.parser.add_argument(
             '--attention_heads',
+            type=positive_int,
             nargs='+',
             help='number of attention heads per hidden layer in the GNN')
         self.default['attention_heads'] = [8, 8, 4, 2, 1]
