@@ -83,7 +83,7 @@ class HemibrainGraphMasked(HemibrainGraph):
             torch.tensor(inner_roi.get_shape(), dtype=torch.float)
 
         nodes_in = torch.all(
-            self.pos > lower_limit,
+            self.pos >= lower_limit,
             dim=1) & torch.all(
             self.pos < upper_limit,
             dim=1)
