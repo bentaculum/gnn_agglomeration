@@ -41,10 +41,18 @@ class HemibrainGraphMasked(HemibrainGraph):
         edge_attrs = graph_provider.read_edges(roi=roi, nodes=node_attrs)
         logger.debug(f'read block in {time.time() - start} s')
 
-        if len(node_attrs) == 0:
-            raise ValueError('No nodes found in roi %s' % roi)
-        if len(edge_attrs) == 0:
-            raise ValueError('No edges found in roi %s' % roi)
+        if len(node_attrs) == 0 or len(edge_attrs) == 0:
+            # raise ValueError('No nodes or edges found in roi %s' % roi)
+            logger.warning(f'No nodes or edges found in roi {roi}, fill graph with empty tensors')
+            self.edge_index = torch.LongTensor()
+            self.edge_attr = torch.FloatTensor()
+            self.x = torch.FloatTensor()
+            self.pos = torch.FloatTensor()
+            self.node_ids = torch.FloatTensor()
+            self.mask = torch.FloatTensor()
+            self.roi_mask = torch.ByteTensor()
+            self.y = torch.LongTensor()
+            return
 
         start = time.time()
         self.edge_index, \
