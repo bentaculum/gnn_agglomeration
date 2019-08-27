@@ -394,7 +394,7 @@ def main(_config, _run, _log):
                             # TODO adapt strategy here if desired
                             if config.graph_type == 'HemibrainGraphMasked':
                                 test_1d_outputs[k] = max(test_1d_outputs[k], v)
-                                _log.warning('Masking should lead to a single prediction per edge in blockwise dataset, unless a block is doubled')
+                                _log.warning('Masking should lead to a single prediction per edge in blockwise dataset, unless a block is doubled because another one is empty')
                                 _log.warning(
                                     f'Edge {k} with value {test_1d_outputs[k]} already exists, new value would be {v}')
                             else:

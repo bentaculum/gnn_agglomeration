@@ -5,6 +5,7 @@ import time
 from time import time as now
 
 from .hemibrain_graph import HemibrainGraph
+from gnn_agglomeration.utils import TooManyEdgesException
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -57,7 +58,7 @@ class HemibrainGraphMasked(HemibrainGraph):
         logger.debug(f'parse rag excerpt in {time.time() - start} s')
 
         if self.edge_index.size(1) > self.config.max_edges:
-            raise AssertionError(
+            raise TooManyEdgesException(
                 f'extracted graph has {self.edge_index.size(1)} edges, but the limit is set to {self.config.max_edges}')
 
         start = time.time()

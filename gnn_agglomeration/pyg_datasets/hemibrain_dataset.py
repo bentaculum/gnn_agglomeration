@@ -253,6 +253,7 @@ class HemibrainDataset(Dataset, ABC):
         logger.info(
             f'edges before dropping edges going out of the dataset: {len(orig_edge_attrs[node1_field])}')
         # drop edges at the border
+        # there shouldn't be any, as the center of mass of the fragments cannot be outside of the ROI
         utils.drop_outgoing_edges(
             node_attrs=orig_node_attrs,
             edge_attrs=orig_edge_attrs,

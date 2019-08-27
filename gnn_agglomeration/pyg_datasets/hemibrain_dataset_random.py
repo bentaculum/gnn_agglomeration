@@ -6,6 +6,7 @@ from .hemibrain_dataset import HemibrainDataset
 from .hemibrain_graph_unmasked import HemibrainGraphUnmasked
 from .hemibrain_graph_masked import HemibrainGraphMasked
 
+from gnn_agglomeration.utils import TooManyEdgesException
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
@@ -47,6 +48,6 @@ class HemibrainDatasetRandom(HemibrainDataset):
                 inner_block_shape=self.config.block_size
             )
             return graph
-        except (ValueError, AssertionError) as e:
+        except (ValueError, TooManyEdgesException) as e:
             logger.warning(f'{e}, getting graph from another random block')
             return self.get_from_db(idx)

@@ -94,3 +94,6 @@ def output_similarities_split(writer, iteration, out0, out1, labels):
             iteration
         )
 
+
+class TooManyEdgesException(Exception):
+    pass
