@@ -234,7 +234,7 @@ class Config:
             '--training_epochs',
             type=int,
             help='number of training epochs')
-        self.default['training_epochs'] = 100
+        self.default['training_epochs'] = 1000
 
         self.parser.add_argument(
             '--samples',
