@@ -131,7 +131,13 @@ class Config:
             '--run_path',
             type=str,
             help='directory to save temporary outputs')
-        self.default['run_path'] = 'runs/grid_search_2'
+        self.default['run_path'] = 'runs/grid_search_3'
+
+        self.parser.add_argument(
+            '--logdir_suffix',
+            type=str,
+            help='append this to the timestamp that identifies the run')
+        self.default['logdir_suffix'] = ''
 
         self.parser.add_argument(
             '--summary_dir',
@@ -844,7 +850,7 @@ class Config:
     def slowpoke1(self):
         return {
             'mongo_url': 'slowpoke1.int.janelia.org:27017',
-            'mongo_db': 'sacred',
+            'mongo_db': 'gnn_agglomeration_logging',
         }
 
     def overwrite_defaults(self, config_filepath):
@@ -926,8 +932,9 @@ class Config:
                 rel_run_path = 'temp'
             else:
                 # create a custom directory for each run
-                rel_run_path = datetime.datetime.now(
+                timestamp_formatted = datetime.datetime.now(
                     pytz.timezone('US/Eastern')).strftime('%Y%m%dT%H%M%S.%f%z')
+                rel_run_path = f"{timestamp_formatted}_{config['logdir_suffix']}"
 
         # set the absolute paths in the config file
         config['run_abs_path'] = os.path.join(
