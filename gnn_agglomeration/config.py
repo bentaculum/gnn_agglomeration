@@ -232,7 +232,7 @@ class Config:
 
         self.parser.add_argument(
             '--training_epochs',
-            type=positive_int,
+            type=int,
             help='number of training epochs')
         self.default['training_epochs'] = 100
 
@@ -635,14 +635,13 @@ class Config:
             help='ROI size, starting at roi_offset')
         self.default['val_roi_shape'] = [11800, 11800, 11800]
         # self.default['val_roi_shape'] = [1180, 11800, 11800]
-        # self.default['val_roi_shape'] = [3000, 3000, 3000]
 
         self.parser.add_argument(
             '--test_roi_offset',
             type=positive_int,
             nargs=3,
             help='ROI absolute position of lower vertex')
-        # self.default['test_roi_offset'] = [140800 + 9 * 1180, 205120, 198400]
+        # self.default['test_roi_offset'] = [140800, 205120, 198400]
         self.default['test_roi_offset'] = [153680, 200000, 179200]
 
         self.parser.add_argument(
@@ -650,7 +649,7 @@ class Config:
             type=positive_int,
             nargs=3,
             help='ROI size, starting at roi_offset')
-        # self.default['test_roi_shape'] = [1180, 11800, 11800]
+        # self.default['test_roi_shape'] = [11800, 11800, 11800]
         self.default['test_roi_shape'] = [16800, 16800, 16800]
 
         #########################
@@ -678,7 +677,7 @@ class Config:
             type=positive_int,
             nargs=3,
             help='padding to create an outer mask that guarantees context for all targets the contribute to the loss')
-        self.default['block_padding'] = [1000, 1000, 1000]
+        self.default['block_padding'] = [750, 750, 750]
         # desired
         # self.default['block_padding'] = [1500, 1500, 1500]
 
