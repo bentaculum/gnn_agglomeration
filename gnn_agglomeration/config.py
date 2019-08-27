@@ -131,7 +131,7 @@ class Config:
             '--run_path',
             type=str,
             help='directory to save temporary outputs')
-        self.default['run_path'] = 'runs'
+        self.default['run_path'] = 'runs/grid_search'
 
         self.parser.add_argument(
             '--summary_dir',
