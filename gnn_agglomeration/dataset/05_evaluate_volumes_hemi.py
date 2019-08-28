@@ -12,9 +12,11 @@ import waterz
 from funlib.segment.arrays import replace_values
 from funlib.evaluate import rand_voi
 
-from config import config
-
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+from config import config  # noqa
 
 
 def evaluate(
@@ -40,28 +42,28 @@ def evaluate(
         border_threshold=None):
 
     # open fragments
-    logging.info("Reading fragments from %s" % fragments_file)
+    logger.info("Reading fragments from %s" % fragments_file)
     fragments = daisy.open_ds(fragments_file, fragments_dataset)
 
     # open RAG DB
-    logging.info("Opening RAG DB...")
+    logger.info("Opening RAG DB...")
     rag_provider = daisy.persistence.MongoDbGraphProvider(
         rag_db_name,
         host=db_host,
         mode='r',
         edges_collection=edges_collection,
         position_attribute=['center_z', 'center_y', 'center_x'])
-    logging.info("RAG DB opened")
+    logger.info("RAG DB opened")
 
     total_roi = fragments.roi
 
     # slice
-    logging.info("Reading fragments and RAG in %s", total_roi)
+    logger.info("Reading fragments and RAG in %s", total_roi)
     fragments = fragments[total_roi]
     rag = rag_provider[total_roi]
 
-    logging.info("Number of nodes in RAG: %d", len(rag.nodes()))
-    logging.info("Number of edges in RAG: %d", len(rag.edges()))
+    logger.info("Number of nodes in RAG: %d", len(rag.nodes()))
+    logger.info("Number of edges in RAG: %d", len(rag.edges()))
 
     # read gt data
     gt = daisy.open_ds(gt_file, gt_dataset)
@@ -71,14 +73,14 @@ def evaluate(
     write_roi = daisy.Roi((0, 0, 0), (2048, 2048, 2048))
 
     # evaluate only where we have both fragments and GT
-    logging.info("Cropping fragments and GT to common ROI %s", common_roi)
+    logger.info("Cropping fragments and GT to common ROI %s", common_roi)
     fragments = fragments[common_roi]
     gt = gt[common_roi]
 
     if relabel:
 
         # relabel connected components
-        logging.info("Relabelling connected components in GT...")
+        logger.info("Relabelling connected components in GT...")
         gt.materialize()
         components = gt.data
         dtype = components.dtype
@@ -97,17 +99,17 @@ def evaluate(
 
     if erode:
 
-        logging.info("Creating 2D border mask...")
+        logger.info("Creating 2D border mask...")
         for z in range(gt.data.shape[0]):
             border_mask = create_border_mask_2d(
                 gt.data[z],
                 float(border_threshold) / gt.voxel_size[1])
             gt.data[z][border_mask] = 0
 
-    logging.info("Converting fragments to nd array...")
+    logger.info("Converting fragments to nd array...")
     fragments = fragments.to_ndarray()
 
-    logging.info("Converting gt to nd array...")
+    logger.info("Converting gt to nd array...")
     gt = gt.to_ndarray()
 
     thresholds = list(np.arange(
@@ -115,7 +117,7 @@ def evaluate(
         thresholds_minmax[1],
         thresholds_step))
 
-    logging.info("Evaluating thresholds...")
+    logger.info("Evaluating thresholds...")
     for threshold in thresholds:
 
         segment_ids = get_segmentation(
@@ -146,7 +148,7 @@ def get_segmentation(
         edges_collection,
         threshold):
 
-    logging.info(
+    logger.info(
         "Loading fragment - segment lookup table for threshold %s..." %
         threshold)
     fragment_segment_lut_dir = os.path.join(
@@ -164,7 +166,7 @@ def get_segmentation(
 
     # fragments = fragments.to_ndarray(block.write_roi)
 
-    logging.info("Relabeling fragment ids with segment ids...")
+    logger.info("Relabeling fragment ids with segment ids...")
 
     segment_ids = replace_values(
         fragments, fragment_segment_lut[0], fragment_segment_lut[1])
@@ -191,9 +193,9 @@ def evaluate_threshold(
     score_collection = database['scores']
 
     # get VOI and RAND
-    logging.info("Calculating VOI scores for threshold %f...", threshold)
+    logger.info("Calculating VOI scores for threshold %f...", threshold)
 
-    logging.info(type(segment_ids))
+    logger.info(type(segment_ids))
 
     rand_voi_report = rand_voi(
         gt,
@@ -205,7 +207,7 @@ def evaluate_threshold(
     for k in {'voi_split_i', 'voi_merge_j'}:
         del metrics[k]
 
-    logging.info("Storing VOI values for threshold %f in DB" % threshold)
+    logger.info("Storing VOI values for threshold %f in DB" % threshold)
 
     metrics['threshold'] = threshold
     metrics['experiment'] = experiment
@@ -215,7 +217,7 @@ def evaluate_threshold(
     metrics['volume_size'] = volume_size
     metrics['merge_function'] = edges_collection.strip('edges_')
 
-    logging.info(metrics)
+    logger.info(metrics)
 
     score_collection.replace_one(
         filter={
