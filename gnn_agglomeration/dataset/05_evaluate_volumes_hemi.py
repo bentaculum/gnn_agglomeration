@@ -157,7 +157,7 @@ def get_segmentation(
 
     fragment_segment_lut_file = os.path.join(
         fragment_segment_lut_dir,
-        'seg_%s_%d.npz' % (edges_collection, int(threshold * 100)))
+        'seg_%s_%d.npz' % (edges_collection, int(threshold * 1000)))
 
     fragment_segment_lut = np.load(
         fragment_segment_lut_file)['fragment_segment_lut']
