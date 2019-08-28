@@ -484,7 +484,7 @@ def main(_config, _run, _log):
             except NameError as e:
                 _log.warning(e)
                 test_loss = 0.0
-                test_matric = 0.0
+                test_metric = 0.0
             _log.info(
                 f'Mean validation loss ({validation_dataset.__len__()} samples): {test_loss:.3f}')
             _log.info(
