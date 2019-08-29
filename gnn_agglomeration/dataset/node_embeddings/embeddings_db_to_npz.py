@@ -11,7 +11,9 @@ logger.setLevel(logging.INFO)
 
 
 def parse_args():
-    p = configargparse.ArgParser(allow_abbrev=False)
+    p = configargparse.ArgParser(
+        default_config_files=['config_embeddings_db_to_npz.ini'],
+        allow_abbrev=False)
     p.add('--config_file', is_config_file=True)
     p.add('--db_host', type=str)
     p.add('--db_name', type=str)
@@ -36,6 +38,7 @@ def embeddings_db_to_npz(
     client = pymongo.MongoClient(db_host)
     db = client[db_name]
     collection_generator = db[collection]
+    logger.info(f'collection {collection_generator}')
 
     node_ids = []
     embeddings = []
