@@ -7,10 +7,12 @@ import sys
 import time
 import numpy as np
 
-from config import config
-
 logging.basicConfig(level=logging.INFO)
 logging.getLogger('daisy.datasets').setLevel(logging.DEBUG)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+from config import config  # noqa
 
 
 def segment_in_block(
@@ -20,18 +22,18 @@ def segment_in_block(
         fragments,
         lut):
 
-    logging.info("Copying fragments to memory...")
+    logger.info("Copying fragments to memory...")
     start = time.time()
     fragments = fragments.to_ndarray(block.write_roi)
-    logging.info("%.3fs" % (time.time() - start))
+    logger.info("%.3fs" % (time.time() - start))
 
     # get segments
 
     num_segments = len(np.unique(lut[1]))
-    logging.info("Relabelling fragments to %d segments", num_segments)
+    logger.info("Relabelling fragments to %d segments", num_segments)
     start = time.time()
     relabelled = replace_values(fragments, lut[0], lut[1])
-    logging.info("%.3fs" % (time.time() - start))
+    logger.info("%.3fs" % (time.time() - start))
 
     segmentation[block.write_roi] = relabelled
 
@@ -62,7 +64,7 @@ def extract_segmentation(
     read_roi = daisy.Roi((0, 0, 0), (5000, 5000, 5000))
     write_roi = daisy.Roi((0, 0, 0), (5000, 5000, 5000))
 
-    logging.info("Preparing segmentation dataset...")
+    logger.info("Preparing segmentation dataset...")
     segmentation = daisy.prepare_ds(
         out_file,
         out_dataset,
@@ -71,7 +73,8 @@ def extract_segmentation(
         dtype=np.uint64,
         write_roi=write_roi)
 
-    lut_filename = 'seg_%s_%d' % (edges_collection, int(threshold * 1000))
+    logger.info(f'edges_collection {edges_collection}')
+    lut_filename = f'seg_{edges_collection}_{int(threshold * 1000)}'
 
     lut_dir = os.path.join(
         fragments_file,
@@ -79,7 +82,7 @@ def extract_segmentation(
 
     if run_type:
         lut_dir = os.path.join(lut_dir, run_type)
-        logging.info("Run type set, using luts from %s data" % run_type)
+        logger.info("Run type set, using luts from %s data" % run_type)
 
     lut = os.path.join(
         lut_dir,
@@ -88,11 +91,11 @@ def extract_segmentation(
     assert os.path.exists(lut), "%s does not exist" % lut
 
     start = time.time()
-    logging.info("Reading fragment-segment LUT...")
+    logger.info("Reading fragment-segment LUT...")
     lut = np.load(lut)['fragment_segment_lut']
-    logging.info("%.3fs" % (time.time() - start))
+    logger.info("%.3fs" % (time.time() - start))
 
-    logging.info("Found %d fragments in LUT" % len(lut[0]))
+    logger.info("Found %d fragments in LUT" % len(lut[0]))
 
     daisy.run_blockwise(
         total_roi,
@@ -111,6 +114,7 @@ def extract_segmentation(
 
 
 if __name__ == "__main__":
+    logger.info(f'config.edges_collection {config.edges_collection}')
     extract_segmentation(
         fragments_file=config.fragments_zarr,
         fragments_dataset=config.fragments_ds,
