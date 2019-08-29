@@ -345,7 +345,6 @@ def main(_config, _run, _log):
             test_1d_outputs = dict()
             test_embeddings = dict()
 
-
             _log.info('test pass ...')
             start_test_pass = time.time()
             for i, data_fe in enumerate(data_loader_test):
@@ -364,7 +363,7 @@ def main(_config, _run, _log):
                     # Careful, we might be off by 1 here due to casting back and forth between long and float
                     pos_long = data_fe.pos.cpu().numpy().astype(np.int64)
                     nodes_in = np.all(pos_long >= lower_limit, axis=1) & \
-                               np.all(pos_long < upper_limit, axis=1)
+                        np.all(pos_long < upper_limit, axis=1)
 
                     embeddings = out_fe.cpu().numpy()[nodes_in]
                     ids = data_fe.node_ids.cpu().numpy()[nodes_in]
@@ -372,10 +371,11 @@ def main(_config, _run, _log):
                         if k not in test_embeddings:
                             test_embeddings[k] = v
                         else:
-                            _log.warning(f'embedding for node {k} already exists')
+                            _log.warning(
+                                f'embedding for node {k} already exists')
+                    continue
 
-
-                elif config.write_to_db:
+                if config.write_to_db:
                     start = time.time()
                     out_1d = model.out_to_one_dim(out_fe)
                     # TODO this assumes again that every pairs of directed edges are next to each other
@@ -435,6 +435,18 @@ def main(_config, _run, _log):
                 pred = model.out_to_predictions(out_fe)
                 test_predictions.extend(model.predictions_to_list(pred))
                 test_targets.extend(data_fe.y.tolist())
+
+            if config.our_conv_output_node_embeddings:
+                # save embeddings to file
+                np.savez(
+                    osp.join(config.run_abs_path, 'embeddings.npz'),
+                    node_ids=np.array(
+                        list(test_embeddings.keys()), dtype=np.int64),
+                    embeddings=np.array(
+                        list(test_embeddings.values()), dtype=np.float32)
+                )
+                return
+
             test_loss /= edge_weights_test
             test_metric /= edge_weights_test
 
@@ -455,15 +467,6 @@ def main(_config, _run, _log):
                     outputs_dict=test_1d_outputs,
                     collection_name=f'{timestamp}_{comment}',
                 )
-
-            if config.our_conv_output_node_embeddings:
-                # save embeddings to file
-                np.savez(
-                    osp.join(config.run_abs_path, 'embeddings.npz'),
-                    node_ids=np.array(list(test_embeddings.keys()), dtype=np.int64),
-                    embeddings=np.array(list(test_embeddings.values()), dtype=np.float32)
-                )
-
 
             if config.plot_targets_vs_predictions:
                 # TODO fix to run on cluster
