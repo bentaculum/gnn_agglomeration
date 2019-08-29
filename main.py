@@ -355,22 +355,12 @@ def main(_config, _run, _log):
                 utils.log_max_memory_allocated(device)
 
                 if config.our_conv_output_node_embeddings:
-                    # TODO put into function
-                    lower_limit = data_fe.inner_roi_offset.cpu().numpy().astype(np.int64)
-                    upper_limit = lower_limit + data_fe.inner_roi_shape.cpu().numpy().astype(np.int64)
+                    nodes_mask = data_fe.nodes_mask.cpu().numpy().astype(np.int64)
                     _log.info(
-                        f'lower limit {lower_limit}, upper limit {upper_limit}')
+                        f'adding embeddings for {np.sum(nodes_mask)} nodes')
 
-                    # Careful, we might be off by 1 here due to casting back and forth between long and float
-                    pos_long = data_fe.pos.cpu().numpy().astype(np.int64)
-                    _log.info(f'pos_long {pos_long}')
-                    nodes_in = np.all(pos_long >= lower_limit, axis=1) & \
-                        np.all(pos_long < upper_limit, axis=1)
-                    _log.info(
-                        f'adding embeddings for {np.sum(nodes_in)} nodes')
-
-                    embeddings = out_fe.cpu().numpy()[nodes_in]
-                    ids = data_fe.node_ids.cpu().numpy()[nodes_in]
+                    embeddings = out_fe.cpu().numpy()[nodes_mask]
+                    ids = data_fe.node_ids.cpu().numpy()[nodes_mask]
                     for k, v in zip(ids, embeddings):
                         if k not in test_embeddings:
                             test_embeddings[k] = v
