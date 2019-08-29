@@ -175,6 +175,10 @@ class OurConvModel(GnnModel):
             x = getattr(F, self.config.dropout_type)(
                 x, p=self.config.dropout_probs[i], training=self.training)
 
+        # simply return the feature vector per node
+        if self.config.our_conv_output_node_embeddings:
+            return x
+
         if isinstance(self.model_type, CosineEmbeddingLossProblem):
             # TODO this is a quick fix implementation, with the assumption that
             #  a pair of edges is next to each other in the edge index

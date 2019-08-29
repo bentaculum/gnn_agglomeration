@@ -40,6 +40,11 @@ class HemibrainGraphUnmasked(HemibrainGraph):
         if len(edge_attrs) == 0:
             raise ValueError('No edges found in roi %s' % roi)
 
+        # TODO this is untested
+        # can be used for masking of nodes later on
+        self.inner_roi_offset = torch.tensor(inner_block_offset, dtype=torch.long)
+        self.inner_roi_shape = torch.tensor(inner_block_shape, dtype=torch.long)
+
         # PyG doubles all edges, there * 2 here
         if len(edge_attrs) * 2 > self.config.max_edges:
             raise TooManyEdgesException(

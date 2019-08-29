@@ -10,6 +10,7 @@ from sacred.stflow import LogFileWriter  # noqa
 import logging  # noqa
 
 import os  # noqa
+import os.path as osp  # noqa
 import shutil  # noqa
 from torch_geometric.data import DataLoader  # noqa
 from tensorboardX import SummaryWriter  # noqa
@@ -342,6 +343,8 @@ def main(_config, _run, _log):
             test_targets = []
 
             test_1d_outputs = dict()
+            test_embeddings = dict()
+
 
             _log.info('test pass ...')
             start_test_pass = time.time()
@@ -352,7 +355,27 @@ def main(_config, _run, _log):
                 out_fe = model(data_fe)
                 utils.log_max_memory_allocated(device)
 
-                if config.write_to_db:
+                if config.our_conv_output_node_embeddings:
+                    start = now()
+                    # TODO put into function
+                    lower_limit = data_fe.inner_roi_offset.cpu().numpy()
+                    upper_limit = lower_limit + data_fe.inner_roi_shape.cpu().numpy()
+
+                    # Careful, we might be off by 1 here due to casting back and forth between long and float
+                    pos_long = data_fe.pos.cpu().numpy().astype(np.int64)
+                    nodes_in = np.all(pos_long >= lower_limit, axis=1) & \
+                               np.all(pos_long < upper_limit, axis=1)
+
+                    embeddings = out_fe.cpu().numpy()[nodes_in]
+                    ids = data_fe.node_ids.cpu().numpy()[nodes_in]
+                    for k, v in zip(ids, embeddings):
+                        if k not in test_embeddings:
+                            test_embeddings[k] = v
+                        else:
+                            _log.warning(f'embedding for node {k} already exists')
+
+
+                elif config.write_to_db:
                     start = time.time()
                     out_1d = model.out_to_one_dim(out_fe)
                     # TODO this assumes again that every pairs of directed edges are next to each other
@@ -426,13 +449,21 @@ def main(_config, _run, _log):
                 f'Mean accuracy on test set: {test_metric:.3f}\n')
 
             if config.write_to_db:
-                # timestamp = datetime.datetime.now(
-                #     pytz.timezone('US/Eastern')).strftime('%Y%m%dT%H%M%S.%f%z')
                 comment = _run.meta_info['options']['--comment']
+                timestamp = str(_run.start_time).replace(' ', 'T')
                 test_dataset.write_outputs_to_db(
                     outputs_dict=test_1d_outputs,
-                    collection_name=f'{_run.start_time}_{comment}',
+                    collection_name=f'{timestamp}_{comment}',
                 )
+
+            if config.our_conv_output_node_embeddings:
+                # save embeddings to file
+                np.savez(
+                    osp.join(config.run_abs_path, 'embeddings.npz'),
+                    node_ids=np.array(list(test_embeddings.keys()), dtype=np.int64),
+                    embeddings=np.array(list(test_embeddings.values()), dtype=np.float32)
+                )
+
 
             if config.plot_targets_vs_predictions:
                 # TODO fix to run on cluster
@@ -498,6 +529,11 @@ def main(_config, _run, _log):
     # -----------------------------------------------
     # ---------------- TRAINING LOOP ----------------
     # -----------------------------------------------
+
+    # no training if we simply want to produce node embeddings
+    if config.our_conv_output_node_embeddings:
+        atexit.unregister(atexit_tasks)
+        return atexit_tasks(model=model)
 
     for epoch in range(model.epoch, config.training_epochs):
         start_epoch_train = time.time()

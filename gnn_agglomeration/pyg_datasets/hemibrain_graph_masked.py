@@ -46,6 +46,10 @@ class HemibrainGraphMasked(HemibrainGraph):
         if len(edge_attrs) == 0:
             raise ValueError('No edges found in roi %s' % roi)
 
+        # can be used for masking of nodes later on
+        self.inner_roi_offset = torch.tensor(inner_block_offset, dtype=torch.long)
+        self.inner_roi_shape = torch.tensor(inner_block_shape, dtype=torch.long)
+
         start = time.time()
         self.edge_index, \
             self.edge_attr, \
@@ -78,14 +82,16 @@ class HemibrainGraphMasked(HemibrainGraph):
 
     def mask_target_edges(self, inner_roi, mask):
         logger.debug('masking target edges, zero for all context edges')
-        lower_limit = torch.tensor(inner_roi.get_offset(), dtype=torch.float)
+        lower_limit = torch.tensor(inner_roi.get_offset(), dtype=torch.long)
         upper_limit = lower_limit + \
-            torch.tensor(inner_roi.get_shape(), dtype=torch.float)
+            torch.tensor(inner_roi.get_shape(), dtype=torch.long)
 
+        # Careful, we might be off by 1 here due to casting back and forth between long and float
+        pos_long = self.pos.long()
         nodes_in = torch.all(
-            self.pos >= lower_limit,
+            pos_long >= lower_limit,
             dim=1) & torch.all(
-            self.pos < upper_limit,
+            pos_long < upper_limit,
             dim=1)
 
         # only check u (the first node, first direction), as each edge should be

@@ -841,6 +841,12 @@ class Config:
         self.parser.add_argument('--summary_per_batch', type=str2bool)
         self.default['summary_per_batch'] = True
 
+        self.parser.add_argument(
+            '--our_conv_output_node_embeddings',
+            type=str2bool,
+            help='instead of outputting a score per edge, output the features on all nodes')
+        self.default['our_conv_output_node_embeddings'] = False
+
     def localhost(self):
         return {
             'mongo_url': 'localhost:27017',
