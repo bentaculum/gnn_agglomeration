@@ -74,6 +74,7 @@ def relabel_block(block, fragments, out_volume, node_ids, embeddings):
     # for j in present_ids:
     # c[fragments == j] = embeddings[np.where(node_ids == j)[0][0], i]
 
+    # TODO we might want to switch to floats again here
     out_block = np.stack(out_channels)
     out_volume[block.write_roi] = out_block
 
