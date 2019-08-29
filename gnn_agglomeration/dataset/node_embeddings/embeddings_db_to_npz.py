@@ -12,7 +12,7 @@ logger.setLevel(logging.INFO)
 
 def parse_args():
     p = configargparse.ArgParser(allow_abbrev=False)
-
+    p.add('--config_file', is_config_file=True)
     p.add('--db_host', type=str)
     p.add('--db_name', type=str)
     p.add('--collection', type=str)
