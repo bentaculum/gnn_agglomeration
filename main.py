@@ -355,7 +355,7 @@ def main(_config, _run, _log):
                 utils.log_max_memory_allocated(device)
 
                 if config.our_conv_output_node_embeddings:
-                    nodes_mask = data_fe.nodes_mask.cpu().numpy().astype(np.int64)
+                    nodes_mask = data_fe.nodes_mask.cpu().numpy().astype(np.bool)
                     _log.info(
                         f'adding embeddings for {np.sum(nodes_mask)} nodes')
 

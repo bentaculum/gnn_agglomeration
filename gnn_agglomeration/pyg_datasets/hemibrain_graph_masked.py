@@ -88,7 +88,7 @@ class HemibrainGraphMasked(HemibrainGraph):
         pos = pos.numpy().astype(np.int64)
         nodes_in = np.all(pos >= lower_limit, axis=1) & \
                    np.all(pos < upper_limit, axis=1)
-        return nodes_in
+        return torch.tensor(nodes_in, dtype=torch.byte())
 
     def mask_target_edges(self, inner_roi, mask):
         logger.debug('masking target edges, zero for all context edges')
