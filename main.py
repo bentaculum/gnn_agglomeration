@@ -438,8 +438,10 @@ def main(_config, _run, _log):
 
             if config.our_conv_output_node_embeddings:
                 # save embeddings to file
+                emb_path = osp.join(config.run_abs_path, 'embeddings.npz')
+                _log.info(f'save embeddings to {emb_path}')
                 np.savez(
-                    osp.join(config.run_abs_path, 'embeddings.npz'),
+                    emb_path,
                     node_ids=np.array(
                         list(test_embeddings.keys()), dtype=np.int64),
                     embeddings=np.array(
