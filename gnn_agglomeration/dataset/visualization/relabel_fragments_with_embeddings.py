@@ -55,7 +55,7 @@ def relabel_block(block, fragments, out_volume, node_ids, embeddings):
     logger.info(f'copy fragments into memory in {now() - start} s')
     logger.debug(f'fragments shape {fragments.shape}')
 
-    out_channels = [np.zeros_like(fragments, dtype=np.uint64)
+    out_channels = [np.zeros_like(fragments, dtype=np.uint8)
                     for _ in range(3)]
     logger.debug(f'out_block channel shape {out_channels[0].shape}')
 
@@ -69,13 +69,8 @@ def relabel_block(block, fragments, out_volume, node_ids, embeddings):
             inplace=False
         )
 
-    # present_ids = np.unique(fragments)
-    # for i, c in enumerate(out_channels):
-    # for j in present_ids:
-    # c[fragments == j] = embeddings[np.where(node_ids == j)[0][0], i]
-
-    # TODO we might want to switch to floats again here
     out_block = np.stack(out_channels)
+    logger.debug(f'out_block {out_block}')
     out_volume[block.write_roi] = out_block
 
 
@@ -91,7 +86,7 @@ def relabel_fragments(file, ds, chunks_size, out_ds, node_ids, embeddings, num_w
         ds_name=out_ds,
         total_roi=fragments.data_roi,
         voxel_size=fragments.voxel_size,
-        dtype=np.float32,
+        dtype=np.uint8,
         write_roi=daisy.Roi(offset=(0, 0, 0), shape=block_size),
         num_channels=3
     )
@@ -114,20 +109,22 @@ def relabel_fragments(file, ds, chunks_size, out_ds, node_ids, embeddings, num_w
 
 
 def rgb_ints_to_unit_floats(array):
-    pass
+    return array / 256.0
 
 
 def floats_to_rgb_ints(array):
-    return (minmax_scale(array, feature_range=(0, 1)) * 255).astype(np.uint64)
+    return (minmax_scale(array, feature_range=(0, 1)) * 255.0).astype(np.uint8)
 
 
 if __name__ == "__main__":
     config = parse_args()
 
     node_ids, embeddings = load_embeddings(path=config.embeddings_path)
+    logger.debug(f'raw embeddings {embeddings}')
     embeddings_3d = pca(embeddings)
     embeddings_3d = floats_to_rgb_ints(embeddings_3d)
     logger.debug(f'embeddings_3d dtype {embeddings_3d.dtype}')
+    logger.debug(f'embeddings_3d {embeddings_3d}')
 
     relabel_fragments(
         file=config.fragments_zarr,

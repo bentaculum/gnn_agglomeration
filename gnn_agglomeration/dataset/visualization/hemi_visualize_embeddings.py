@@ -22,17 +22,30 @@ relabelled = [
 
 output_file = sys.argv[2]
 
-frag_embeddings = daisy.open_ds(output_file, f'volumes/embeddings/siamese')
+frag_embeddings = [
+    daisy.open_ds(output_file, f'volumes/embeddings/siamese_uint8/s{i}') for i in range(9)
+]
+
+gnn_embeddings = [
+    daisy.open_ds(output_file, f'volumes/embeddings/gnn_setup26/s{i}') for i in range(9)
+]
 
 viewer = neuroglancer.Viewer()
 with viewer.txn() as s:
-    add_layer(s, raw, 'raw')
-    add_layer(s, relabelled, 'relabelled gt')
     add_layer(
         s,
         frag_embeddings,
         'fragments embeddings',
         shader='rgb'
     )
+    add_layer(
+        s,
+        gnn_embeddings,
+        'gnn embeddings',
+        shader='rgb'
+    )
+
+    add_layer(s, raw, 'raw')
+    add_layer(s, relabelled, 'relabelled gt')
 
 print(viewer)
