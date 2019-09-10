@@ -209,7 +209,11 @@ def run_validation(model, loss_function, labels, dataloader, device, writer, tra
     start = now()
     model.eval()
 
+    out0_list = []
+    out1_list = []
+    labels_list = []
     for i, data in enumerate(dataloader):
+        start_batch = now()
         input0, input1, labels = data
 
         input0 = input0.to(device)
@@ -245,14 +249,19 @@ def run_validation(model, loss_function, labels, dataloader, device, writer, tra
         )
 
         # TODO this is only a patch
-        np.savez(
-            os.path.join(outputs_dir, f'batch_{i}'),
-            out0=out0.detach().cpu().numpy(),
-            out1=out1.detach().cpu().numpy(),
-            labels=data.y.detach().cpu().numpy(),
-        )
+        out0_list.append(list(out0.detach().cpu().numpy()))
+        out1_list.append(list(out1.detach().cpu().numpy()))
+        labels_list.append(list(labels.detach().cpu().numpy()))
+
+        logger.info(f'validation batch {i} in {now() - start_batch}')
 
     model.train()
+    np.savez(
+        os.path.join(outputs_dir, f'validation_set_{train_iteration}'),
+        out0=np.array(out0_list),
+        out1=np.array(out1_list),
+        labels=np.array(labels_list)
+    )
     logger.info(f'run validation in {now() - start} s')
 
 
@@ -269,6 +278,7 @@ def train():
     summary_dir = osp.join(run_dir, 'summary')
     os.makedirs(summary_dir)
     outputs_dir = osp.join(run_dir, 'outputs')
+    os.makedirs(outputs_dir)
 
     start = now()
     dataset = SiameseDatasetTrain(
@@ -327,7 +337,9 @@ def train():
         #     replacement=True
         # )
 
-        sampler_val = torch.utils.data.SequentialSampler()
+        sampler_val = torch.utils.data.SequentialSampler(
+            data_source=dataset
+        )
 
         dataloader_val = torch.utils.data.DataLoader(
             dataset=dataset,
@@ -455,7 +467,7 @@ def train():
 
         start_backward = now()
         loss.backward()
-        optimizer.step()
+        # optimizer.step()
         optimizer.zero_grad()
         logger.debug(f'backward + step in {now() - start_backward} s')
 
@@ -496,7 +508,8 @@ def train():
                 f'batches {i} done in {now() - start_console_update} s')
 
         if config_siamese.use_validation:
-            if i % config_siamese.validation_interval == 0 and i > 0:
+            if i % config_siamese.validation_interval == 0:
+                logger.info('starting validation')
                 run_validation(
                     model=model,
                     loss_function=loss_function,

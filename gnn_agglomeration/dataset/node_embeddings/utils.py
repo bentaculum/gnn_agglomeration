@@ -89,6 +89,8 @@ def load_checkpoint(load_model, load_model_version, runs_dir):
         return int(s[0]) if s else -1, f
 
     load_model_dir = os.path.join(run_path, 'model')
+    logger.info(f'load_model_dir {load_model_dir}')
+
     checkpoint_versions = [name for name in os.listdir(
         load_model_dir) if name.endswith('.tar')]
     if load_model_version == 'latest':
