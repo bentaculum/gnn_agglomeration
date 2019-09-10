@@ -205,9 +205,10 @@ def write_accuracy_to_summary(writer, iteration, out0, out1, labels):
     )
 
 
-def run_validation(model, loss_function, labels, dataloader, device, writer, train_iteration):
+def run_validation(model, loss_function, labels, dataloader, device, writer, train_iteration, outputs_dir):
     start = now()
     model.eval()
+
     for i, data in enumerate(dataloader):
         input0, input1, labels = data
 
@@ -243,6 +244,14 @@ def run_validation(model, loss_function, labels, dataloader, device, writer, tra
             global_step=train_iteration + i
         )
 
+        # TODO this is only a patch
+        np.savez(
+            os.path.join(outputs_dir, f'batch_{i}'),
+            out0=out0.detach().cpu().numpy(),
+            out1=out1.detach().cpu().numpy(),
+            labels=data.y.detach().cpu().numpy(),
+        )
+
     model.train()
     logger.info(f'run validation in {now() - start} s')
 
@@ -259,6 +268,7 @@ def train():
     os.makedirs(model_dir)
     summary_dir = osp.join(run_dir, 'summary')
     os.makedirs(summary_dir)
+    outputs_dir = osp.join(run_dir, 'outputs')
 
     start = now()
     dataset = SiameseDatasetTrain(
@@ -276,6 +286,7 @@ def train():
     logger.info(f'init dataset in {now() - start} s')
 
     start = now()
+
     sampler = torch.utils.data.WeightedRandomSampler(
         weights=dataset.samples_weights,
         num_samples=config_siamese.training_samples,
@@ -310,11 +321,13 @@ def train():
         )
         logger.info(f'init dataset val in {now() - start} s')
 
-        sampler_val = torch.utils.data.WeightedRandomSampler(
-            weights=dataset_val.samples_weights,
-            num_samples=config_siamese.validation_samples,
-            replacement=True
-        )
+        # sampler_val = torch.utils.data.WeightedRandomSampler(
+        #     weights=dataset_val.samples_weights,
+        #     num_samples=config_siamese.validation_samples,
+        #     replacement=True
+        # )
+
+        sampler_val = torch.utils.data.SequentialSampler()
 
         dataloader_val = torch.utils.data.DataLoader(
             dataset=dataset,
@@ -491,7 +504,8 @@ def train():
                     dataloader=dataloader_val,
                     device=device,
                     writer=writer_val,
-                    train_iteration=i
+                    train_iteration=i,
+                    outputs_dir=outputs_dir
                 )
 
         # save model
