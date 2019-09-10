@@ -345,6 +345,8 @@ def main(_config, _run, _log):
             test_1d_outputs = dict()
             test_embeddings = dict()
 
+            paired_embeddings = {}
+
             _log.info('test pass ...')
             start_test_pass = time.time()
             for i, data_fe in enumerate(data_loader_test):
@@ -381,6 +383,10 @@ def main(_config, _run, _log):
                     ).numpy().astype(np.int64)
                     out_1d = out_1d[data_fe.roi_mask.byte()].cpu().numpy()
 
+                    out0 = out_fe[0][data_fe.roi_mask.byte()].cpu().numpy()
+                    out1 = out_fe[1][data_fe.roi_mask.byte()].cpu().numpy()
+                    labels = data_fe.y.cpu().numpy()
+
                     if len(edges) == 0:
                         _log.warning(
                             f'test pass: no edges in block after masking')
@@ -399,11 +405,13 @@ def main(_config, _run, _log):
                     edges_list = [tuple(i)
                                   for i in edges_orig_labels]
 
-                    for k, v in zip(edges_list, out_1d):
+                    for k, v, emb_pair in zip(edges_list, out_1d, (out0, out1, labels)):
                         # TODO this is super hacky, only applies for RAG
                         # remove artificial self-loops:
                         if k[0] == k[1]:
                             continue
+
+                        paired_embeddings[k] = emb_pair
 
                         if k not in test_1d_outputs:
                             test_1d_outputs[k] = v
@@ -429,6 +437,22 @@ def main(_config, _run, _log):
                 pred = model.out_to_predictions(out_fe)
                 test_predictions.extend(model.predictions_to_list(pred))
                 test_targets.extend(data_fe.y.tolist())
+
+            # save pairwise embeddings plus labels
+            emb_pair_path = osp.join(config.run_abs_path, 'outputs.npz')
+            _log.info(f'save outputs and labels to {emb_pair_path}')
+
+            out0 = np.array([i[0] for i in list(paired_embeddings.values())])
+            out1 = np.array([i[1] for i in list(paired_embeddings.values())])
+            labels = np.array([i[2] for i in list(paired_embeddings.values())])
+            np.savez(
+                emb_pair_path,
+                out0=out0,
+                out1=out1,
+                labels=labels
+            )
+            # stop here
+            return
 
             if config.our_conv_output_node_embeddings:
                 # save embeddings to file
