@@ -338,7 +338,7 @@ def train():
         # )
 
         sampler_val = torch.utils.data.SequentialSampler(
-            data_source=dataset
+            data_source=dataset_val
         )
 
         dataloader_val = torch.utils.data.DataLoader(
