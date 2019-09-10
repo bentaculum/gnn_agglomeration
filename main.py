@@ -385,7 +385,8 @@ def main(_config, _run, _log):
 
                     out0 = out_fe[0][data_fe.roi_mask.byte()].cpu().numpy()
                     out1 = out_fe[1][data_fe.roi_mask.byte()].cpu().numpy()
-                    labels = data_fe.y.cpu().numpy()
+                    labels = data_fe.y[data_fe.roi_mask.byte()].cpu().numpy()
+                    unknown_mask = data_fe.mask[data_fe.roi_mask.byte()].cpu().numpy()
 
                     if len(edges) == 0:
                         _log.warning(
@@ -405,13 +406,14 @@ def main(_config, _run, _log):
                     edges_list = [tuple(i)
                                   for i in edges_orig_labels]
 
-                    for k, v, o1, o2, la in zip(edges_list, out_1d, out0, out1, labels):
+                    for k, v, o1, o2, la, um in zip(edges_list, out_1d, out0, out1, labels, unknown_mask):
                         # TODO this is super hacky, only applies for RAG
                         # remove artificial self-loops:
                         if k[0] == k[1]:
                             continue
 
-                        paired_embeddings[k] = (o1, o2, la)
+                        if um > 0:
+                            paired_embeddings[k] = (o1, o2, la)
 
                         if k not in test_1d_outputs:
                             test_1d_outputs[k] = v
