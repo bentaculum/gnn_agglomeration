@@ -405,13 +405,13 @@ def main(_config, _run, _log):
                     edges_list = [tuple(i)
                                   for i in edges_orig_labels]
 
-                    for k, v, emb_pair in zip(edges_list, out_1d, (out0, out1, labels)):
+                    for k, v, o1, o2, la in zip(edges_list, out_1d, out0, out1, labels):
                         # TODO this is super hacky, only applies for RAG
                         # remove artificial self-loops:
                         if k[0] == k[1]:
                             continue
 
-                        paired_embeddings[k] = emb_pair
+                        paired_embeddings[k] = (o1, o2, la)
 
                         if k not in test_1d_outputs:
                             test_1d_outputs[k] = v
