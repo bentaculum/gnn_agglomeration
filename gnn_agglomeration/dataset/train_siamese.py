@@ -249,9 +249,9 @@ def run_validation(model, loss_function, labels, dataloader, device, writer, tra
         )
 
         # TODO this is only a patch
-        out0_list.append(list(out0.detach().cpu().numpy()))
-        out1_list.append(list(out1.detach().cpu().numpy()))
-        labels_list.append(list(labels.detach().cpu().numpy()))
+        out0_list.extend(list(out0.detach().cpu().numpy()))
+        out1_list.extend(list(out1.detach().cpu().numpy()))
+        labels_list.extend(list(labels.detach().cpu().numpy()))
 
         logger.info(f'validation batch {i} in {now() - start_batch}')
 
