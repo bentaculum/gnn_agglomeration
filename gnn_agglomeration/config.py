@@ -48,19 +48,19 @@ class Config:
             '--euclidian_dimensionality',
             type=positive_int,
             help='Dimension of the Euclidian space, used in data.pos')
-        self.default['euclidian_dimensionality'] = 3
+        self.default['euclidian_dimensionality'] = 2
 
         self.parser.add_argument(
             '--feature_dimensionality',
             type=positive_int,
             help='Dimension of the feature space, used in data.x')
-        self.default['feature_dimensionality'] = 6
+        self.default['feature_dimensionality'] = 1
 
         self.parser.add_argument(
             '--pseudo_dimensionality',
             type=positive_int,
             help='Dimension of the pseudo coordinates, according to their type')
-        self.default['pseudo_dimensionality'] = 4
+        self.default['pseudo_dimensionality'] = 2
 
         self.parser.add_argument(
             '--kernel_size',
@@ -101,7 +101,7 @@ class Config:
                 'HemibrainDatasetBlockwiseInMemory'
             ],
             help='choose from different types of local datasets')
-        self.default['dataset_type_train'] = 'HemibrainDatasetRandomInMemory'
+        self.default['dataset_type_train'] = 'CountNeighborsDataset'
 
         self.parser.add_argument(
             '--dataset_type_val',
@@ -131,7 +131,7 @@ class Config:
             '--run_path',
             type=str,
             help='directory to save temporary outputs')
-        self.default['run_path'] = 'runs/grid_search_3'
+        self.default['run_path'] = 'runs/toy_examples'
 
         self.parser.add_argument(
             '--logdir_suffix',
@@ -234,7 +234,7 @@ class Config:
             '--model_type',
             type=str,
             choices=['ClassificationProblem', 'RegressionProblem', 'CosineEmbeddingLossProblem'])
-        self.default['model_type'] = 'CosineEmbeddingLossProblem'
+        self.default['model_type'] = 'RegressionProblem'
 
         self.parser.add_argument(
             '--training_epochs',
@@ -246,7 +246,7 @@ class Config:
             '--samples',
             type=positive_int,
             help='Number of random graphs to create, if a new dataset is created')
-        self.default['samples'] = 4096
+        self.default['samples'] = 10
 
         self.parser.add_argument(
             '--epoch_samples_train',
@@ -447,7 +447,7 @@ class Config:
             '--att_normalize',
             type=str2bool,
             help='whether to use a softmax over each neighborhood')
-        self.default['att_normalize'] = True
+        self.default['att_normalize'] = False
 
         self.parser.add_argument(
             '--att_nodenet_layers',
@@ -466,7 +466,7 @@ class Config:
             '--att_use_node_features',
             type=str2bool,
             help='wether the attention function takes the node features as input on top of the pseudo-coordinates')
-        self.default['att_use_node_features'] = False
+        self.default['att_use_node_features'] = True
 
         self.parser.add_argument(
             '--load_model',
@@ -484,7 +484,7 @@ class Config:
             '--telegram',
             type=str2bool,
             help='whether to have a Sacred Telegram Observer')
-        self.default['telegram'] = True
+        self.default['telegram'] = False
 
         self.parser.add_argument(
             '--confusion_matrix_path',
@@ -496,7 +496,7 @@ class Config:
             '--temp',
             type=str2bool,
             help='If true, save results to temp folder. If false, create timestamped directory.')
-        self.default['temp'] = False
+        self.default['temp'] = True
 
         self.parser.add_argument(
             '--checkpoint_interval',
@@ -561,7 +561,7 @@ class Config:
             '--edge_labels',
             type=str2bool,
             help='whether to use edge labels')
-        self.default['edge_labels'] = True
+        self.default['edge_labels'] = False
 
         self.parser.add_argument(
             '--fc_use_edge',
@@ -595,7 +595,7 @@ class Config:
             '--dataset_path_train',
             type=str,
             help='the directory to read the training dataset from')
-        self.default['dataset_path_train'] = 'data/hemi/22_micron_cube/train4096_1500_750_debugged'
+        self.default['dataset_path_train'] = 'data/count/recreate'
         # self.default['dataset_path_train'] = 'data/hemi/12_micron_cube/default_train'
 
         self.parser.add_argument(
@@ -856,7 +856,7 @@ class Config:
     def slowpoke1(self):
         return {
             'mongo_url': 'slowpoke1.int.janelia.org:27017',
-            'mongo_db': 'gnn_agglomeration_logging',
+            'mongo_db': 'sacred',
         }
 
     def overwrite_defaults(self, config_filepath):

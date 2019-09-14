@@ -30,6 +30,7 @@ from funlib.segment.arrays import replace_values  # noqa
 from gnn_agglomeration import utils  # noqa
 from gnn_agglomeration.pyg_datasets import *  # noqa
 from gnn_agglomeration.nn.models import *  # noqa
+from gnn_agglomeration.pyg_datasets.toy_datasets import *  # noqa
 
 
 from gnn_agglomeration.experiment import ex  # noqa
@@ -254,6 +255,7 @@ def main(_config, _run, _log):
 
     def atexit_tasks(model):
 
+        return ''
         # -----------------------------------------------
         # ---------------- EVALUATION ROUTINE -----------
         # -----------------------------------------------

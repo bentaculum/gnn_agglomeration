@@ -20,7 +20,7 @@ class CountNeighborsGraph(MyGraph):
 
         # connect all edges within distance theta_max O(n^2)
         edges = []
-        y = torch.zeros(config.nodes, dtype=torch.long)
+        y = torch.zeros(config.nodes, dtype=torch.float)
         x = torch.arange(
             config.nodes) % config.feature_dimensionality
 
