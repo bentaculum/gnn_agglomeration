@@ -12,22 +12,22 @@ input_file = sys.argv[1]
 
 raw = [
     daisy.open_ds(input_file, 'volumes/raw/s%d' % s)
-    for s in range(9)
+    for s in range(6)
 ]
 
 relabelled = [
     daisy.open_ds(input_file, 'volumes/labels/relabelled_ids/s%d' % s)
-    for s in range(9)
+    for s in range(6)
 ]
 
 output_file = sys.argv[2]
 
 frag_embeddings = [
-    daisy.open_ds(output_file, f'volumes/embeddings/siamese_uint8/s{i}') for i in range(9)
+    daisy.open_ds(output_file, f'volumes/embeddings/siamese_uint8/s{i}') for i in range(6)
 ]
 
 gnn_embeddings = [
-    daisy.open_ds(output_file, f'volumes/embeddings/gnn_setup26/s{i}') for i in range(9)
+    daisy.open_ds(output_file, f'volumes/embeddings/gnn_setup26/s{i}') for i in range(6)
 ]
 
 viewer = neuroglancer.Viewer()
