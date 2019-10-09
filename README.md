@@ -2,11 +2,15 @@
 
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/7a92c3102bdf4bb4ac5257a800754932)](https://app.codacy.com/app/benjamin9555/gnn_agglomeration?utm_source=github.com&utm_medium=referral&utm_content=benjamin9555/gnn_agglomeration&utm_campaign=Badge_Grade_Dashboard)
 
-using [pytorch_geometric](https://github.com/rusty1s/pytorch_geometric)
+Implementation based on [pytorch_geometric](https://github.com/rusty1s/pytorch_geometric).
+
+<img src='imgs/fragments_rag.png' width="300px"/>
 
 ### Abstract
 
 Fully automating neural circuit reconstruction from electron microscopy (EM) data has the potential to provide a huge leap for neuroscience. The final step of many neuron reconstruction pipelines consists of agglomerating small compact fragments to form entire neurons. This work explores using Graph Neural Networks to learn that task from the Region Adjacency Graph (RAG) of said fragments, combined with features learned by a Convolutional Neural Network directly from EM data. For this purpose we present a generalizable, geometric Graph Neural Network called _RagNet_. It labels RAG edges as _merge_ or _split_, which allows the direct extraction of segmentations. In contrast to previous agglomeration methods, the _RagNet_ allows an increase in the context considered for making an edge merge decision. This benefit is empirically confirmed by applying _RagNet_ on top of an edge-wise prediction method and increasing the class-balanced accuracy by ten percentage points. Lastly, we fuse our implementation with an existing large-scale neuron reconstruction pipeline and report initial results on a recently imaged _Drosophila melanogaster_ brain dataset.
+
+<img src='imgs/from_to.png'/>
 
 ### Installation
 1. Set up a python3 conda environment, then `pip install -r requirements.txt` or `conda env create -f environment.yml`
