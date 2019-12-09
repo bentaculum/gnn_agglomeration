@@ -12,7 +12,7 @@ import datetime
 import pytz
 
 from .siamese_dataset import SiameseDataset  # noqa
-from .merge_fragments import MergeFragments  # noqa
+from utils.merge_fragments import MergeFragments  # noqa
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -82,7 +82,7 @@ class SiameseDatasetTrain(SiameseDataset):
         self.labels_key = ArrayKey('LABELS')
 
         if self.in_memory:
-            from .hdf5_like_in_memory import InMemZarrSource as ZarrSource  # noqa
+            from utils.hdf5_like_in_memory import InMemZarrSource as ZarrSource  # noqa
         else:
             from gunpowder.nodes.zarr_source import ZarrSource  # noqa
 

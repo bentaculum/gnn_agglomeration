@@ -62,7 +62,7 @@ class SiameseDatasetInference(SiameseDataset):
         self.labels_key = ArrayKey('LABELS')
 
         if self.in_memory:
-            from .hdf5_like_in_memory import InMemZarrSource as ZarrSource  # noqa
+            from utils.hdf5_like_in_memory import InMemZarrSource as ZarrSource  # noqa
         else:
             from gunpowder.nodes.zarr_source import ZarrSource  # noqa
 

@@ -14,7 +14,7 @@ logger.setLevel(logging.INFO)
 from node_embeddings.config_siamese import config as config_siamese  # noqa
 from config import config  # noqa
 
-from node_embeddings.siamese_dataset_inference import SiameseDatasetInference  # noqa
+from node_embeddings.dataset.siamese_dataset_inference import SiameseDatasetInference  # noqa
 from node_embeddings.siamese_vgg_3d import SiameseVgg3d  # noqa
 from node_embeddings import utils  # noqa
 
