@@ -72,7 +72,7 @@ pyrsistent==0.15.0
 python-dateutil==2.8.0
 python-telegram-bot==11.1.0
 pytz==2019.1
-PyYAML==5.1
+PyYAML==5.4
 pyzmq==18.0.1
 qtconsole==4.4.3
 rdflib==4.2.2
