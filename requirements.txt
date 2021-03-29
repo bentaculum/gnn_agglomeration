@@ -65,7 +65,7 @@ protobuf==3.7.1
 ptyprocess==0.6.0
 py-cpuinfo==5.0.0
 pycparser==2.19
-Pygments==2.3.1
+Pygments==2.7.4
 pymongo==3.8.0
 pyparsing==2.4.0
 pyrsistent==0.15.0
